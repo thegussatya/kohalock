@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  
+  --color-brand-50: #EAF7FE;
+  --color-brand-100: #D5EFFD;
+  --color-brand-500: #00AEEF;
+  --color-brand-600: #0090C7;
+  --color-brand-900: #2B3990;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans;
+  }
+}
+
+/* Sembunyikan spinner arrows pada input number - Chrome, Safari, Edge */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Sembunyikan spinner arrows pada input number - Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}

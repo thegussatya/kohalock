@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  nama         String
+  role         String
+  email        String?  @unique
+  passwordHash String?
+  jabatan      String?
+  createdAt    DateTime @default(now())
+
+  proposals            Proposal[]
+  sekdesVerifications  Disbursement[]          @relation("SekdesVerification")
+  kadesApprovals       Disbursement[]          @relation("KadesApproval")
+  kadesInterventions   InterventionLog[]       @relation("KadesInterventions")
+  clarificationAnswers ClarificationTicket[]
+  adatCases            AdatCase[]
+  supervisionNotes     SupervisionNote[]
+  auditorTokens        AuditorAccessToken[]
+  monthlyClosings      MonthlyClosing[]
+  corrections          CorrectionTransaction[]
+}
+
+model Proposal {
+  id           String   @id @default(cuid())
+  onChainId    Int      @unique
+  dusun        String
+  judulUsulan  String
+  kategori     String
+  volume       Float
+  satuan       String
+  paguMaksimal BigInt
+  dokumenHash  String
+  fileUrls     Json
+  kaurTeknisId String
+  kaurTeknis   User     @relation(fields: [kaurTeknisId], references: [id])
+  createdAt    DateTime @default(now())
+
+  disbursements Disbursement[]
+}
+
+model Disbursement {
+  id               String   @id @default(cuid())
+  onChainId        Int      @unique
+  proposalId       String
+  proposal         Proposal @relation(fields: [proposalId], references: [id])
+  keterangan       String
+  nominal          BigInt
+  beritaAcaraUrl   String
+  beritaAcaraHash  String
+  fotoUrl          String
+  geotagLat        Float
+  geotagLng        Float
+  geotagTimestamp  DateTime
+  status           String
+  catatanRevisi    String?
+  sekdesVerifierId String?
+  sekdesVerifier   User?    @relation("SekdesVerification", fields: [sekdesVerifierId], references: [id])
+  kadesApproverId  String?
+  kadesApprover    User?    @relation("KadesApproval", fields: [kadesApproverId], references: [id])
+  submittedAt      DateTime @default(now())
+  verifiedAt       DateTime?
+  authorizedAt     DateTime?
+  disbursedAt      DateTime?
+
+  rejectionLogs    RejectionLog[]
+  interventionLogs InterventionLog[]
+  supervisionNotes SupervisionNote[]
+}
+
+model RejectionLog {
+  id              String       @id @default(cuid())
+  disbursementId  String
+  disbursement    Disbursement @relation(fields: [disbursementId], references: [id])
+  jenisPenolakan  String
+  pesanError      String
+  sudahDiperbaiki Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+}
+
+model InterventionLog {
+  id             String       @id @default(cuid())
+  disbursementId String
+  disbursement   Disbursement @relation(fields: [disbursementId], references: [id])
+  kadesId        String
+  kades          User         @relation("KadesInterventions", fields: [kadesId], references: [id])
+  txHash         String
+  createdAt      DateTime     @default(now())
+}
+
+model ClarificationTicket {
+  id            String    @id @default(cuid())
+  namaWarga     String?
+  programId     String?
+  pertanyaan    String
+  status        String    @default("MENUNGGU_JAWABAN")
+  jawaban       String?
+  dijawabOlehId String?
+  dijawabOleh   User?     @relation(fields: [dijawabOlehId], references: [id])
+  createdAt     DateTime  @default(now())
+  answeredAt    DateTime?
+}
+
+model WhistleblowerReport {
+  id               String   @id @default(cuid())
+  ticketCode       String   @unique
+  encryptedPayload String
+  attachmentUrls   Json
+  status           String   @default("DITERIMA")
+  createdAt        DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  judul     String
+  pesan     String
+  dibaca    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AdatCase {
+  id                String   @id @default(cuid())
+  pihakTerlibat     Json
+  kategori          String
+  status            String   @default("MUSYAWARAH")
+  keputusanResolusi String?
+  dicatatOlehId     String
+  dicatatOleh       User     @relation(fields: [dicatatOlehId], references: [id])
+  createdAt         DateTime @default(now())
+}
+
+model SupervisionNote {
+  id             String       @id @default(cuid())
+  disbursementId String
+  disbursement   Disbursement @relation(fields: [disbursementId], references: [id])
+  bpdUserId      String
+  bpdUser        User         @relation(fields: [bpdUserId], references: [id])
+  catatan        String
+  createdAt      DateTime     @default(now())
+}
+
+model AuditorAccessToken {
+  id        String   @id @default(cuid())
+  auditorId String
+  auditor   User     @relation(fields: [auditorId], references: [id])
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Model-model Kaur Keuangan / Bendahara
+
+model CashBookEntry {
+  id             String   @id @default(cuid())
+  tanggal        DateTime
+  uraian         String
+  penerimaan     BigInt
+  pengeluaran    BigInt
+  saldoBerjalan  BigInt
+  bulan          Int
+  tahun          Int
+  statusTerkunci Boolean  @default(false)
+}
+
+model BankBookEntry {
+  id         String   @id @default(cuid())
+  tanggal    DateTime
+  keterangan String
+  debit      BigInt
+  kredit     BigInt
+  saldo      BigInt
+  bulan      Int
+  tahun      Int
+}
+
+model TaxBookEntry {
+  id          String   @id @default(cuid())
+  tanggal     DateTime
+  jenisPajak  String
+  nominal     BigInt
+  statusSetor String
+}
+
+model MonthlyClosing {
+  id            String   @id @default(cuid())
+  bulan         Int
+  tahun         Int
+  hashKunci     String
+  ditutupOlehId String
+  ditutupOleh   User     @relation(fields: [ditutupOlehId], references: [id])
+  ditutupPada   DateTime
+}
+
+model CorrectionTransaction {
+  id              String   @id @default(cuid())
+  transaksiAsalId String
+  alasan          String
+  nilaiKoreksi    BigInt
+  dibuatOlehId    String
+  dibuatOleh      User     @relation(fields: [dibuatOlehId], references: [id])
+  createdAt       DateTime @default(now())
+}
