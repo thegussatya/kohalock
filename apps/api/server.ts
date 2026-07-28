@@ -14,10 +14,13 @@ import notificationRouter from './routes/notification.route';
 import dashboardRouter from './routes/dashboard.route';
 import monthlyClosingRouter from './routes/monthlyclosing.route';
 import taxBookRouter from './routes/taxbook.route';
+import publicRouter from './routes/public.route';
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/public', publicRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/proposals', proposalRouter);
 app.use('/api/disbursements', disbursementRouter);

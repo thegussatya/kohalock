@@ -1,17 +1,30 @@
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { Home, Building2, MessageCircleQuestion, Lock, HelpCircle, ShieldCheck, CheckCircle2, MessageSquareCheck, Download } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
 import { PUBLIK_MENU } from './menu';
-
-
+import apiClient from '../../lib/apiClient';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [reportPeriod, setReportPeriod] = useState('Bulan Ini');
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get('/public/summary')
+      .then(res => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
 
   const handleDownload = () => {
     toast.success(`Laporan transparansi periode ${reportPeriod} sedang disiapkan, akan diunduh otomatis`);
@@ -20,6 +33,11 @@ export default function DashboardPage() {
   return (
     <RoleLayout menuItems={PUBLIK_MENU} userName="Warga" userRole="Masyarakat">
       <PageHeader title="Dashboard Publik" description="Selamat datang di portal informasi Publik." />
+
+      {loading ? (
+        <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Memuat dashboard...</div>
+      ) : (
+        <>
 
       <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mb-6 mt-[-1rem]">
         <select 
@@ -43,19 +61,19 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <MetricCard
           title="Dana Desa Tahun Ini"
-          value="Rp 1.000.000.000"
+          value={data?.totalDana ? `Rp ${Number(data.totalDana).toLocaleString('id-ID')}` : 'Rp 0'}
           variant="default"
         />
         <div onClick={() => navigate('/publik/proyek')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">
           <MetricCard
             title="Total Realisasi Dana"
-            value="35%"
+            value={data?.persentaseRealisasi ? `${data.persentaseRealisasi}%` : '0%'}
             variant="success"
           />
         </div>
         <MetricCard
           title="Proyek Sedang Berjalan"
-          value="4"
+          value={data?.proyekAktif?.toString() || '0'}
           variant="warning"
         />
       </div>
@@ -73,7 +91,7 @@ export default function DashboardPage() {
           />
           <MetricCard
             title="Proyek Selesai Tahun Ini"
-            value="12"
+            value={data?.proyekSelesai?.toString() || '0'}
             variant="default"
             icon={<CheckCircle2 className="w-5 h-5 text-brand-600" />}
           />
@@ -85,6 +103,8 @@ export default function DashboardPage() {
           />
         </div>
       </div>
+      </>
+      )}
     </RoleLayout>
   );
 }

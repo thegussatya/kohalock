@@ -65,6 +65,12 @@ Lokasi: `apps/api/routes/`
 | `/api/ledger/timeline` | GET | Ya | Mengambil daftar pencairan untuk ditampilkan di eksplorer. Mendukung filter pencarian (`?search=`) berbasis judul usulan. |
 | `/api/ledger/timeline/:id` | GET | Ya | Mengambil detail 1 pencairan yang dipetakan sebagai rentetan tahapan timeline berdasarkan timestamp. |
 | `/api/dashboard/*` | GET | Ya | Endpoint agregasi metrik spesifik untuk 5 role (Kaur Teknis, Sekdes, Kades, Auditor, BPD). |
+| `/api/public/summary` | GET | Tidak | Endpoint agregasi metrik ringkasan dana, realisasi, dan jumlah proyek untuk dashboard publik. |
+| `/api/public/projects` | GET | Tidak | Mengambil daftar seluruh proyek dengan filter judul (`?search=`), dusun (`?dusun=`), dan status (`?status=`). |
+| `/api/public/projects/:id` | GET | Tidak | Mengambil detail publik 1 proyek lengkap dengan informasi termin pencairan dan galeri geotagging. |
+| `/api/public/clarifications` | POST/GET | Tidak | Mengirim pertanyaan publik (POST) dan mengambil seluruh daftar tiket diskusi terbuka (GET). |
+| `/api/public/whistleblower` | POST | Tidak | Menerima payload whistleblower (encrypted-only) dari masyarakat tanpa logging backend. |
+| `/api/public/whistleblower/:ticketCode/status` | GET | Tidak | Cek status tiket laporan whistleblower tanpa mengembalikan payload enkripsi aslinya. |
 
 ## 3. Middleware Autentikasi
 Lokasi: `apps/api/middleware/auth.middleware.ts`
@@ -113,13 +119,18 @@ Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data lang
 *   **Dashboard (Kaur Teknis, Sekdes, Kades, Auditor, BPD/Adat)** (`DashboardPage.tsx`) - *Baru disambungkan!*
 *   **Kronologi Transaksi (Auditor)** (`LedgerExplorerPage.tsx`) - *Baru disambungkan!*
 *   **Pantauan Transaksi (BPD/Adat)** (`TransactionMonitoringPage.tsx`) - *Baru disambungkan!*
+*   **Dashboard Publik** (`DashboardPage.tsx`) - *Baru disambungkan!*
+*   **Daftar Proyek Publik** (`ProjectListPage.tsx`) - *Baru disambungkan!*
+*   **Detail Proyek Publik** (`ProjectDetailPage.tsx`) - *Baru disambungkan!*
+*   **Klarifikasi Warga** (`ClarificationPage.tsx`) - *Baru disambungkan!*
+*   **Whistleblower Report** (`WhistleblowerReportPage.tsx`) - *Baru disambungkan!*
 
 ## 7. Yang MASIH Dummy
 Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum terhubung (maupun belum ada) ke *endpoint* API asli:
 
 *   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Notifikasi, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
 *   **Auditor**: Case Management, Integrity Checker, Legal Export, Notifikasi, Report Templates, Whistleblower Inbox.
-*   **Publik**: Dashboard publik, Halaman Klarifikasi, Detail/Daftar Proyek, Whistleblower Report, Notifikasi.
+*   **Publik**: Notifikasi.
 *   **Kaur Keuangan**: Correction Transaction, Dashboard, Locked Archive, Realization Report.
 *   **Kades**: Authorization History, Clarification Analytics, Integrity Shield, Public Clarification Center, Notifikasi.
 *   **Kaur Teknis**: My Programs, Program Detail, Rejection History, Notifikasi.

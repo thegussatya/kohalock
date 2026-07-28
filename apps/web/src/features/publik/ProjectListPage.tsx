@@ -1,32 +1,43 @@
 import PageHeader from '../../components/PageHeader';
-import { useState } from 'react';
-import { Home, Building2, MessageCircleQuestion, Lock, HelpCircle, SearchX } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { SearchX } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import RoleLayout from '../../components/RoleLayout';
 import { PUBLIK_MENU } from './menu';
-
-
-
-const DUMMY_PROJECTS = [
-  { id: 'PRJ-101', title: 'Pembangunan Posyandu Dusun 3', status: 'Sedang Berjalan', progress: 45, dusun: 'Dusun 3' },
-  { id: 'PRJ-102', title: 'Pengaspalan Jalan Utama (RT 01 - 04)', status: 'Sedang Berjalan', progress: 70, dusun: 'Dusun 1' },
-  { id: 'PRJ-103', title: 'Bantuan Bibit Jagung Unggul', status: 'Selesai', progress: 100, dusun: 'Dusun 2' },
-  { id: 'PRJ-104', title: 'Perbaikan Saluran Irigasi Tersier', status: 'Sedang Berjalan', progress: 20, dusun: 'Dusun 4' },
-  { id: 'PRJ-105', title: 'Pengadaan Lampu Jalan Tenaga Surya', status: 'Selesai', progress: 100, dusun: 'Dusun 1' },
-];
+import apiClient from '../../lib/apiClient';
 
 export default function ProjectListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDusun, setSelectedDusun] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const filteredProjects = DUMMY_PROJECTS.filter(p => {
-    if (searchQuery && !p.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (selectedDusun && p.dusun !== selectedDusun) return false;
-    if (selectedStatus && p.status !== selectedStatus) return false;
-    return true;
-  });
+  useEffect(() => {
+    const fetchProjects = async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery) params.append('search', searchQuery);
+        if (selectedDusun) params.append('dusun', selectedDusun);
+        if (selectedStatus) params.append('status', selectedStatus);
+
+        const res = await apiClient.get(`/public/projects?${params.toString()}`);
+        setProjects(res.data);
+      } catch (error) {
+        console.error('Error fetching projects:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const delayDebounce = setTimeout(() => {
+      fetchProjects();
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, selectedDusun, selectedStatus]);
 
   return (
     <RoleLayout menuItems={PUBLIK_MENU} userName="Warga" userRole="Masyarakat">
@@ -74,7 +85,14 @@ export default function ProjectListPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.length === 0 ? (
+          {loading ? (
+            <div className="col-span-full py-16 flex flex-col items-center justify-center text-center">
+              <div className="animate-pulse flex flex-col items-center gap-4">
+                <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
+                <div className="h-4 bg-slate-200 rounded w-48"></div>
+              </div>
+            </div>
+          ) : projects.length === 0 ? (
             <div className="col-span-full py-16 flex flex-col items-center justify-center text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
               <SearchX className="w-12 h-12 text-slate-400 mb-4" />
               <p className="text-slate-600 font-medium">Tidak ada proyek yang cocok dengan pencarian Anda</p>
@@ -86,7 +104,7 @@ export default function ProjectListPage() {
               </button>
             </div>
           ) : (
-            filteredProjects.map((project) => (
+            projects.map((project) => (
               <div 
                 key={project.id} 
                 onClick={() => navigate(`/publik/proyek/${project.id}`)}
@@ -104,7 +122,7 @@ export default function ProjectListPage() {
                     </span>
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 mb-4 group-hover:text-blue-600 transition-colors leading-tight line-clamp-2">
-                    {project.title}
+                    {project.judulUsulan}
                   </h3>
                   
                   <div>

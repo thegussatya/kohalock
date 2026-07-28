@@ -1,30 +1,34 @@
 import PageHeader from '../../components/PageHeader';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BackLink from '../../components/BackLink';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Home, Building2, MessageCircleQuestion, Lock, HelpCircle, Bell, BellRing } from 'lucide-react';
+import { Bell, BellRing } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import RoleLayout from '../../components/RoleLayout';
 import Badge from '../../components/Badge';
 import { PUBLIK_MENU } from './menu';
-
-
-
-const DUMMY_PHOTOS = [
-  { id: 1, url: 'https://images.unsplash.com/photo-1541888087644-2ee178129cc6?w=600&h=400&fit=crop', time: '12 Okt 2023, 10:30 WIB', location: 'Lat: -6.123, Lng: 106.456 (Dusun 3)' },
-  { id: 2, url: 'https://images.unsplash.com/photo-1590496793907-471d87e221df?w=600&h=400&fit=crop', time: '25 Sep 2023, 14:15 WIB', location: 'Lat: -6.124, Lng: 106.455 (Dusun 3)' },
-];
-
-const DUMMY_TERMS = [
-  { id: 1, term: 'Termin 1 (Uang Muka 30%)', anggaran: 45000000, cair: 45000000, status: 'Sudah Cair' },
-  { id: 2, term: 'Termin 2 (Progress 50%)', anggaran: 60000000, cair: 60000000, status: 'Sudah Cair' },
-  { id: 3, term: 'Termin 3 (Pelunasan 20%)', anggaran: 45000000, cair: 0, status: 'Menunggu Progress Fisik' },
-];
+import apiClient from '../../lib/apiClient';
 
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [project, setProject] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (id) {
+      apiClient.get(`/public/projects/${id}`)
+        .then(res => {
+          setProject(res.data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setLoading(false);
+        });
+    }
+  }, [id]);
 
   const handleFollowToggle = () => {
     if (isFollowing) {
@@ -40,13 +44,22 @@ export default function ProjectDetailPage() {
     <RoleLayout menuItems={PUBLIK_MENU} userName="Warga" userRole="Masyarakat">
       <div className="mb-6">
         <BackLink to="/publik/proyek" label="Kembali ke Daftar Proyek" />
-        <div className="flex items-start justify-between gap-4">
+      </div>
+        
+      {loading ? (
+        <div className="py-16 text-center text-slate-500 font-bold animate-pulse">Memuat detail proyek...</div>
+      ) : !project ? (
+        <div className="py-16 text-center text-slate-500 font-bold">Proyek tidak ditemukan</div>
+      ) : (
+        <>
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <Badge label={id || 'PRJ-XYZ'} variant="info" />
-              <Badge label="Infrastruktur" variant="neutral" />
+              <Badge label={project.id} variant="info" />
+              <Badge label={project.kategori || "Infrastruktur"} variant="neutral" />
             </div>
-            <PageHeader title="Pembangunan Posyandu Dusun 3" />
+            <PageHeader title={project.judulUsulan} />
           </div>
           <div className="flex w-full md:w-auto items-center gap-3">
             <button
@@ -86,7 +99,7 @@ export default function ProjectDetailPage() {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {DUMMY_PHOTOS.map((photo) => (
+              {project.photos && project.photos.length > 0 ? project.photos.map((photo: any) => (
                 <div key={photo.id} className="relative group rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
                   <div className="aspect-[4/3] w-full">
                     <img src={photo.url} alt="Progress" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -102,7 +115,11 @@ export default function ProjectDetailPage() {
                     </p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="col-span-full py-8 text-center text-slate-500 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  Belum ada foto progres untuk proyek ini.
+                </div>
+              )}
             </div>
             <p className="text-xs font-medium text-slate-500 mt-4">
               *Foto diambil melalui sistem kamera khusus yang menyegel koordinat dan waktu secara presisi untuk mencegah manipulasi.
@@ -120,30 +137,38 @@ export default function ProjectDetailPage() {
 
             <div className="mb-6 p-4 bg-white border border-slate-200 rounded-xl">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1">Total Pagu Proyek</span>
-              <span className="text-2xl font-black text-slate-900">Rp 150.000.000</span>
+              <span className="text-2xl font-black text-slate-900">Rp {Number(project.paguMaksimal).toLocaleString('id-ID')}</span>
             </div>
             
             <div className="flex flex-col gap-3">
-              {DUMMY_TERMS.map((t) => (
+              {project.terms && project.terms.length > 0 ? project.terms.map((t: any) => (
                 <div key={t.id} className="bg-white border border-slate-200 p-4 rounded-xl">
                   <h4 className="font-bold text-slate-900 mb-3 text-sm">{t.term}</h4>
                   <div className="flex justify-between items-center text-sm font-medium text-slate-600 mb-1">
                     <span>Anggaran:</span>
-                    <span>Rp {t.anggaran.toLocaleString('id-ID')}</span>
+                    <span>Rp {Number(t.anggaran).toLocaleString('id-ID')}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm font-bold text-green-700 mb-3">
                     <span>Realisasi Cair:</span>
-                    <span>Rp {t.cair.toLocaleString('id-ID')}</span>
+                    <span>Rp {Number(t.cair).toLocaleString('id-ID')}</span>
                   </div>
                   
                   <div className="flex justify-center mt-2">
                     <Badge 
                       label={t.status} 
-                      variant={t.status === 'Sudah Cair' ? 'success' : 'warning'} 
+                      variant={t.status === 'DISBURSED' ? 'success' : 'warning'} 
                     />
                   </div>
+                  {t.beritaAcaraHash && (
+                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                      <span>Hash On-Chain:</span>
+                      <span className="font-mono bg-slate-100 px-2 py-1 rounded truncate w-32">{t.beritaAcaraHash.substring(0, 16)}...</span>
+                    </div>
+                  )}
                 </div>
-              ))}
+              )) : (
+                <div className="py-4 text-center text-sm text-slate-500">Belum ada pencairan termin.</div>
+              )}
             </div>
           </div>
 
@@ -155,8 +180,8 @@ export default function ProjectDetailPage() {
             Tanya Tentang Proyek Ini
           </button>
         </div>
-
-      </div>
+      </>
+      )}
     </RoleLayout>
   );
 }

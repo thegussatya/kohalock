@@ -1,7 +1,7 @@
 import PageHeader from '../../components/PageHeader';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
-import { Home, Building2, MessageCircleQuestion, Lock, HelpCircle } from 'lucide-react';
+
 import RoleLayout from '../../components/RoleLayout';
 import Badge from '../../components/Badge';
 import { PUBLIK_MENU } from './menu';
@@ -15,7 +15,7 @@ export default function ClarificationPage() {
 
   const fetchDiscussions = async () => {
     try {
-      const res = await apiClient.get('/clarifications');
+      const res = await apiClient.get('/public/clarifications');
       setDiscussions(res.data);
     } catch (error) {
       console.error(error);
@@ -31,7 +31,7 @@ export default function ClarificationPage() {
     if (!question.trim()) return;
     setLoading(true);
     try {
-      await apiClient.post('/clarifications', {
+      await apiClient.post('/public/clarifications', {
         namaWarga: name.trim() || undefined,
         pertanyaan: question.trim()
       });

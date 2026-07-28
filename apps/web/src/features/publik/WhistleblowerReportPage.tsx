@@ -30,7 +30,7 @@ export default function WhistleblowerReportPage() {
 
     try {
       // 3. Kirim POST ke backend
-      await apiClient.post('/whistleblower/reports', {
+      await apiClient.post('/public/whistleblower', {
         ticketCode,
         encryptedPayload,
         attachmentUrls: []
@@ -56,7 +56,7 @@ export default function WhistleblowerReportPage() {
 
     setLoading(true);
     try {
-      const res = await apiClient.get(`/whistleblower/reports/${searchTicket}/status`);
+      const res = await apiClient.get(`/public/whistleblower/${searchTicket}/status`);
       setSearchStatus('found');
       setSearchStatusValue(res.data.status);
     } catch (error: any) {
