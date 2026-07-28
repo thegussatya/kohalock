@@ -61,10 +61,10 @@ Lokasi: `apps/api/routes/`
 | `/api/bank-book/` | GET | Ya | Mengambil seluruh entri Buku Bank. |
 | `/api/tax-book/` | GET | Ya | Mengambil seluruh entri Buku Pajak. |
 | `/api/tax-book/:id/setor` | POST | Ya | (Kaur Keuangan) Mengubah status setor pajak menjadi `SUDAH_SETOR`. |
-| `/api/corrections/` | GET | Ya | (Kaur Keuangan) Mengambil riwayat catatan jurnal pembalik (koreksi transaksi). |
-| `/api/corrections/` | POST | Ya | (Kaur Keuangan) Membuat transaksi koreksi (jurnal pembalik) untuk entri buku kas yang sudah ditutup/terkunci. |
-| `/api/reports/realization` | GET | Ya | (Kaur Keuangan) Mengambil agregasi Laporan Realisasi & LPJ (pagu, realisasi, sisa, breakdown dusun/kategori, rekap pajak). |
-| `/api/monthly-closing/archive` | GET | Ya | (Kaur Keuangan) Mengambil arsip seluruh ledger yang telah dikunci beserta validasi ulang integritas SHA-256 hash-nya secara real-time. |
+| `/api/corrections/` | POST | Ya | Membuat transaksi koreksi (jurnal pembalik) untuk entri buku yang sudah closing; ditolak jika entri asal belum terkunci. |
+| `/api/corrections/` | GET | Ya | List transaksi koreksi, filter `?bulan=` & `?tahun=`. |
+| `/api/reports/realization` | GET | Ya | Agregasi realisasi anggaran per periode (pagu, realisasi, sisa pagu, breakdown kategori/dusun/pajak). |
+| `/api/monthly-closing/archive` | GET | Ya | List seluruh penutupan buku bulanan beserta status verifikasi hash. |
 | `/api/monthly-closing/status` | GET | Ya | Cek status penutupan bulan dan validasi rekonsiliasi. |
 | `/api/monthly-closing/close` | POST | Ya | Mengunci buku bulanan secara permanen dengan PIN dan meng-generate SHA-256 hash kriptografis asli dari rekam jejak ledger. |
 | `/api/monthly-closing/:id/verify` | GET | Ya | Memverifikasi kecocokan hash kriptografis dari ledger bulanan yang tersimpan dengan data historis. |

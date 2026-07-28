@@ -24,6 +24,7 @@
 - [x] UI & API Buku Bank (pencatatan otomatis dari buku kas)
 - [x] UI & API Penutupan Buku Bulanan (lock periode & simulasi hash)
 - [x] UI & API Buku Pajak (integrasi potong pajak manual saat eksekusi pencairan)
+- [x] UI & API Correction Transaction, Realization Report, Locked Archive
 
 ## Fase 2 — Transparansi Publik
 - [ ] UI Publik: Beranda, Pantau Proyek (galeri + progress), Klarifikasi (UI selesai, logic asli belum)

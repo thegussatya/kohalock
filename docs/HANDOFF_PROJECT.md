@@ -86,6 +86,7 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
 - Endpoint Dashboard (Kaur Teknis) - sudah tersambung dengan data dinamis.
 - Endpoint Buku Bank & Penutupan Buku Bulanan (Kaur Keuangan) - sudah tersambung, logic pencatatan/penguncian otomatis sudah berjalan, **termasuk Hash-lock kriptografis asli via crypto SHA-256**.
 - Endpoint Buku Pajak (GET/POST setor) - sudah dibuat, dan logic potongan otomatis pada pencairan (`execute`) dicatat secara terpisah tanpa memotong nilai awal (SUDAH IMPLEMENTASI).
+- Endpoint Koreksi, Realisasi, & Arsip Terkunci (Kaur Keuangan) - sudah tersambung end-to-end.
 - Database: Supabase Postgres, koneksi via Connection Pooler.
 - **Row Level Security (RLS)**: Sudah AKTIF di seluruh (16) tabel Supabase. Backend tidak terdampak karena menggunakan bypass service-role (postgres).
 
