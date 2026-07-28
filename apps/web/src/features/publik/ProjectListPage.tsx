@@ -111,9 +111,11 @@ export default function ProjectListPage() {
                 className="group bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer flex flex-col"
               >
                 <div className="p-5 flex-grow">
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{project.id}</span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                  <div className="flex justify-between items-start mb-3 gap-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest truncate" title={project.id}>
+                      {project.id}
+                    </span>
+                    <span className={`shrink-0 whitespace-nowrap inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                       project.status === 'Selesai' 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-blue-100 text-blue-700'

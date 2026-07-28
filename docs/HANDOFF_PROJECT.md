@@ -84,20 +84,15 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
   CashBookEntry, BankBookEntry, TaxBookEntry, MonthlyClosing,
   CorrectionTransaction, Notification)
 - Endpoint Dashboard (Kaur Teknis) - sudah tersambung dengan data dinamis.
-- Endpoint Buku Bank & Penutupan Buku Bulanan (Kaur Keuangan) - sudah tersambung dan logic pencatatan/penguncian otomatis sudah berjalan.
-- Endpoint Buku Pajak (GET) - sudah dibuat, tinggal melengkapi logic POST pada pencairan.
-- Database: Supabase Postgres, koneksi via Connection Pooler (BUKAN
-  direct connection - direct connection gagal dari jaringan user)
+- Endpoint Buku Bank & Penutupan Buku Bulanan (Kaur Keuangan) - sudah tersambung, logic pencatatan/penguncian otomatis sudah berjalan, **termasuk Hash-lock kriptografis asli via crypto SHA-256**.
+- Endpoint Buku Pajak (GET/POST setor) - sudah dibuat, dan logic potongan otomatis pada pencairan (`execute`) dicatat secara terpisah tanpa memotong nilai awal (SUDAH IMPLEMENTASI).
+- Database: Supabase Postgres, koneksi via Connection Pooler.
+- **Row Level Security (RLS)**: Sudah AKTIF di seluruh (16) tabel Supabase. Backend tidak terdampak karena menggunakan bypass service-role (postgres).
 
 ## Yang BELUM Selesai
 
-- Buku Pajak (Kaur Keuangan) - GET endpoint sudah ada, namun integrasi pemotongan pajak otomatis pada proses `execute` pencairan belum jelas spesifikasinya.
 - Smart contract (Solidity/Hardhat) - BELUM DIMULAI SAMA SEKALI,
   masih di tahap dokumen rencana saja
-- Hash-lock kriptografis asli untuk Penutupan Buku Bulanan - baru
-  simulasi visual di frontend
-- Row Level Security di Supabase - masih disabled semua tabel (tidak
-  darurat untuk prototipe, tapi dicatat sebagai utang teknis)
 - Git/GitHub - sempat ada masalah node_modules ke-track, belum
   sepenuhnya beres, user memutuskan skip dulu (tidak prioritas)
 

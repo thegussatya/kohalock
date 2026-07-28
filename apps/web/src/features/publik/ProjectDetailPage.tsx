@@ -180,6 +180,7 @@ export default function ProjectDetailPage() {
             Tanya Tentang Proyek Ini
           </button>
         </div>
+        </div>
       </>
       )}
     </RoleLayout>

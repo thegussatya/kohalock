@@ -60,8 +60,10 @@ Lokasi: `apps/api/routes/`
 | `/api/cash-book/` | GET | Ya | Mengambil seluruh entri Buku Kas Umum, mendukung filter query `?bulan=` dan `?tahun=`. |
 | `/api/bank-book/` | GET | Ya | Mengambil seluruh entri Buku Bank. |
 | `/api/tax-book/` | GET | Ya | Mengambil seluruh entri Buku Pajak. |
+| `/api/tax-book/:id/setor` | POST | Ya | (Kaur Keuangan) Mengubah status setor pajak menjadi `SUDAH_SETOR`. |
 | `/api/monthly-closing/status` | GET | Ya | Cek status penutupan bulan dan validasi rekonsiliasi. |
-| `/api/monthly-closing/close` | POST | Ya | Mengunci buku bulanan secara permanen dengan PIN. |
+| `/api/monthly-closing/close` | POST | Ya | Mengunci buku bulanan secara permanen dengan PIN dan meng-generate SHA-256 hash kriptografis asli dari rekam jejak ledger. |
+| `/api/monthly-closing/:id/verify` | GET | Ya | Memverifikasi kecocokan hash kriptografis dari ledger bulanan yang tersimpan dengan data historis. |
 | `/api/ledger/timeline` | GET | Ya | Mengambil daftar pencairan untuk ditampilkan di eksplorer. Mendukung filter pencarian (`?search=`) berbasis judul usulan. |
 | `/api/ledger/timeline/:id` | GET | Ya | Mengambil detail 1 pencairan yang dipetakan sebagai rentetan tahapan timeline berdasarkan timestamp. |
 | `/api/dashboard/*` | GET | Ya | Endpoint agregasi metrik spesifik untuk 5 role (Kaur Teknis, Sekdes, Kades, Auditor, BPD). |
@@ -146,3 +148,8 @@ Variabel *environment* (`.env`) yang saat ini digunakan di backend (tanpa _value
 ## 9. Isu Diketahui
 *   **Terkait Field `authorizedAt`**: *Field* `authorizedAt` merupakan tambahan terbaru pada model `Disbursement` untuk mencatat stempel waktu otorisasi Kades secara khusus. Karena sifatnya opsional (`nullable`), data transaksi lama (yang dibuat dan diotorisasi sebelum *field* ini ditambahkan ke database) mungkin memiliki nilai `null` pada kolom ini, yang menyebabkan ketidakkonsistenan pada status timeline (tampil sebagai "Menunggu proses") kecuali data tersebut di-_backfill_ manual di database.
 *   **Ketidaksesuaian Caching TypeScript**: Mengubah struktur schema Prisma terkadang membuat *compiler* internal `ts-node-dev` gagal mendeteksi penambahan tipe baru, sehingga memerlukan casting `as any` di kode atau restart bersih dari lingkungan pengembangan.
+
+## 10. Row Level Security (RLS) Status
+Seluruh **16 tabel** di Supabase saat ini **SUDAH DIBERLAKUKAN (ENABLED)** Row Level Security (RLS) untuk keamanan. 
+Tabel-tabel tersebut adalah: `User`, `Proposal`, `Disbursement`, `RejectionLog`, `InterventionLog`, `ClarificationTicket`, `WhistleblowerReport`, `Notification`, `AdatCase`, `SupervisionNote`, `AuditorAccessToken`, `CashBookEntry`, `BankBookEntry`, `TaxBookEntry`, `MonthlyClosing`, dan `CorrectionTransaction`.
+*Catatan: Backend Prisma secara default melakukan bypass pada RLS karena dikoneksikan dengan service role credentials (postgres) di URL database-nya.*

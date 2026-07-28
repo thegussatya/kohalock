@@ -58,4 +58,39 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
   }
 });
 
+// POST /:id/setor
+router.post('/:id/setor', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    
+    const taxEntry = await prisma.taxBookEntry.findUnique({
+      where: { id }
+    });
+
+    if (!taxEntry) {
+      res.status(404).json({ error: 'TaxBookEntry tidak ditemukan' });
+      return;
+    }
+
+    const isClosed = await prisma.monthlyClosing.findFirst({
+      where: { bulan: taxEntry.bulan, tahun: taxEntry.tahun }
+    });
+
+    if (isClosed) {
+      res.status(400).json({ error: 'Buku untuk bulan ini sudah ditutup, status pajak tidak dapat diubah.' });
+      return;
+    }
+
+    const updated = await prisma.taxBookEntry.update({
+      where: { id },
+      data: { statusSetor: 'SUDAH_SETOR' }
+    });
+
+    res.json(serialize(updated));
+  } catch (error: any) {
+    console.error('Error setting tax status:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 export default router;

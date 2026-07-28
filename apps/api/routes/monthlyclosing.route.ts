@@ -133,8 +133,25 @@ router.post('/close', authenticate, async (req: AuthRequest, res: Response): Pro
       }
     }
 
-    // Generate simulasi hash
-    const dataToHash = `${bulan}-${tahun}-${new Date().toISOString()}-${pin}`;
+    // Generate hash asli
+    const cashEntries = await prisma.cashBookEntry.findMany({
+      where: { bulan: Number(bulan), tahun: Number(tahun) },
+      orderBy: { id: 'asc' }
+    });
+    const bankEntries = await prisma.bankBookEntry.findMany({
+      where: { bulan: Number(bulan), tahun: Number(tahun) },
+      orderBy: { id: 'asc' }
+    });
+    const taxEntries = await prisma.taxBookEntry.findMany({
+      where: { bulan: Number(bulan), tahun: Number(tahun) },
+      orderBy: { id: 'asc' }
+    });
+
+    const cashString = cashEntries.map(e => `${e.id}:${e.penerimaan.toString()}:${e.pengeluaran.toString()}:${e.saldoBerjalan.toString()}`).join('|');
+    const bankString = bankEntries.map(e => `${e.id}:${e.debit.toString()}:${e.kredit.toString()}:${e.saldo.toString()}`).join('|');
+    const taxString = taxEntries.map(e => `${e.id}:${e.nominal.toString()}:${e.statusSetor}`).join('|');
+    
+    const dataToHash = `${bulan}-${tahun}::CASH:${cashString}::BANK:${bankString}::TAX:${taxString}`;
     const hashKunci = crypto.createHash('sha256').update(dataToHash).digest('hex');
 
     // Eksekusi transaksi
@@ -168,3 +185,44 @@ router.post('/close', authenticate, async (req: AuthRequest, res: Response): Pro
 });
 
 export default router;
+
+// GET /api/monthly-closing/:id/verify
+router.get('/:id/verify', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const closing = await prisma.monthlyClosing.findUnique({
+      where: { id: req.params.id }
+    });
+
+    if (!closing) {
+      res.status(404).json({ error: 'Buku tutup tidak ditemukan' });
+      return;
+    }
+
+    const { bulan, tahun, hashKunci: storedHash } = closing;
+
+    const cashEntries = await prisma.cashBookEntry.findMany({
+      where: { bulan, tahun },
+      orderBy: { id: 'asc' }
+    });
+    const bankEntries = await prisma.bankBookEntry.findMany({
+      where: { bulan, tahun },
+      orderBy: { id: 'asc' }
+    });
+    const taxEntries = await prisma.taxBookEntry.findMany({
+      where: { bulan, tahun },
+      orderBy: { id: 'asc' }
+    });
+
+    const cashString = cashEntries.map(e => `${e.id}:${e.penerimaan.toString()}:${e.pengeluaran.toString()}:${e.saldoBerjalan.toString()}`).join('|');
+    const bankString = bankEntries.map(e => `${e.id}:${e.debit.toString()}:${e.kredit.toString()}:${e.saldo.toString()}`).join('|');
+    const taxString = taxEntries.map(e => `${e.id}:${e.nominal.toString()}:${e.statusSetor}`).join('|');
+    
+    const dataToHash = `${bulan}-${tahun}::CASH:${cashString}::BANK:${bankString}::TAX:${taxString}`;
+    const recalculatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+    res.json({ match: storedHash === recalculatedHash, storedHash, recalculatedHash });
+  } catch (error: any) {
+    console.error('Error verifying hash:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});

@@ -31,6 +31,11 @@ export default function MonthlyClosingPage() {
     fetchStatus();
   }, []);
 
+  const handleConfirmWarning = () => {
+    setShowConfirmModal(false);
+    setShowPinModal(true);
+  };
+
   const handleConfirmPin = async () => {
     if (pin.length !== 6) {
       toast.error("PIN harus 6 digit");

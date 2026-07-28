@@ -299,7 +299,7 @@ router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Respon
 router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const { pajak } = req.body;
+    const { potonganPajak } = req.body;
     
     const disbursement = await prisma.disbursement.findUnique({
       where: { id },
@@ -313,6 +313,19 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
 
     if (disbursement.status !== 'PENDING_EKSEKUSI') {
       res.status(400).json({ error: 'Pengajuan tidak dalam status PENDING_EKSEKUSI' });
+      return;
+    }
+
+    const sekarang = new Date();
+    const currentBulan = sekarang.getMonth() + 1;
+    const currentTahun = sekarang.getFullYear();
+
+    const isClosed = await prisma.monthlyClosing.findFirst({
+      where: { bulan: currentBulan, tahun: currentTahun }
+    });
+
+    if (isClosed) {
+      res.status(400).json({ error: 'Buku kas untuk bulan ini sudah ditutup, eksekusi pencairan tidak diizinkan.' });
       return;
     }
 
@@ -370,22 +383,29 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
 
       // TaxBook Entries
       const taxEntries = [];
-      if (pajak && Array.isArray(pajak)) {
-        for (const p of pajak) {
-          if (!p.jenisPajak || p.nominal <= 0) continue;
+      if (potonganPajak && Array.isArray(potonganPajak)) {
+        for (const p of potonganPajak) {
+          if (!p.jenisPajak || !p.nominal) continue;
           
-          const newTax = await (tx as any).taxBookEntry.create({
-            data: {
-              tanggal: sekarang,
-              jenisPajak: p.jenisPajak,
-              nominal: BigInt(p.nominal),
-              statusSetor: "BELUM_SETOR",
-              bulan: sekarang.getMonth() + 1,
-              tahun: sekarang.getFullYear(),
-              disbursementId: id
-            }
-          });
-          taxEntries.push(newTax);
+          try {
+            const nominalPajak = BigInt(p.nominal);
+            if (nominalPajak <= 0n) continue;
+
+            const newTax = await (tx as any).taxBookEntry.create({
+              data: {
+                tanggal: sekarang,
+                jenisPajak: p.jenisPajak,
+                nominal: nominalPajak,
+                statusSetor: "BELUM_SETOR",
+                bulan: sekarang.getMonth() + 1,
+                tahun: sekarang.getFullYear(),
+                disbursementId: id
+              }
+            });
+            taxEntries.push(newTax);
+          } catch (e) {
+            // Ignore if nominal is invalid bigint
+          }
         }
       }
 
