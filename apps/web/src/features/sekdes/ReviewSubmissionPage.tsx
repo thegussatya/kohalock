@@ -18,6 +18,7 @@ export default function ReviewSubmissionPage() {
   const navigate = useNavigate();
   
   const [showPinModal, setShowPinModal] = useState(false);
+  const [pin, setPin] = useState('');
   const [showRevisiModal, setShowRevisiModal] = useState(false);
   const [data, setData] = useState<any>(null);
   const [sisaPagu, setSisaPagu] = useState<number>(0);
@@ -118,12 +119,14 @@ export default function ReviewSubmissionPage() {
       {/* Aksi Bawah */}
       <div className="flex flex-col sm:flex-row gap-4 border-t border-slate-200 pt-8 pb-4">
         <button
+          type="button"
           onClick={() => setShowPinModal(true)}
           className="px-8 py-3.5 bg-green-600 text-white font-bold rounded-lg shadow-sm hover:bg-green-700 transition-all text-sm uppercase tracking-wide"
         >
           Verifikasi & Teruskan ke Kades
         </button>
         <button
+          type="button"
           onClick={() => setShowRevisiModal(true)}
           className="px-8 py-3.5 bg-yellow-500 text-white font-bold rounded-lg shadow-sm hover:bg-yellow-600 transition-all text-sm uppercase tracking-wide"
         >
@@ -142,21 +145,26 @@ export default function ReviewSubmissionPage() {
             <input 
               type="password" 
               maxLength={6}
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
               className="w-full text-center tracking-[1em] text-3xl p-4 border border-slate-300 rounded-xl mb-8 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-mono"
               placeholder="••••••"
             />
             <div className="flex justify-end gap-3">
               <button 
+                type="button"
                 onClick={() => setShowPinModal(false)}
                 className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold"
               >
                 Batal
               </button>
               <button 
+                type="button"
                 onClick={async () => {
                   try {
-                    await apiClient.post(`/disbursements/${id}/verify`);
+                    await apiClient.post(`/disbursements/${id}/verify`, { pin });
                     setShowPinModal(false);
+                    setPin('');
                     toast.success("Berhasil diverifikasi & diteruskan ke Kades");
                     navigate("/sekdes/verifikasi");
                   } catch (error: any) {
@@ -189,12 +197,14 @@ export default function ReviewSubmissionPage() {
             ></textarea>
             <div className="flex justify-end gap-3">
               <button 
+                type="button"
                 onClick={() => setShowRevisiModal(false)}
                 className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold"
               >
                 Batal
               </button>
               <button 
+                type="button"
                 onClick={async () => {
                   if (!catatanRevisi.trim()) {
                     toast.error("Catatan revisi tidak boleh kosong");

@@ -324,13 +324,15 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
         }
       });
 
+      const sekarang = new Date();
+
+      // CashBook Entry
       const lastEntry = await tx.cashBookEntry.findFirst({
         orderBy: { tanggal: 'desc' }
       });
 
       const saldoSebelumnya = lastEntry ? lastEntry.saldoBerjalan : BigInt(0);
       const saldoBaru = saldoSebelumnya - disbursement.nominal;
-      const sekarang = new Date();
 
       const newEntry = await tx.cashBookEntry.create({
         data: {
@@ -345,7 +347,27 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
         }
       });
 
-      return { disbursement: updatedDisbursement, cashBookEntry: newEntry };
+      // BankBook Entry
+      const lastBankEntry = await tx.bankBookEntry.findFirst({
+        orderBy: { tanggal: 'desc' }
+      });
+
+      const saldoBankSebelumnya = lastBankEntry ? lastBankEntry.saldo : BigInt(0);
+      const saldoBankBaru = saldoBankSebelumnya - disbursement.nominal;
+
+      const newBankEntry = await tx.bankBookEntry.create({
+        data: {
+          tanggal: sekarang,
+          keterangan: "Pencairan dana: " + disbursement.proposal.judulUsulan,
+          debit: BigInt(0),
+          kredit: disbursement.nominal,
+          saldo: saldoBankBaru,
+          bulan: sekarang.getMonth() + 1,
+          tahun: sekarang.getFullYear()
+        }
+      });
+
+      return { disbursement: updatedDisbursement, cashBookEntry: newEntry, bankBookEntry: newBankEntry };
     });
 
     try {

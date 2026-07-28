@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../components/RoleLayout';
 import PageHeader from '../../components/PageHeader';
 import DataTable, { type TableColumn } from '../../components/DataTable';
@@ -7,6 +7,7 @@ import Badge from '../../components/Badge';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import { toast } from 'react-hot-toast';
 import { Database, Landmark, CheckCircle, AlertTriangle } from 'lucide-react';
+import apiClient from '../../lib/apiClient';
 
 const COLUMNS: TableColumn[] = [
   { key: 'tanggal', label: 'Tanggal' },
@@ -16,40 +17,70 @@ const COLUMNS: TableColumn[] = [
   { key: 'saldo', label: 'Saldo' },
 ];
 
-const DUMMY_DATA = [
-  { id: 1, tanggal: '01 Okt 2023', keterangan: 'Saldo Awal', debit: '-', kredit: '-', saldo: 'Rp 25.000.000' },
-  { id: 2, tanggal: '05 Okt 2023', keterangan: 'Transfer Masuk (Dana Desa)', debit: 'Rp 50.000.000', kredit: '-', saldo: 'Rp 75.000.000' },
-  { id: 3, tanggal: '10 Okt 2023', keterangan: 'Cek Keluar No. 123 (Material)', debit: '-', kredit: 'Rp 15.000.000', saldo: 'Rp 60.000.000' },
-  { id: 4, tanggal: '15 Okt 2023', keterangan: 'Biaya Administrasi Bank', debit: '-', kredit: 'Rp 500.000', saldo: 'Rp 59.500.000' },
-  { id: 5, tanggal: '20 Okt 2023', keterangan: 'Bunga Bank (Penerimaan)', debit: 'Rp 5.000.000', kredit: '-', saldo: 'Rp 64.500.000' },
-];
-
 export default function BankBookPage() {
-  const systemBalance = 65000000;
-  const bankBalance = 64500000;
+  const [data, setData] = useState<any[]>([]);
+  const [systemBalance, setSystemBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        const [bankRes, cashRes] = await Promise.all([
+          apiClient.get('/bank-book'),
+          apiClient.get('/cash-book')
+        ]);
+        
+        setData(bankRes.data);
+        
+        const cashData = cashRes.data;
+        if (cashData && cashData.length > 0) {
+          setSystemBalance(Number(cashData[cashData.length - 1].saldoBerjalan));
+        }
+      } catch (err) {
+        console.error('Error fetching bank book:', err);
+        toast.error('Gagal mengambil data buku bank');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBooks();
+  }, []);
+
+  const formatCurrency = (val: number | string | BigInt) => {
+    if (val === undefined || val === null || val === '-') return '-';
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(Number(val));
+  };
+
+  const formatDate = (isoString: string) => {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const bankBalance = data.length > 0 ? Number(data[data.length - 1].saldo) : 0;
   const isMatch = systemBalance === bankBalance;
   const diff = Math.abs(systemBalance - bankBalance);
 
-  const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
-  };
-
-  const renderCell = (row: typeof DUMMY_DATA[0], columnKey: string) => {
+  const renderCell = (row: any, columnKey: string) => {
     switch (columnKey) {
       case 'tanggal':
-        return <span className="text-slate-600 text-sm">{row.tanggal}</span>;
+        return <span className="text-slate-600 text-sm">{formatDate(row.tanggal)}</span>;
       case 'keterangan':
         return <span className="font-semibold text-slate-900 text-sm">{row.keterangan}</span>;
       case 'debit':
-        return <span className={`text-sm font-medium ${row.debit !== '-' ? 'text-green-600' : 'text-slate-400'}`}>{row.debit}</span>;
+        const debitVal = Number(row.debit);
+        return <span className={`text-sm font-medium ${debitVal > 0 ? 'text-green-600' : 'text-slate-400'}`}>{debitVal > 0 ? formatCurrency(debitVal) : '-'}</span>;
       case 'kredit':
-        return <span className={`text-sm font-medium ${row.kredit !== '-' ? 'text-red-600' : 'text-slate-400'}`}>{row.kredit}</span>;
+        const kreditVal = Number(row.kredit);
+        return <span className={`text-sm font-medium ${kreditVal > 0 ? 'text-red-600' : 'text-slate-400'}`}>{kreditVal > 0 ? formatCurrency(kreditVal) : '-'}</span>;
       case 'saldo':
-        return <span className="font-bold text-slate-900 text-sm">{row.saldo}</span>;
+        return <span className="font-bold text-slate-900 text-sm">{formatCurrency(row.saldo)}</span>;
       default:
-        return (row as any)[columnKey];
+        return row[columnKey];
     }
   };
+
+  if (loading) return <div className="p-8 text-center text-slate-500 font-bold">Memuat Buku Bank...</div>;
 
   return (
     <RoleLayout
@@ -110,7 +141,7 @@ export default function BankBookPage() {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <DataTable
           columns={COLUMNS}
-          data={DUMMY_DATA}
+          data={data}
           renderCell={renderCell}
         />
       </div>

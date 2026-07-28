@@ -5,30 +5,55 @@ import Badge from '../../components/Badge';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import { toast } from 'react-hot-toast';
 import { CheckCircle2, AlertTriangle, ShieldAlert, Lock, Loader2 } from 'lucide-react';
+import apiClient from '../../lib/apiClient';
 
 export default function MonthlyClosingPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [closingState, setClosingState] = useState<'idle' | 'hashing' | 'success'>('idle');
+  const [pin, setPin] = useState('');
+  const [months, setMonths] = useState<any[]>([]);
+  const [validations, setValidations] = useState<any>(null);
+  const [currentOpenMonth, setCurrentOpenMonth] = useState<any>(null);
 
-  const MONTHS = [
-    { value: '08', label: 'Agustus 2023', locked: true },
-    { value: '09', label: 'September 2023', locked: true },
-    { value: '10', label: 'Oktober 2023', locked: false },
-  ];
-
-  const handleConfirmWarning = () => {
-    setShowConfirmModal(false);
-    setShowPinModal(true);
+  const fetchStatus = async () => {
+    try {
+      const res = await apiClient.get('/monthly-closing/status');
+      setMonths(res.data.months);
+      setValidations(res.data.validations);
+      setCurrentOpenMonth(res.data.currentOpenMonth);
+    } catch (err) {
+      toast.error('Gagal mengambil status penutupan buku');
+    }
   };
 
-  const handleConfirmPin = () => {
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  const handleConfirmPin = async () => {
+    if (pin.length !== 6) {
+      toast.error("PIN harus 6 digit");
+      return;
+    }
     setShowPinModal(false);
     setClosingState('hashing');
-    setTimeout(() => {
+    
+    try {
+      const res = await apiClient.post('/monthly-closing/close', {
+        bulan: currentOpenMonth.bulan,
+        tahun: currentOpenMonth.tahun,
+        pin
+      });
+      
       setClosingState('success');
       toast.success("Buku bulanan berhasil dikunci secara permanen");
-    }, 2000);
+      setCurrentOpenMonth({ ...currentOpenMonth, hashKunci: res.data.hashKunci });
+      fetchStatus();
+    } catch (err: any) {
+      setClosingState('idle');
+      toast.error(err.response?.data?.error || "Gagal mengunci buku");
+    }
   };
 
   return (
@@ -44,7 +69,7 @@ export default function MonthlyClosingPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        {MONTHS.map((m) => (
+        {months.map((m) => (
           <div 
             key={m.value} 
             className={`p-5 rounded-2xl flex flex-col justify-center gap-3 ${
@@ -72,40 +97,46 @@ export default function MonthlyClosingPage() {
         <div className="animate-in fade-in duration-300">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${validations?.kasSeimbang ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                {validations?.kasSeimbang ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-900">Buku Kas Umum</p>
-                <p className="text-xs text-green-600 font-semibold">Seimbang</p>
+                <p className={`text-xs font-semibold ${validations?.kasSeimbang ? 'text-green-600' : 'text-red-600'}`}>{validations?.kasSeimbang ? 'Seimbang' : 'Tidak Seimbang'}</p>
               </div>
             </div>
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${validations?.bankCocok ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                {validations?.bankCocok ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-900">Buku Bank</p>
-                <p className="text-xs text-green-600 font-semibold">Rekonsiliasi Cocok</p>
+                <p className={`text-xs font-semibold ${validations?.bankCocok ? 'text-green-600' : 'text-red-600'}`}>{validations?.bankCocok ? 'Rekonsiliasi Cocok' : 'Selisih'}</p>
               </div>
             </div>
             <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex items-center gap-4">
-              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${validations?.pajakLengkap ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                {validations?.pajakLengkap ? <CheckCircle2 className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6" />}
               </div>
               <div>
                 <p className="text-sm font-bold text-slate-900">Buku Pajak</p>
-                <p className="text-xs text-green-600 font-semibold">Lengkap</p>
+                <p className={`text-xs font-semibold ${validations?.pajakLengkap ? 'text-green-600' : 'text-red-600'}`}>{validations?.pajakLengkap ? 'Lengkap' : 'Tidak Lengkap'}</p>
               </div>
             </div>
           </div>
 
           <button 
+            type="button"
             onClick={() => setShowConfirmModal(true)} 
-            className="w-full py-5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg transition-transform active:scale-[0.98]"
+            disabled={!validations?.kasSeimbang || !validations?.bankCocok || !currentOpenMonth}
+            className={`w-full py-5 text-white rounded-2xl font-bold uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg transition-transform active:scale-[0.98] ${
+              !validations?.kasSeimbang || !validations?.bankCocok || !currentOpenMonth
+                ? 'bg-slate-400 cursor-not-allowed opacity-70'
+                : 'bg-slate-900 hover:bg-slate-800'
+            }`}
           >
             <Lock className="w-6 h-6 text-slate-300" />
-            Tutup & Kunci Buku Bulan Ini
+            Tutup & Kunci Buku Bulan {currentOpenMonth?.label || 'Ini'}
           </button>
         </div>
       )}
@@ -123,7 +154,7 @@ export default function MonthlyClosingPage() {
           <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
             <Lock className="w-12 h-12" />
           </div>
-          <h3 className="text-2xl md:text-3xl font-black text-green-900 mb-3">Buku Bulan Oktober 2023 Berhasil Dikunci</h3>
+          <h3 className="text-2xl md:text-3xl font-black text-green-900 mb-3">Buku Bulan {currentOpenMonth?.label || 'Ini'} Berhasil Dikunci</h3>
           <p className="text-green-700 mb-8 max-w-xl mx-auto">Seluruh transaksi bulan ini telah direkam secara permanen. Laporan bulan ini sekarang siap untuk dilaporkan ke struktur di atasnya.</p>
           
           <div className="bg-white p-5 rounded-xl border border-green-200 inline-block text-left w-full max-w-3xl shadow-sm">
@@ -132,7 +163,7 @@ export default function MonthlyClosingPage() {
               <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Cryptographic Hash Signature</p>
             </div>
             <p className="font-mono text-sm text-slate-700 break-all bg-slate-50 p-4 rounded-lg border border-slate-200 select-all">
-              e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+              {currentOpenMonth?.hashKunci || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
             </p>
           </div>
         </div>
@@ -151,12 +182,14 @@ export default function MonthlyClosingPage() {
             </p>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowConfirmModal(false)}
                 className="flex-1 px-4 py-3 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold"
               >
                 Batal
               </button>
               <button
+                type="button"
                 onClick={handleConfirmWarning}
                 className="flex-1 px-4 py-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 transition-colors font-bold shadow-sm"
               >
@@ -179,22 +212,25 @@ export default function MonthlyClosingPage() {
               Masukkan 6 digit PIN Anda untuk memvalidasi penutupan buku.
             </p>
             
-            <div className="flex justify-center gap-2 mb-8">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="w-10 h-12 border-2 border-slate-300 rounded-lg flex items-center justify-center text-xl font-bold text-slate-900 bg-slate-50">
-                  •
-                </div>
-              ))}
-            </div>
+            <input 
+              type="password" 
+              maxLength={6}
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="w-full text-center tracking-[1em] text-3xl p-4 border border-slate-300 rounded-xl mb-8 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono"
+              placeholder="••••••"
+            />
 
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => setShowPinModal(false)}
                 className="flex-1 px-4 py-3 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold"
               >
                 Batal
               </button>
               <button
+                type="button"
                 onClick={handleConfirmPin}
                 className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-bold shadow-sm"
               >
