@@ -5,7 +5,7 @@ import PageHeader from '../../components/PageHeader';
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import { toast } from 'react-hot-toast';
-import { ShieldAlert, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Trash2 } from 'lucide-react';
 
 const COLUMNS: TableColumn[] = [
   { key: 'tanggal', label: 'Tanggal Otorisasi' },
@@ -21,6 +21,9 @@ export default function ExecutionQueuePage() {
   const [selectedTx, setSelectedTx] = useState<any>(null);
   const [data, setData] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pajakList, setPajakList] = useState<{jenisPajak: string, nominal: string}[]>([]);
+
+  const TAX_OPTIONS = ["PPN", "PPh 21", "PPh 22", "PPh 23", "Pajak Daerah", "Lainnya"];
 
   const fetchData = () => {
     apiClient.get('/disbursements/execution-queue').then(res => {
@@ -57,6 +60,7 @@ export default function ExecutionQueuePage() {
           <button
             onClick={() => {
               setSelectedTx(row);
+              setPajakList([]);
               setShowConfirmModal(true);
             }}
             className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors"
@@ -92,14 +96,70 @@ export default function ExecutionQueuePage() {
       {/* Konfirmasi Modal */}
       {showConfirmModal && selectedTx && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-xl shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
             <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-2">Konfirmasi Eksekusi Dana</h3>
-            <p className="text-slate-600 text-sm mb-8 leading-relaxed">
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
               Anda akan mengeksekusi dana sebesar <strong className="text-slate-900">{selectedTx.nominal}</strong> untuk <strong className="text-slate-900">{selectedTx.program}</strong>.
             </p>
+
+            <div className="text-left mb-8">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-bold text-slate-800">Potongan Pajak (Opsional)</h4>
+                <button 
+                  onClick={() => setPajakList([...pajakList, { jenisPajak: 'PPN', nominal: '' }])}
+                  className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  + Tambah Baris Pajak
+                </button>
+              </div>
+              
+              {pajakList.map((p, idx) => (
+                <div key={idx} className="flex gap-2 mb-3 items-start animate-in fade-in duration-200">
+                  <select 
+                    value={p.jenisPajak}
+                    onChange={(e) => {
+                      const newList = [...pajakList];
+                      newList[idx].jenisPajak = e.target.value;
+                      setPajakList(newList);
+                    }}
+                    className="flex-1 border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  >
+                    {TAX_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                  <div className="flex-1 relative">
+                    <span className="absolute left-3 top-2.5 text-slate-500 text-sm font-bold">Rp</span>
+                    <input 
+                      type="number"
+                      value={p.nominal}
+                      onChange={(e) => {
+                        const newList = [...pajakList];
+                        newList[idx].nominal = e.target.value;
+                        setPajakList(newList);
+                      }}
+                      placeholder="0"
+                      className="w-full border border-slate-300 rounded-lg p-2.5 pl-9 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+                  <button 
+                    onClick={() => setPajakList(pajakList.filter((_, i) => i !== idx))}
+                    className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Hapus baris"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              ))}
+              
+              {pajakList.length > 0 && (
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mt-4 text-xs text-blue-800">
+                  <strong className="block mb-1">Informasi:</strong>
+                  Kas keluar tetap dicatat penuh sesuai tagihan. Pajak akan dicatat terpisah ke dalam Buku Pajak. Total pajak: <strong>Rp {pajakList.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0).toLocaleString('id-ID')}</strong>.
+                </div>
+              )}
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowConfirmModal(false)}
@@ -154,7 +214,12 @@ export default function ExecutionQueuePage() {
                   if (isSubmitting || !selectedTx) return;
                   setIsSubmitting(true);
                   try {
-                    await apiClient.post(`/disbursements/${selectedTx.id}/execute`);
+                    await apiClient.post(`/disbursements/${selectedTx.id}/execute`, {
+                      pajak: pajakList.map(p => ({
+                        jenisPajak: p.jenisPajak,
+                        nominal: Number(p.nominal)
+                      })).filter(p => p.nominal > 0 && p.jenisPajak)
+                    });
                     setShowModal(false);
                     toast.success("Dana berhasil dieksekusi & otomatis tercatat ke Buku Kas Umum");
                     fetchData();

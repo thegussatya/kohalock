@@ -299,6 +299,7 @@ router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Respon
 router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
+    const { pajak } = req.body;
     
     const disbursement = await prisma.disbursement.findUnique({
       where: { id },
@@ -367,7 +368,28 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
         }
       });
 
-      return { disbursement: updatedDisbursement, cashBookEntry: newEntry, bankBookEntry: newBankEntry };
+      // TaxBook Entries
+      const taxEntries = [];
+      if (pajak && Array.isArray(pajak)) {
+        for (const p of pajak) {
+          if (!p.jenisPajak || p.nominal <= 0) continue;
+          
+          const newTax = await (tx as any).taxBookEntry.create({
+            data: {
+              tanggal: sekarang,
+              jenisPajak: p.jenisPajak,
+              nominal: BigInt(p.nominal),
+              statusSetor: "BELUM_SETOR",
+              bulan: sekarang.getMonth() + 1,
+              tahun: sekarang.getFullYear(),
+              disbursementId: id
+            }
+          });
+          taxEntries.push(newTax);
+        }
+      }
+
+      return { disbursement: updatedDisbursement, cashBookEntry: newEntry, bankBookEntry: newBankEntry, taxEntries };
     });
 
     try {

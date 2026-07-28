@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import apiClient from '../../lib/apiClient';
 import RoleLayout from '../../components/RoleLayout';
 import PageHeader from '../../components/PageHeader';
 import DataTable, { type TableColumn } from '../../components/DataTable';
@@ -14,29 +15,41 @@ const COLUMNS: TableColumn[] = [
   { key: 'status', label: 'Status' },
 ];
 
-const DUMMY_DATA = [
-  { id: 1, tanggal: '05 Okt 2023', jenis: 'PPN 11%', nominal: 'Rp 2.200.000', status: 'Sudah Disetor' },
-  { id: 2, tanggal: '05 Okt 2023', jenis: 'PPh 22', nominal: 'Rp 300.000', status: 'Sudah Disetor' },
-  { id: 3, tanggal: '10 Okt 2023', jenis: 'PPN 11%', nominal: 'Rp 550.000', status: 'Sudah Disetor' },
-  { id: 4, tanggal: '15 Okt 2023', jenis: 'PPh 21', nominal: 'Rp 1.500.000', status: 'Sudah Disetor' },
-  { id: 5, tanggal: '20 Okt 2023', jenis: 'PPN 11%', nominal: 'Rp 3.000.000', status: 'Belum Disetor' },
-  { id: 6, tanggal: '25 Okt 2023', jenis: 'PPh 22', nominal: 'Rp 950.000', status: 'Belum Disetor' },
-];
-
 export default function TaxBookPage() {
-  const renderCell = (row: typeof DUMMY_DATA[0], columnKey: string) => {
+  const [data, setData] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState({ pungut: 0, setor: 0 });
+
+  useEffect(() => {
+    apiClient.get('/tax-book').then(res => {
+      const formatted = res.data.map((item: any) => ({
+        id: item.id,
+        tanggal: new Date(item.tanggal).toLocaleDateString('id-ID'),
+        jenis: item.jenisPajak,
+        nominal: Number(item.nominal),
+        status: item.statusSetor
+      }));
+      setData(formatted);
+
+      const totalPungut = formatted.reduce((acc: number, curr: any) => acc + curr.nominal, 0);
+      const totalSetor = formatted.reduce((acc: number, curr: any) => 
+        curr.status !== 'BELUM_SETOR' ? acc + curr.nominal : acc, 0
+      );
+      setMetrics({ pungut: totalPungut, setor: totalSetor });
+    }).catch(err => console.error(err));
+  }, []);
+  const renderCell = (row: any, columnKey: string) => {
     switch (columnKey) {
       case 'tanggal':
         return <span className="text-slate-600 text-sm">{row.tanggal}</span>;
       case 'jenis':
         return <span className="font-semibold text-slate-900 text-sm">{row.jenis}</span>;
       case 'nominal':
-        return <span className="font-bold text-slate-900 text-sm">{row.nominal}</span>;
+        return <span className="font-bold text-slate-900 text-sm">Rp {row.nominal.toLocaleString('id-ID')}</span>;
       case 'status':
         return (
           <Badge 
-            variant={row.status === 'Sudah Disetor' ? 'success' : 'warning'} 
-            label={row.status} 
+            variant={row.status !== 'BELUM_SETOR' ? 'success' : 'warning'} 
+            label={row.status.replace('_', ' ')} 
           />
         );
       default:
@@ -60,13 +73,13 @@ export default function TaxBookPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <MetricCard
           title="Total Pajak Dipungut"
-          value="Rp 8.500.000"
+          value={`Rp ${metrics.pungut.toLocaleString('id-ID')}`}
           variant="default"
           icon={<ReceiptText className="w-5 h-5 text-brand-600" />}
         />
         <MetricCard
           title="Total Pajak Disetor"
-          value="Rp 8.500.000"
+          value={`Rp ${metrics.setor.toLocaleString('id-ID')}`}
           variant="success"
           icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}
         />
@@ -76,7 +89,7 @@ export default function TaxBookPage() {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <DataTable
           columns={COLUMNS}
-          data={DUMMY_DATA}
+          data={data}
           renderCell={renderCell}
         />
       </div>

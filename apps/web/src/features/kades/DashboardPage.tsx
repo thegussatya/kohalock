@@ -1,35 +1,40 @@
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, BadgeCheck, ShieldAlert, QrCode, Settings, HelpCircle, History, BarChart3, Calendar } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
 import MonthlyBarChart from '../../components/MonthlyBarChart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
 import { KADES_MENU } from './menu';
-
-
-
-const PENYERAPAN_DATA = [
-  { label: 'Kuartal 1', value: 200000000, value2: 150000000 },
-  { label: 'Kuartal 2', value: 250000000, value2: 230000000 },
-  { label: 'Kuartal 3', value: 300000000, value2: 180000000 },
-  { label: 'Kuartal 4', value: 250000000, value2: 0 },
-];
-
-const DONUT_DATA = [
-  { name: 'Terserap', value: 720000000, color: '#00AEEF' },
-  { name: 'Sisa Target', value: 280000000, color: '#e2e8f0' },
-];
-
-const DUSUN_RANKING = [
-  { name: 'Dusun 1', percentage: 85 },
-  { name: 'Dusun 3', percentage: 78 },
-  { name: 'Dusun 2', percentage: 60 },
-  { name: 'Dusun 4', percentage: 45 },
-];
+import apiClient from '../../lib/apiClient';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get('/dashboard/kades')
+      .then(res => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Memuat dashboard...</div>;
+
+  const pendingAuthCount = data?.pendingAuthCount?.toString() || "0";
+  const totalDisbursedYear = data?.totalDisbursedYear ? `Rp ${Number(data.totalDisbursedYear).toLocaleString('id-ID')}` : 'Rp 0';
+  const kasBalance = data?.kasBalance || "Rp 0";
+  const absorptionRate = data?.absorptionRate || "0%";
+  const donutData = data?.donutData || [];
+  const barData = data?.barData || [];
+  const penyerapanData = data?.penyerapanData || [];
 
   return (
     <RoleLayout menuItems={KADES_MENU} userName="Ahmad Fauzi" userRole="Kepala Desa" settingsPath="/kades/pengaturan">
@@ -39,19 +44,19 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <MetricCard
           title="Total Sisa Kas Desa"
-          value="Rp 350.000.000"
+          value={kasBalance}
           variant="success"
         />
         <div onClick={() => navigate('/kades/persetujuan-pencairan')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">
           <MetricCard
             title="Menunggu Otorisasi Final"
-            value="2"
+            value={pendingAuthCount}
             variant="warning"
           />
         </div>
         <MetricCard
           title="Target Penyerapan Tercapai"
-          value="65%"
+          value={absorptionRate}
           variant="default"
         />
       </div>
@@ -65,7 +70,7 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={DONUT_DATA}
+                  data={donutData}
                   cx="50%"
                   cy="50%"
                   innerRadius={65}
@@ -75,7 +80,7 @@ export default function DashboardPage() {
                   dataKey="value"
                   stroke="none"
                 >
-                  {DONUT_DATA.map((entry, index) => (
+                  {donutData.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -83,11 +88,11 @@ export default function DashboardPage() {
             </ResponsiveContainer>
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-3xl font-bold text-slate-900">72%</span>
+              <span className="text-3xl font-bold text-slate-900">{absorptionRate}</span>
             </div>
           </div>
           <p className="text-sm font-medium text-slate-600 text-center">
-            Rp 720.000.000 dari target Rp 1.000.000.000
+            {totalDisbursedYear}
           </p>
         </div>
 
@@ -97,7 +102,7 @@ export default function DashboardPage() {
           <div className="flex-1 w-full min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={DUSUN_RANKING}
+                data={barData}
                 layout="vertical"
                 margin={{ top: 0, right: 30, left: 0, bottom: 0 }}
               >
@@ -124,14 +129,16 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <MonthlyBarChart
-            title="Penyerapan Anggaran: Target vs Realisasi"
-            data={PENYERAPAN_DATA}
-            series1Name="Target"
-            series2Name="Realisasi"
-            series1Color="#94a3b8"
-            series2Color="#10b981"
-          />
+          {penyerapanData && penyerapanData.length > 0 && (
+            <MonthlyBarChart
+              title="Penyerapan Anggaran: Target vs Realisasi"
+              data={penyerapanData}
+              series1Name="Target"
+              series2Name="Realisasi"
+              series1Color="#94a3b8"
+              series2Color="#10b981"
+            />
+          )}
         </div>
         
         <div className="lg:col-span-1">

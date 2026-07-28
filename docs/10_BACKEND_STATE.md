@@ -34,7 +34,7 @@ Berikut adalah daftar model, *field*, dan relasinya:
 *   **`BankBookEntry`**: Entri Buku Bank.
     *   *Fields*: `id`, `tanggal`, `keterangan`, `debit`, `kredit`, `saldo`, `bulan`, `tahun`.
 *   **`TaxBookEntry`**: Entri Buku Pajak.
-    *   *Fields*: `id`, `tanggal`, `jenisPajak`, `nominal`, `statusSetor`.
+    *   *Fields*: `id`, `tanggal`, `jenisPajak`, `nominal`, `statusSetor`, `bulan`, `tahun`, `disbursementId`.
 *   **`MonthlyClosing`**: Penutupan buku bulanan.
     *   *Fields*: `id`, `bulan`, `tahun`, `hashKunci`, `ditutupOlehId`, `ditutupPada`.
 *   **`CorrectionTransaction`**: Transaksi koreksi/pembetulan BKU.
@@ -56,10 +56,15 @@ Lokasi: `apps/api/routes/`
 | `/api/disbursements/:id/verify` | POST | Ya | (Sekdes) Memverifikasi pengajuan. Mengubah status ke `PENDING_KADES` dan set `verifiedAt`. |
 | `/api/disbursements/:id/return-revision` | POST | Ya | (Sekdes/Kades) Menolak dengan catatan revisi, mengubah status ke `RETURNED_FOR_REVISION`. |
 | `/api/disbursements/:id/authorize` | POST | Ya | (Kades) Mengotorisasi pencairan. Mengubah status ke `PENDING_EKSEKUSI` dan set `authorizedAt`. |
-| `/api/disbursements/:id/execute` | POST | Ya | (Kaur Keuangan) Mengeksekusi pencairan. Mengubah status ke `DISBURSED`, set `disbursedAt`, dan otomatis mencatat ke `CashBookEntry`. |
+| `/api/disbursements/:id/execute` | POST | Ya | (Kaur Keuangan) Mengeksekusi pencairan. Mengubah status ke `DISBURSED`, set `disbursedAt`, dan otomatis mencatat ke `CashBookEntry`, `BankBookEntry`, dan `TaxBookEntry` (jika ada potongan pajak yang dilampirkan). |
 | `/api/cash-book/` | GET | Ya | Mengambil seluruh entri Buku Kas Umum, mendukung filter query `?bulan=` dan `?tahun=`. |
+| `/api/bank-book/` | GET | Ya | Mengambil seluruh entri Buku Bank. |
+| `/api/tax-book/` | GET | Ya | Mengambil seluruh entri Buku Pajak. |
+| `/api/monthly-closing/status` | GET | Ya | Cek status penutupan bulan dan validasi rekonsiliasi. |
+| `/api/monthly-closing/close` | POST | Ya | Mengunci buku bulanan secara permanen dengan PIN. |
 | `/api/ledger/timeline` | GET | Ya | Mengambil daftar pencairan untuk ditampilkan di eksplorer. Mendukung filter pencarian (`?search=`) berbasis judul usulan. |
 | `/api/ledger/timeline/:id` | GET | Ya | Mengambil detail 1 pencairan yang dipetakan sebagai rentetan tahapan timeline berdasarkan timestamp. |
+| `/api/dashboard/*` | GET | Ya | Endpoint agregasi metrik spesifik untuk 5 role (Kaur Teknis, Sekdes, Kades, Auditor, BPD). |
 
 ## 3. Middleware Autentikasi
 Lokasi: `apps/api/middleware/auth.middleware.ts`
@@ -75,8 +80,11 @@ Rute (*route*) didaftarkan pada Express *app* dengan urutan berikut:
 3.  `app.use('/api/proposals', proposalRouter)`
 4.  `app.use('/api/disbursements', disbursementRouter)`
 5.  `app.use('/api/cash-book', cashBookRouter)`
-6.  `app.use('/api/ledger', ledgerRouter)`
-7.  `app.get('/health', ...)` (Health check inline route)
+6.  `app.use('/api/bank-book', bankBookRouter)`
+7.  `app.use('/api/ledger', ledgerRouter)`
+8.  `app.use('/api/monthly-closing', monthlyClosingRouter)`
+9.  `app.use('/api/tax-book', taxBookRouter)`
+10. `app.get('/health', ...)` (Health check inline route)
 
 ## 5. Alur Inti yang Sudah Terhubung End-to-End
 Sistem tata kelola desa KohaLock saat ini telah memfasilitasi alur transaksi dari hulu ke hilir:
@@ -99,19 +107,23 @@ Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data lang
 *   **Detail Otorisasi (Kades)** (`DisbursementDetailPage.tsx`)
 *   **Antrean Eksekusi (Kaur Keuangan)** (`ExecutionQueuePage.tsx`)
 *   **Buku Kas Umum** (`GeneralCashBookPage.tsx`)
+*   **Buku Bank** (`BankBookPage.tsx`)
+*   **Buku Pajak** (`TaxBookPage.tsx`) - *Baru disambungkan!*
+*   **Tutup Buku Bulanan** (`MonthlyClosingPage.tsx`)
+*   **Dashboard (Kaur Teknis, Sekdes, Kades, Auditor, BPD/Adat)** (`DashboardPage.tsx`) - *Baru disambungkan!*
 *   **Kronologi Transaksi (Auditor)** (`LedgerExplorerPage.tsx`) - *Baru disambungkan!*
 *   **Pantauan Transaksi (BPD/Adat)** (`TransactionMonitoringPage.tsx`) - *Baru disambungkan!*
 
 ## 7. Yang MASIH Dummy
 Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum terhubung (maupun belum ada) ke *endpoint* API asli:
 
-*   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Dashboard (Summary Stats), Notifikasi, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
-*   **Auditor**: Case Management, Dashboard, Integrity Checker, Legal Export, Notifikasi, Report Templates, Whistleblower Inbox.
+*   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Notifikasi, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
+*   **Auditor**: Case Management, Integrity Checker, Legal Export, Notifikasi, Report Templates, Whistleblower Inbox.
 *   **Publik**: Dashboard publik, Halaman Klarifikasi, Detail/Daftar Proyek, Whistleblower Report, Notifikasi.
-*   **Kaur Keuangan**: Bank Book (Buku Bank), Correction Transaction, Dashboard, Locked Archive, Monthly Closing (Tutup Buku Bulanan), Notifikasi, Realization Report, Tax Book (Buku Pajak).
-*   **Kades**: Authorization History, Clarification Analytics, Dashboard, Integrity Shield, Public Clarification Center, Notifikasi.
-*   **Kaur Teknis**: Dashboard, My Programs, Program Detail, Rejection History, Notifikasi.
-*   **Sekdes**: Budget Monitoring, Clarification Inbox, Dashboard, Verification History, Notifikasi.
+*   **Kaur Keuangan**: Correction Transaction, Dashboard, Locked Archive, Realization Report.
+*   **Kades**: Authorization History, Clarification Analytics, Integrity Shield, Public Clarification Center, Notifikasi.
+*   **Kaur Teknis**: My Programs, Program Detail, Rejection History, Notifikasi.
+*   **Sekdes**: Budget Monitoring, Clarification Inbox, Verification History, Notifikasi.
 
 ## 8. Konfigurasi & Environment
 Variabel *environment* (`.env`) yang saat ini digunakan di backend (tanpa _value_ asli):

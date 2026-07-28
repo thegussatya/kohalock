@@ -83,13 +83,15 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
   WhistleblowerReport, AdatCase, SupervisionNote, AuditorAccessToken,
   CashBookEntry, BankBookEntry, TaxBookEntry, MonthlyClosing,
   CorrectionTransaction, Notification)
+- Endpoint Dashboard (Kaur Teknis) - sudah tersambung dengan data dinamis.
+- Endpoint Buku Bank & Penutupan Buku Bulanan (Kaur Keuangan) - sudah tersambung dan logic pencatatan/penguncian otomatis sudah berjalan.
+- Endpoint Buku Pajak (GET) - sudah dibuat, tinggal melengkapi logic POST pada pencairan.
 - Database: Supabase Postgres, koneksi via Connection Pooler (BUKAN
   direct connection - direct connection gagal dari jaringan user)
 
 ## Yang BELUM Selesai
 
-- Buku Bank, Buku Pajak, Penutupan Buku Bulanan (Kaur Keuangan) -
-  masih data dummy di frontend, belum ada endpoint backend
+- Buku Pajak (Kaur Keuangan) - GET endpoint sudah ada, namun integrasi pemotongan pajak otomatis pada proses `execute` pencairan belum jelas spesifikasinya.
 - Smart contract (Solidity/Hardhat) - BELUM DIMULAI SAMA SEKALI,
   masih di tahap dokumen rencana saja
 - Hash-lock kriptografis asli untuk Penutupan Buku Bulanan - baru
@@ -101,8 +103,7 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
 
 ## ISU AKTIF Sedang Didebug (mulai dari sini kalau lanjut)
 
-- **Bug Notifikasi**: (Telah diselesaikan) Sebelumnya tombol verifikasi tidak mengirimkan POST request karena *default behavior* reload halaman tanpa atribut `type="button"`. Masalah ini sudah diperbaiki, state input PIN ditambahkan, dan sistem notifikasi sekarang berjalan normal dari frontend hingga masuk ke tabel `Notification`.
-- Saat ini belum ada isu aktif kritis yang sedang didebug.
+- Saat ini belum ada isu aktif kritis yang sedang didebug. (Logic pajak dan bug notifikasi telah diselesaikan).
 
 ## Cara Menjalankan Project
 

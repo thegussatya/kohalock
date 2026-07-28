@@ -19,6 +19,12 @@
 - [ ] UI Sekdes: Dashboard, Verifikasi Pengajuan (Split-View Reviewer + Map widget + PDF viewer + Hash checker), Pantauan Anggaran (UI selesai, logic asli belum)
 - [ ] UI Kades: Dashboard, Persetujuan Pencairan, halaman detail + tombol Cairkan Dana (UI selesai, logic asli belum)
 
+## Fase 1.5 — Pengelolaan Keuangan (Kaur Keuangan)
+- [x] UI & API Buku Kas Umum (sinkronisasi saat eksekusi pencairan)
+- [x] UI & API Buku Bank (pencatatan otomatis dari buku kas)
+- [x] UI & API Penutupan Buku Bulanan (lock periode & simulasi hash)
+- [x] UI & API Buku Pajak (integrasi potong pajak manual saat eksekusi pencairan)
+
 ## Fase 2 — Transparansi Publik
 - [ ] UI Publik: Beranda, Pantau Proyek (galeri + progress), Klarifikasi (UI selesai, logic asli belum)
 - [ ] Endpoint public (read-only, tanpa auth wajib)

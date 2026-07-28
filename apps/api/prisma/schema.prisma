@@ -75,6 +75,7 @@ model Disbursement {
   rejectionLogs    RejectionLog[]
   interventionLogs InterventionLog[]
   supervisionNotes SupervisionNote[]
+  taxEntries       TaxBookEntry[]
 }
 
 model RejectionLog {
@@ -184,11 +185,15 @@ model BankBookEntry {
 }
 
 model TaxBookEntry {
-  id          String   @id @default(cuid())
-  tanggal     DateTime
-  jenisPajak  String
-  nominal     BigInt
-  statusSetor String
+  id             String        @id @default(cuid())
+  tanggal        DateTime
+  jenisPajak     String
+  nominal        BigInt
+  statusSetor    String        @default("BELUM_SETOR")
+  bulan          Int
+  tahun          Int
+  disbursementId String?
+  disbursement   Disbursement? @relation(fields: [disbursementId], references: [id])
 }
 
 model MonthlyClosing {

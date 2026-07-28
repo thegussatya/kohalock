@@ -13,6 +13,7 @@ import whistleblowerRouter from './routes/whistleblower.route';
 import notificationRouter from './routes/notification.route';
 import dashboardRouter from './routes/dashboard.route';
 import monthlyClosingRouter from './routes/monthlyclosing.route';
+import taxBookRouter from './routes/taxbook.route';
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -28,6 +29,7 @@ app.use('/api/whistleblower', whistleblowerRouter);
 app.use('/api/notifications', notificationRouter);
 app.use('/api/dashboard', dashboardRouter);
 app.use('/api/monthly-closing', monthlyClosingRouter);
+app.use('/api/tax-book', taxBookRouter);
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'KohaLock API jalan' });
 });

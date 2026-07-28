@@ -1,22 +1,38 @@
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FileCheck, PieChart, MessageCircle, HelpCircle, Clock, TrendingUp, History, AlertTriangle } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
 import MonthlyBarChart from '../../components/MonthlyBarChart';
 import { SEKDES_MENU } from './menu';
-
-const VERIFICATION_DATA = [
-  { label: 'Minggu 1', value: 45, value2: 38 },
-  { label: 'Minggu 2', value: 52, value2: 40 },
-  { label: 'Minggu 3', value: 38, value2: 45 },
-  { label: 'Minggu 4', value: 65, value2: 50 },
-];
-
-
+import apiClient from '../../lib/apiClient';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get('/dashboard/sekdes')
+      .then(res => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Memuat dashboard...</div>;
+
+  const pendingCount = data?.pendingCount?.toString() || "0";
+  const approvedAmountMonth = data?.approvedAmountMonth ? `Rp ${Number(data.approvedAmountMonth).toLocaleString('id-ID')}` : 'Rp 0';
+  const clarificationPending = data?.clarificationPending?.toString() || "0";
+  const avgVerificationDays = data?.avgVerificationDays || "0 Hari";
+  const approvalRate = data?.approvalRate || "N/A";
+  const chartData = data?.chartData || [];
 
   return (
     <RoleLayout menuItems={SEKDES_MENU} userName="Siti Rahma" userRole="Sekretaris Desa">
@@ -45,19 +61,19 @@ export default function DashboardPage() {
         <div onClick={() => navigate('/sekdes/verifikasi')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">
           <MetricCard
             title="Total Pengajuan Menunggu"
-            value="5"
+            value={pendingCount}
             variant="warning"
           />
         </div>
         <MetricCard
           title="Total Pengajuan Disetujui (Bulan Ini)"
-          value="Rp 150.000.000"
+          value={approvedAmountMonth}
           variant="success"
         />
         <div onClick={() => navigate('/sekdes/klarifikasi')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">
           <MetricCard
             title="Tiket Warga Belum Dijawab"
-            value="2"
+            value={clarificationPending}
             variant="danger"
           />
         </div>
@@ -66,26 +82,28 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         <MetricCard
           title="Rata-rata Waktu Verifikasi"
-          value="1.2 Hari"
+          value={avgVerificationDays}
           variant="default"
           icon={<Clock className="w-5 h-5 text-brand-600" />}
         />
         <MetricCard
           title="Tingkat Approval"
-          value="87%"
+          value={approvalRate}
           variant="success"
           icon={<TrendingUp className="w-5 h-5 text-green-600" />}
         />
       </div>
 
-      <MonthlyBarChart 
-        title="Perbandingan Verifikasi: Bulan Ini vs Bulan Lalu"
-        data={VERIFICATION_DATA}
-        series1Name="Bulan Ini"
-        series2Name="Bulan Lalu"
-        series1Color="#00AEEF"
-        series2Color="#94a3b8"
-      />
+      {chartData && chartData.length > 0 && (
+        <MonthlyBarChart 
+          title="Perbandingan Verifikasi: Bulan Ini vs Bulan Lalu"
+          data={chartData}
+          series1Name="Bulan Ini"
+          series2Name="Bulan Lalu"
+          series1Color="#00AEEF"
+          series2Color="#94a3b8"
+        />
+      )}
     </RoleLayout>
   );
 }

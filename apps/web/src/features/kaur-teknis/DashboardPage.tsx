@@ -27,7 +27,7 @@ export default function DashboardPage() {
       });
   }, []);
 
-  if (loading) return <div className="p-8 text-center text-slate-500 font-bold">Memuat dashboard...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Memuat dashboard...</div>;
 
   const totalPagu = data?.totalPaguMusrembang ? `Rp ${Number(data.totalPaguMusrembang).toLocaleString('id-ID')}` : 'Rp 0';
   const pendingCount = data?.pendingCount?.toString() || "0";

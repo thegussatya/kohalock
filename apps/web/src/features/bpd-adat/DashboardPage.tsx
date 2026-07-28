@@ -1,14 +1,33 @@
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Eye, Scale, Archive, Settings, HelpCircle } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
 import { BPD_ADAT_MENU } from './menu';
-
-
+import apiClient from '../../lib/apiClient';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get('/dashboard/bpd')
+      .then(res => {
+        setData(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Memuat dashboard...</div>;
+
+  const performanceRate = data?.performanceRate || "-";
+  const redFlags = data?.redFlags?.toString() || "0";
 
   return (
     <RoleLayout menuItems={BPD_ADAT_MENU} userName="Bapak RT/Adat" userRole="BPD / Tokoh Adat" settingsPath="/bpd-adat/pengaturan">
@@ -21,14 +40,14 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <MetricCard
             title="Kinerja Desa (Realisasi Program)"
-            value="68%"
+            value={performanceRate}
             description="Persentase total program berjalan berbanding selesai"
             variant="default"
           />
           <div onClick={() => navigate('/bpd-adat/pantauan-transaksi')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">
             <MetricCard
               title="Potensi Pelanggaran (Red Flags)"
-              value="2"
+              value={redFlags}
               description="Berdasarkan aduan masyarakat & sistem AI"
               variant="danger"
             />
