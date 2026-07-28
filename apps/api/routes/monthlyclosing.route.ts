@@ -190,7 +190,7 @@ export default router;
 router.get('/:id/verify', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const closing = await prisma.monthlyClosing.findUnique({
-      where: { id: req.params.id }
+      where: { id: req.params.id as string }
     });
 
     if (!closing) {
