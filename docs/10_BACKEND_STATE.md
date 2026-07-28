@@ -61,6 +61,10 @@ Lokasi: `apps/api/routes/`
 | `/api/bank-book/` | GET | Ya | Mengambil seluruh entri Buku Bank. |
 | `/api/tax-book/` | GET | Ya | Mengambil seluruh entri Buku Pajak. |
 | `/api/tax-book/:id/setor` | POST | Ya | (Kaur Keuangan) Mengubah status setor pajak menjadi `SUDAH_SETOR`. |
+| `/api/corrections/` | GET | Ya | (Kaur Keuangan) Mengambil riwayat catatan jurnal pembalik (koreksi transaksi). |
+| `/api/corrections/` | POST | Ya | (Kaur Keuangan) Membuat transaksi koreksi (jurnal pembalik) untuk entri buku kas yang sudah ditutup/terkunci. |
+| `/api/reports/realization` | GET | Ya | (Kaur Keuangan) Mengambil agregasi Laporan Realisasi & LPJ (pagu, realisasi, sisa, breakdown dusun/kategori, rekap pajak). |
+| `/api/monthly-closing/archive` | GET | Ya | (Kaur Keuangan) Mengambil arsip seluruh ledger yang telah dikunci beserta validasi ulang integritas SHA-256 hash-nya secara real-time. |
 | `/api/monthly-closing/status` | GET | Ya | Cek status penutupan bulan dan validasi rekonsiliasi. |
 | `/api/monthly-closing/close` | POST | Ya | Mengunci buku bulanan secara permanen dengan PIN dan meng-generate SHA-256 hash kriptografis asli dari rekam jejak ledger. |
 | `/api/monthly-closing/:id/verify` | GET | Ya | Memverifikasi kecocokan hash kriptografis dari ledger bulanan yang tersimpan dengan data historis. |
@@ -118,6 +122,9 @@ Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data lang
 *   **Buku Bank** (`BankBookPage.tsx`)
 *   **Buku Pajak** (`TaxBookPage.tsx`) - *Baru disambungkan!*
 *   **Tutup Buku Bulanan** (`MonthlyClosingPage.tsx`)
+*   **Transaksi Koreksi** (`CorrectionTransactionPage.tsx`) - *Baru disambungkan!*
+*   **Laporan Realisasi** (`RealizationReportPage.tsx`) - *Baru disambungkan!*
+*   **Arsip Buku Terkunci** (`LockedArchivePage.tsx`) - *Baru disambungkan!*
 *   **Dashboard (Kaur Teknis, Sekdes, Kades, Auditor, BPD/Adat)** (`DashboardPage.tsx`) - *Baru disambungkan!*
 *   **Kronologi Transaksi (Auditor)** (`LedgerExplorerPage.tsx`) - *Baru disambungkan!*
 *   **Pantauan Transaksi (BPD/Adat)** (`TransactionMonitoringPage.tsx`) - *Baru disambungkan!*
@@ -133,7 +140,7 @@ Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum 
 *   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Notifikasi, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
 *   **Auditor**: Case Management, Integrity Checker, Legal Export, Notifikasi, Report Templates, Whistleblower Inbox.
 *   **Publik**: Notifikasi.
-*   **Kaur Keuangan**: Correction Transaction, Dashboard, Locked Archive, Realization Report.
+*   **Kaur Keuangan**: Dashboard.
 *   **Kades**: Authorization History, Clarification Analytics, Integrity Shield, Public Clarification Center, Notifikasi.
 *   **Kaur Teknis**: My Programs, Program Detail, Rejection History, Notifikasi.
 *   **Sekdes**: Budget Monitoring, Clarification Inbox, Verification History, Notifikasi.

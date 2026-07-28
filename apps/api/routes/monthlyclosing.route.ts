@@ -89,6 +89,68 @@ router.get('/status', authenticate, async (req: AuthRequest, res: Response): Pro
   }
 });
 
+// GET /api/monthly-closing/archive
+router.get('/archive', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const closings = await prisma.monthlyClosing.findMany({
+      orderBy: [
+        { tahun: 'desc' },
+        { bulan: 'desc' }
+      ],
+      include: {
+        ditutupOleh: {
+          select: { nama: true }
+        }
+      }
+    });
+
+    const archiveList = await Promise.all(closings.map(async (closing) => {
+      const cashEntries = await prisma.cashBookEntry.findMany({
+        where: { bulan: closing.bulan, tahun: closing.tahun },
+        orderBy: { id: 'asc' }
+      });
+      const bankEntries = await prisma.bankBookEntry.findMany({
+        where: { bulan: closing.bulan, tahun: closing.tahun },
+        orderBy: { id: 'asc' }
+      });
+      const taxEntries = await prisma.taxBookEntry.findMany({
+        where: { bulan: closing.bulan, tahun: closing.tahun },
+        orderBy: { id: 'asc' }
+      });
+
+      const cashString = cashEntries.map(e => `${e.id}:${e.penerimaan.toString()}:${e.pengeluaran.toString()}:${e.saldoBerjalan.toString()}`).join('|');
+      const bankString = bankEntries.map(e => `${e.id}:${e.debit.toString()}:${e.kredit.toString()}:${e.saldo.toString()}`).join('|');
+      const taxString = taxEntries.map(e => `${e.id}:${e.nominal.toString()}:${e.statusSetor}`).join('|');
+      
+      const dataToHash = `${closing.bulan}-${closing.tahun}::CASH:${cashString}::BANK:${bankString}::TAX:${taxString}`;
+      const recalculatedHash = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+      const cashStats = await prisma.cashBookEntry.aggregate({
+        where: { bulan: closing.bulan, tahun: closing.tahun },
+        _sum: { penerimaan: true, pengeluaran: true }
+      });
+
+      return {
+        id: closing.id,
+        bulan: closing.bulan,
+        tahun: closing.tahun,
+        ditutupPada: closing.ditutupPada,
+        ditutupOlehId: closing.ditutupOlehId,
+        ditutupOlehNama: closing.ditutupOleh?.nama,
+        hashKunci: closing.hashKunci,
+        match: closing.hashKunci === recalculatedHash,
+        penerimaan: cashStats._sum.penerimaan || 0n,
+        pengeluaran: cashStats._sum.pengeluaran || 0n
+      };
+    }));
+
+    res.json(serialize(archiveList));
+  } catch (error: any) {
+    console.error('Error fetching monthly closing archive:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // POST /api/monthly-closing/close
 router.post('/close', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
