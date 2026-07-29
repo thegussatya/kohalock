@@ -1,29 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../components/RoleLayout';
 import PageHeader from '../../components/PageHeader';
 import Badge, { type BadgeVariant } from '../../components/Badge';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, FilePlus, FolderKanban, Wallet, History, HelpCircle, Search } from 'lucide-react';
 import { KAUR_TEKNIS_MENU } from './menu';
-
-
-
-const DUMMY_PROGRAMS = [
-  { id: 1, name: 'Pembangunan Posyandu Dusun 1', category: 'Kesehatan', status: 'Aktif', totalFunds: 150000000, realized: 50000000, remaining: 100000000 },
-  { id: 2, name: 'Pengaspalan Jalan Utama', category: 'Infrastruktur', status: 'Selesai', totalFunds: 300000000, realized: 300000000, remaining: 0 },
-  { id: 3, name: 'Bantuan Bibit Pertanian', category: 'Pemberdayaan Masyarakat', status: 'Ditolak', totalFunds: 25000000, realized: 0, remaining: 25000000 },
-  { id: 4, name: 'Beasiswa Pendidikan Anak Desa', category: 'Pendidikan', status: 'Aktif', totalFunds: 50000000, realized: 10000000, remaining: 40000000 },
-  { id: 5, name: 'Pengadaan Lampu Jalan', category: 'Infrastruktur', status: 'Aktif', totalFunds: 75000000, realized: 25000000, remaining: 50000000 },
-  { id: 6, name: 'Dana Siaga Bencana Alam', category: 'Bencana & Keadaan Darurat', status: 'Aktif', totalFunds: 20000000, realized: 0, remaining: 20000000 },
-];
+import apiClient from '../../lib/apiClient';
 
 export default function MyProgramsPage() {
   const navigate = useNavigate();
+  const [programs, setPrograms] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
 
-  const filteredPrograms = DUMMY_PROGRAMS.filter(p => {
+  useEffect(() => {
+    apiClient.get('/proposals')
+      .then(res => {
+        const mapped = res.data.map((p: any) => ({
+          id: p.id,
+          name: p.judulUsulan,
+          category: p.kategori,
+          status: Number(p.sisaPagu) <= 0 ? 'Selesai' : 'Aktif',
+          totalFunds: Number(p.paguMaksimal),
+          realized: Number(p.realisasi),
+          remaining: Number(p.sisaPagu)
+        }));
+        setPrograms(mapped);
+      })
+      .catch(console.error);
+  }, []);
+
+  const filteredPrograms = programs.filter(p => {
     if (filterCategory && p.category !== filterCategory) return false;
     if (filterStatus && p.status !== filterStatus) return false;
     if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;

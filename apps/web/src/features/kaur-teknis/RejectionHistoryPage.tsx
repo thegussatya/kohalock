@@ -6,53 +6,69 @@ import { KAUR_TEKNIS_MENU } from './menu';
 
 
 
+import { useState, useEffect, useMemo } from 'react';
+import apiClient from '../../lib/apiClient';
+
 type RejectionData = {
   id: string;
   tanggal: string;
   namaProgram: string;
   tahap: string;
+  jenis: string;
+  alasan: string;
   status: 'Belum Diperbaiki' | 'Sudah Diperbaiki';
 };
-
-const DATA_REJECTION: RejectionData[] = [
-  { 
-    id: '1', 
-    tanggal: '2023-10-15', 
-    namaProgram: 'Pengaspalan Jalan Dusun 1', 
-    tahap: 'Pencairan', 
-    status: 'Belum Diperbaiki' 
-  },
-  { 
-    id: '2', 
-    tanggal: '2023-10-10', 
-    namaProgram: 'Pembangunan Posyandu', 
-    tahap: 'Musrembang', 
-    status: 'Sudah Diperbaiki' 
-  },
-  { 
-    id: '3', 
-    tanggal: '2023-09-28', 
-    namaProgram: 'Bantuan Bibit Jagung', 
-    tahap: 'Pencairan', 
-    status: 'Sudah Diperbaiki' 
-  },
-  { 
-    id: '4', 
-    tanggal: '2023-09-15', 
-    namaProgram: 'Pengadaan Traktor', 
-    tahap: 'Musrembang', 
-    status: 'Belum Diperbaiki' 
-  },
-];
 
 const COLUMNS: TableColumn[] = [
   { key: 'tanggal', label: 'Tanggal' },
   { key: 'namaProgram', label: 'Nama Program' },
   { key: 'tahap', label: 'Tahap' },
+  { key: 'alasan', label: 'Alasan Penolakan' },
   { key: 'status', label: 'Status' },
 ];
 
 export default function RejectionHistoryPage() {
+  const [dataRejection, setDataRejection] = useState<RejectionData[]>([]);
+  const [filterBulan, setFilterBulan] = useState('');
+  const [filterJenis, setFilterJenis] = useState('');
+
+  useEffect(() => {
+    apiClient.get('/disbursements/rejections')
+      .then(res => {
+        const mapped = res.data.map((item: any) => ({
+          ...item,
+          tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })
+        }));
+        setDataRejection(mapped);
+      })
+      .catch(console.error);
+  }, []);
+
+  const filteredData = useMemo(() => {
+    return dataRejection.filter(item => {
+      if (filterBulan) {
+        // e.g. item.tanggal is like "15 Okt 2023" or similar depending on toLocaleDateString,
+        // Actually, filtering by month is easier if we have the original ISO string.
+        // Let's assume filterBulan works via string match on month abbreviation if we use short month,
+        // or we just keep it simple. But wait, earlier UI had: '9' for Sep, '10' for Oct.
+        // It's better to fetch and keep ISO date somewhere.
+        // For now, let's do a simple string include check for month name in Indonesian
+        const monthNames = ['', 'jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'];
+        const mIdx = parseInt(filterBulan);
+        if (mIdx > 0 && mIdx <= 12) {
+           const monthStr = monthNames[mIdx];
+           if (!item.tanggal.toLowerCase().includes(monthStr)) return false;
+        }
+      }
+      if (filterJenis && item.jenis !== filterJenis) return false;
+      return true;
+    });
+  }, [dataRejection, filterBulan, filterJenis]);
+
   const renderCell = (row: RejectionData, columnKey: string) => {
     if (columnKey === 'status') {
       const isFixed = row.status === 'Sudah Diperbaiki';
@@ -84,6 +100,8 @@ export default function RejectionHistoryPage() {
           </label>
           <select
             id="bulan"
+            value={filterBulan}
+            onChange={(e) => setFilterBulan(e.target.value)}
             className="border border-slate-300 bg-white rounded-md shadow-sm px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
           >
             <option value="">Semua Bulan</option>
@@ -99,6 +117,8 @@ export default function RejectionHistoryPage() {
           </label>
           <select
             id="jenis"
+            value={filterJenis}
+            onChange={(e) => setFilterJenis(e.target.value)}
             className="border border-slate-300 bg-white rounded-md shadow-sm px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[250px]"
           >
             <option value="">Semua Jenis</option>
@@ -111,7 +131,7 @@ export default function RejectionHistoryPage() {
       {/* Table Content */}
       <DataTable
         columns={COLUMNS}
-        data={DATA_REJECTION}
+        data={filteredData}
         renderCell={renderCell}
       />
     </RoleLayout>

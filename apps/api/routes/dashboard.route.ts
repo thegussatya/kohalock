@@ -97,6 +97,44 @@ router.get('/kaur-teknis', authenticate, async (req: AuthRequest, res: Response)
   }
 });
 
+// 2. Sekdes - Budget Monitoring
+router.get('/sekdes/budget', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const proposals = await prisma.proposal.findMany();
+    let totalPagu = BigInt(0);
+    proposals.forEach(p => totalPagu += p.paguMaksimal);
+
+    const disbursements = await prisma.disbursement.findMany({
+      where: {
+        status: {
+          notIn: ['REJECTED_SYSTEM', 'RETURNED_FOR_REVISION']
+        }
+      }
+    });
+
+    let danaCair = BigInt(0);
+    let dalamProses = BigInt(0);
+
+    disbursements.forEach(d => {
+      if (d.status === 'DISBURSED') {
+        danaCair += d.nominal;
+      } else {
+        dalamProses += d.nominal;
+      }
+    });
+
+    const sisaKas = totalPagu - danaCair - dalamProses;
+
+    res.json(serialize({
+      danaCair,
+      dalamProses,
+      sisaKas
+    }));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 2. Sekdes
 router.get('/sekdes', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {

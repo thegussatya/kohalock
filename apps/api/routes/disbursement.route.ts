@@ -150,6 +150,57 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
   }
 });
 
+// GET /disbursements/rejections
+router.get('/rejections', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const rejectionLogs = await prisma.rejectionLog.findMany({
+      include: {
+        disbursement: {
+          include: {
+            proposal: { select: { judulUsulan: true } }
+          }
+        }
+      }
+    });
+
+    const interventionLogs = await prisma.interventionLog.findMany({
+      include: {
+        disbursement: {
+          include: {
+            proposal: { select: { judulUsulan: true } }
+          }
+        }
+      }
+    });
+
+    const combined = [
+      ...rejectionLogs.map(l => ({
+        id: `rej_${l.id}`,
+        tanggal: l.createdAt,
+        namaProgram: l.disbursement?.proposal?.judulUsulan || '-',
+        tahap: 'Pencairan (Verifikasi Sekdes)',
+        jenis: 'sekdes',
+        alasan: l.pesanError,
+        status: 'Belum Diperbaiki' // as default status based on UI mockup
+      })),
+      ...interventionLogs.map(l => ({
+        id: `int_${l.id}`,
+        tanggal: l.createdAt,
+        namaProgram: l.disbursement?.proposal?.judulUsulan || '-',
+        tahap: 'Pencairan (Otorisasi Kades)',
+        jenis: 'sistem',
+        alasan: l.disbursement?.catatanRevisi || 'Penolakan Sistem/Intervensi',
+        status: 'Belum Diperbaiki'
+      }))
+    ].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+
+    res.json(serialize(combined));
+  } catch (error: any) {
+    console.error('Error fetching rejections:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // GET /disbursements/execution-queue
 router.get('/execution-queue', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -232,17 +283,73 @@ router.post('/:id/verify', authenticate, async (req: AuthRequest, res: Response)
   }
 });
 
+// GET /disbursements/verifications
+router.get('/verifications', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const sekdesId = req.user?.userId;
+    
+    // Disetujui
+    const verified = await prisma.disbursement.findMany({
+      where: { sekdesVerifierId: sekdesId, verifiedAt: { not: null } },
+      include: { proposal: { select: { judulUsulan: true } } }
+    });
+
+    // Revisi (since we can't filter by sekdesId directly in RejectionLog, we filter by jenisPenolakan 
+    // and assume it corresponds to the current Sekdes or just list all 'Verifikasi Sekdes' logs)
+    const rejections = await prisma.rejectionLog.findMany({
+      where: { jenisPenolakan: 'Verifikasi Sekdes' },
+      include: { disbursement: { include: { proposal: { select: { judulUsulan: true } } } } }
+    });
+
+    const combined = [
+      ...verified.map(v => ({
+        id: `v_${v.id}`,
+        tanggal: v.verifiedAt || new Date(),
+        namaProgram: v.proposal?.judulUsulan,
+        keputusan: 'Disetujui',
+        nominal: v.nominal
+      })),
+      ...rejections.map(r => ({
+        id: `r_${r.id}`,
+        tanggal: r.createdAt,
+        namaProgram: r.disbursement?.proposal?.judulUsulan,
+        keputusan: 'Revisi',
+        nominal: r.disbursement?.nominal || BigInt(0)
+      }))
+    ].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
+
+    res.json(serialize(combined));
+  } catch (error: any) {
+    console.error('Error fetching verifications:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // POST /disbursements/:id/return-revision
 router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
     const { catatan } = req.body;
+    const sekdesId = req.user?.userId;
+
+    if (!sekdesId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
 
     const updated = await prisma.disbursement.update({
       where: { id },
       data: {
         status: 'RETURNED_FOR_REVISION',
         catatanRevisi: catatan
+      }
+    });
+
+    await prisma.rejectionLog.create({
+      data: {
+        disbursementId: id,
+        jenisPenolakan: 'Verifikasi Sekdes',
+        pesanError: catatan
       }
     });
 

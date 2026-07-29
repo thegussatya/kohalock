@@ -56,11 +56,29 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
           select: {
             nama: true
           }
+        },
+        disbursements: {
+          where: {
+            status: {
+              notIn: ['REJECTED_SYSTEM', 'RETURNED_FOR_REVISION']
+            }
+          }
         }
-      }
+      },
+      orderBy: { createdAt: 'desc' }
     });
     
-    res.json(serialize(proposals));
+    // Hitung realisasi dan sisa pagu per proposal
+    const formattedProposals = proposals.map((p) => {
+      const terpakai = p.disbursements.reduce((acc, curr) => acc + curr.nominal, BigInt(0));
+      return {
+        ...p,
+        realisasi: terpakai,
+        sisaPagu: p.paguMaksimal - terpakai
+      };
+    });
+
+    res.json(serialize(formattedProposals));
   } catch (error: any) {
     console.error('Error fetching proposals:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
