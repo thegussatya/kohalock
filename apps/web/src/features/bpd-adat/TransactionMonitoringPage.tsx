@@ -5,6 +5,7 @@ import RoleLayout from '../../components/RoleLayout';
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import { BPD_ADAT_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
+import { X, MapPin, FileText } from 'lucide-react';
 
 type TransactionData = {
   id: string;
@@ -23,17 +24,20 @@ const COLUMNS: TableColumn[] = [
   { key: 'nominal', label: 'Nominal' },
   { key: 'status', label: 'Status Pengajuan' },
   { key: 'statusEksekusi', label: 'Status Eksekusi (Kaur Keuangan)' },
+  { key: 'aksi', label: 'Aksi' }
 ];
 
 export default function TransactionMonitoringPage() {
   const [data, setData] = useState<TransactionData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [comments, setComments] = useState([
-    { id: 1, sender: 'BPD (Anda)', role: 'BPD', content: 'Mohon tinjau kembali urgensi pengadaan aspal untuk Dusun 2, mengingat anggaran sebelumnya belum terserap penuh.', time: '10:30 WIB' },
-    { id: 2, sender: 'Ahmad Fauzi', role: 'Kades', content: 'Terima kasih atas masukannya. Pengadaan ini diperlukan segera karena ada event desa bulan depan, namun akan kami evaluasi ulang volumenya.', time: '11:15 WIB' }
-  ]);
+  // Modal & Detail states
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTx, setSelectedTx] = useState<TransactionData | null>(null);
+  const [txDetail, setTxDetail] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
   const [newReply, setNewReply] = useState('');
+  const [submittingReply, setSubmittingReply] = useState(false);
 
   const fetchTimeline = async () => {
     try {
@@ -61,13 +65,50 @@ export default function TransactionMonitoringPage() {
     fetchTimeline();
   }, []);
 
-  const handleReply = () => {
-    if (!newReply.trim()) return;
-    setComments([
-      ...comments,
-      { id: Date.now(), sender: 'BPD (Anda)', role: 'BPD', content: newReply, time: 'Baru saja' }
-    ]);
-    setNewReply('');
+  const fetchNotes = async (txId: string) => {
+    try {
+      const notesRes = await apiClient.get('/supervision-notes/history');
+      const txNotes = notesRes.data.filter((n: any) => n.disbursementId === txId);
+      // reverse because backend gives desc, and chat usually renders chronological
+      setComments(txNotes.reverse());
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+    }
+  };
+
+  const openDetailModal = async (row: TransactionData) => {
+    setSelectedTx(row);
+    setIsModalOpen(true);
+    setTxDetail(null);
+    setComments([]);
+
+    try {
+      const [res] = await Promise.all([
+        apiClient.get(`/ledger/timeline/${row.id}`),
+        fetchNotes(row.id)
+      ]);
+      setTxDetail(res.data);
+    } catch (error) {
+      toast.error('Gagal memuat detail transaksi');
+    }
+  };
+
+  const handleReply = async () => {
+    if (!newReply.trim() || !selectedTx) return;
+    try {
+      setSubmittingReply(true);
+      await apiClient.post('/supervision-notes', {
+        disbursementId: selectedTx.id,
+        catatan: newReply
+      });
+      toast.success('Catatan pengawasan berhasil ditambahkan');
+      setNewReply('');
+      await fetchNotes(selectedTx.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Gagal menambahkan catatan');
+    } finally {
+      setSubmittingReply(false);
+    }
   };
 
   const renderCell = (row: TransactionData, columnKey: string) => {
@@ -97,6 +138,16 @@ export default function TransactionMonitoringPage() {
         </span>
       );
     }
+    if (columnKey === 'aksi') {
+      return (
+        <button 
+          onClick={() => openDetailModal(row)}
+          className="text-blue-600 hover:text-blue-800 text-sm font-semibold transition-colors"
+        >
+          Lihat Detail
+        </button>
+      );
+    }
     return undefined;
   };
 
@@ -106,7 +157,7 @@ export default function TransactionMonitoringPage() {
       {/* Read-Only Notice */}
       <div className="mb-6 p-4 bg-slate-100 border-l-4 border-slate-500 rounded-r-lg shadow-sm max-w-2xl">
         <p className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-          <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
@@ -127,51 +178,92 @@ export default function TransactionMonitoringPage() {
         renderCell={renderCell}
       />
 
-      {/* Thread Komentar / Catatan Pengawasan */}
-      <div className="mt-8 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
-          <div>
-            <h3 className="font-bold text-slate-800">Catatan Pengawasan & Evaluasi</h3>
-            <p className="text-xs text-slate-500">Diskusi dan catatan terkait transaksi berjalan</p>
+      {/* Detail Modal */}
+      {isModalOpen && selectedTx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Detail Transaksi & Pengawasan</h3>
+                <p className="text-xs text-slate-500">{selectedTx.id}</p>
+              </div>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto flex-1 bg-slate-50/50">
+              {/* Detail Info */}
+              <div className="p-6 border-b border-slate-100 bg-white">
+                <h4 className="text-xl font-bold text-slate-900 mb-1">{selectedTx.namaProgram}</h4>
+                <p className="text-sm font-semibold text-slate-500 mb-4">{selectedTx.nominal} &bull; {selectedTx.dusun}</p>
+
+                {txDetail && (
+                  <div className="flex gap-4 mb-4">
+                    {txDetail.buktiGeotagUrl && (
+                      <a href={txDetail.buktiGeotagUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-200 transition-colors">
+                        <MapPin className="w-4 h-4" /> Foto Geotag
+                      </a>
+                    )}
+                    {txDetail.buktiPdfUrl && (
+                      <a href={txDetail.buktiPdfUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-semibold hover:bg-red-100 transition-colors">
+                        <FileText className="w-4 h-4" /> Berita Acara PDF
+                      </a>
+                    )}
+                  </div>
+                )}
+                {!txDetail && <p className="text-sm text-slate-400 animate-pulse">Memuat bukti...</p>}
+              </div>
+
+              {/* Thread Komentar / Catatan Pengawasan */}
+              <div className="px-6 py-4 flex flex-col gap-4">
+                {comments.length === 0 ? (
+                  <div className="text-center py-6 text-slate-400 text-sm">Belum ada catatan pengawasan.</div>
+                ) : (
+                  comments.map((msg: any) => {
+                    // Check if message is from BPD user by role
+                    const isBPD = msg.bpdUser?.role === 'BPD';
+                    return (
+                      <div key={msg.id} className={`flex flex-col max-w-[85%] ${!isBPD ? 'self-start mr-12' : 'self-end items-end ml-12'}`}>
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className="text-xs font-bold text-slate-700">{msg.bpdUser?.nama || 'Sistem'} ({msg.bpdUser?.role || 'User'})</span>
+                          <span className="text-[10px] text-slate-400">{new Date(msg.createdAt).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className={`px-4 py-3 rounded-2xl text-sm shadow-sm border ${
+                          isBPD 
+                            ? 'bg-blue-50 border-blue-200 text-blue-900 rounded-tr-sm' 
+                            : 'bg-white border-slate-200 text-slate-700 rounded-tl-sm'
+                        }`}>
+                          {msg.catatan}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-t border-slate-200 flex gap-3">
+              <input 
+                type="text" 
+                placeholder="Tambahkan catatan pengawasan untuk transaksi ini..." 
+                value={newReply}
+                onChange={(e) => setNewReply(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleReply()}
+                className="flex-1 border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-50"
+              />
+              <button 
+                onClick={handleReply}
+                disabled={submittingReply}
+                className="px-6 py-2 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-slate-800 transition-colors disabled:opacity-50"
+              >
+                {submittingReply ? 'Mengirim...' : 'Kirim Catatan'}
+              </button>
+            </div>
           </div>
         </div>
-        <div className="p-6 flex flex-col gap-4 bg-slate-50/50">
-          {comments.map((msg) => {
-            const isKades = msg.role === 'Kades';
-            return (
-              <div key={msg.id} className={`flex flex-col max-w-[85%] ${isKades ? 'self-start ml-12' : 'self-start'}`}>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="text-xs font-bold text-slate-700">{msg.sender}</span>
-                  <span className="text-[10px] text-slate-400">{msg.time}</span>
-                </div>
-                <div className={`px-4 py-3 rounded-2xl text-sm shadow-sm border ${
-                  isKades 
-                    ? 'bg-brand-50 border-brand-200 text-brand-900 rounded-tl-sm' 
-                    : 'bg-white border-slate-200 text-slate-700 rounded-tl-sm'
-                }`}>
-                  {msg.content}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="p-4 bg-white border-t border-slate-200 flex gap-3">
-          <input 
-            type="text" 
-            placeholder="Ketik balasan Anda..." 
-            value={newReply}
-            onChange={(e) => setNewReply(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleReply()}
-            className="flex-1 border border-slate-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-50"
-          />
-          <button 
-            onClick={handleReply}
-            className="px-6 py-2 bg-slate-900 text-white font-bold rounded-xl text-sm hover:bg-slate-800 transition-colors"
-          >
-            Kirim
-          </button>
-        </div>
-      </div>
+      )}
+
     </RoleLayout>
   );
 }
