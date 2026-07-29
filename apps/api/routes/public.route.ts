@@ -50,12 +50,19 @@ router.get('/summary', async (req: Request, res: Response) => {
       ? Math.round((totalRealisasiNumber / totalDanaNumber) * 100) 
       : 0;
 
+    const laporanDitindaklanjuti = await prisma.clarificationTicket.count({
+      where: {
+        status: 'SELESAI'
+      }
+    });
+
     res.json(serialize({
       totalDana,
       totalRealisasi,
       persentaseRealisasi,
       proyekAktif: aktifCount,
-      proyekSelesai: selesaiCount
+      proyekSelesai: selesaiCount,
+      laporanDitindaklanjuti
     }));
   } catch (error: any) {
     console.error('Public Summary Error:', error);

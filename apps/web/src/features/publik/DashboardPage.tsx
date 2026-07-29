@@ -85,20 +85,20 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <MetricCard
             title="Dana Desa Transparan On-Chain"
-            value="94%"
-            variant="success"
-            icon={<ShieldCheck className="w-5 h-5 text-green-600" />}
+            value="Belum Tersedia"
+            variant="default"
+            icon={<ShieldCheck className="w-5 h-5 text-slate-400" />}
           />
           <MetricCard
             title="Proyek Selesai Tahun Ini"
             value={data?.proyekSelesai?.toString() || '0'}
-            variant="default"
-            icon={<CheckCircle2 className="w-5 h-5 text-brand-600" />}
+            variant="success"
+            icon={<CheckCircle2 className="w-5 h-5 text-green-600" />}
           />
           <MetricCard
             title="Laporan Warga Ditindaklanjuti"
-            value="8"
-            variant="default"
+            value={data?.laporanDitindaklanjuti?.toString() || '0'}
+            variant="warning"
             icon={<MessageSquareCheck className="w-5 h-5 text-brand-600" />}
           />
         </div>
