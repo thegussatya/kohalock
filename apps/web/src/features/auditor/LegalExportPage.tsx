@@ -34,10 +34,13 @@ export default function LegalExportPage() {
       const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = url;
       a.download = 'raw_data_export.json';
+      document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Error exporting raw data:', error);
       alert('Gagal mengunduh raw data');
@@ -50,10 +53,13 @@ export default function LegalExportPage() {
       const res = await apiClient.post('/export/legal-report', { disbursementIds }, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
+      a.style.display = 'none';
       a.href = url;
       a.download = 'legal_report.pdf';
+      document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Error exporting legal report:', error);
       alert('Gagal mengunduh legal report');
