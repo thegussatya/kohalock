@@ -21,23 +21,18 @@ export default function WhistleblowerReportPage() {
     if (!kronologi.trim()) return;
 
     setLoading(true);
-    // 1. Generate ticketCode acak (WB-XXXXXX)
-    const randomDigits = Math.floor(100000 + Math.random() * 900000);
-    const ticketCode = `WB-${randomDigits}`;
-
-    // 2. Encrypt isi textarea
+    // 1. Encrypt isi textarea
     const encryptedPayload = encryptReport(kronologi, INSPEKTORAT_PUBLIC_KEY);
 
     try {
-      // 3. Kirim POST ke backend
-      await apiClient.post('/public/whistleblower', {
-        ticketCode,
+      // 2. Kirim POST ke backend
+      const res = await apiClient.post('/public/whistleblower', {
         encryptedPayload,
         attachmentUrls: []
       });
 
-      // 4. Update UI untuk menampilkan tiket dan mereset form
-      setNewTicket(ticketCode);
+      // 3. Update UI untuk menampilkan tiket (dari respon backend) dan mereset form
+      setNewTicket(res.data.ticketCode);
       setKronologi('');
       toast.success("Laporan terenkripsi berhasil dikirim");
     } catch (error) {
