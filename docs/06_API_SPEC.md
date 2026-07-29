@@ -4,7 +4,7 @@ Base URL: `/api/v1`. Auth: `Authorization: Bearer <JWT>`. Semua endpoint (kecual
 
 ## Auth
 - `POST /auth/login` *(public)* — email/nama + password → JWT
-- `POST /auth/refresh`
+- `POST /auth/refresh` *(Belum diimplementasi)*
 
 ## Proposal (Musrembang)
 - `POST /proposals` — `KAUR_TEKNIS`. Body: dusun, judul, kategori, volume, satuan, pagu, files (multipart). Alur: hash file → upload S3 → simpan DB → sign+kirim tx `registerProposal` → return `{ id, onChainTxHash, status: "pending_confirmation" }`
@@ -55,7 +55,7 @@ Base URL: `/api/v1`. Auth: `Authorization: Bearer <JWT>`. Semua endpoint (kecual
 
 ## Ledger Explorer (Auditor)
 - `GET /ledger/timeline?programId=&blockId=&dateFrom=&dateTo=`
-- `GET /ledger/blocks/:blockId/metadata` — timestamp presisi, signature, geolocation
+- `GET /ledger/blocks/:blockId/metadata` *(Belum diimplementasi)* — timestamp presisi, signature, geolocation
 
 ## Whistleblower
 - `POST /whistleblower/reports` *(public)* — body: `{ ticketCode (generated server-side), encryptedPayload, attachmentUrls }`. Server **tidak pernah** melihat plaintext.
