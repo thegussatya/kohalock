@@ -1,38 +1,53 @@
 import PageHeader from '../../components/PageHeader';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, FileSearch, Workflow, LockKeyhole, Download, HelpCircle } from 'lucide-react';
 import RoleLayout from '../../components/RoleLayout';
 import HashCheckerBadge from '../../components/HashCheckerBadge';
 import { AUDITOR_MENU } from './menu';
-
-
-
-const DUMMY_TRANSACTIONS = [
-  { id: 'TRX-TEST', description: 'File Teks "test"', hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08' },
-  { id: 'TRX-101', description: 'Berita Acara Posyandu Dusun 3', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
-  { id: 'TRX-102', description: 'Foto Geotagging Jalan Utama', hash: 'f2d81a260dea8a100dd92a4b85dbe367855b7f329973273e936c5b9679f1ec52' },
-];
+import apiClient from '../../lib/apiClient';
 
 export default function IntegrityCheckerPage() {
   const [selectedTrxId, setSelectedTrxId] = useState('');
   const [fileHash, setFileHash] = useState<string | null>(null);
+  const [onChainHash, setOnChainHash] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMatch, setIsMatch] = useState<boolean>(false);
+  const [disbursements, setDisbursements] = useState<any[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedTrx = DUMMY_TRANSACTIONS.find(t => t.id === selectedTrxId);
+  useEffect(() => {
+    apiClient.get('/disbursements?status=DISBURSED')
+      .then(res => setDisbursements(res.data))
+      .catch(console.error);
+  }, []);
 
-  const calculateHash = async (file: File) => {
+  const verifyFile = async (file: File) => {
+    if (!selectedTrxId) {
+      alert("Pilih transaksi terlebih dahulu!");
+      return;
+    }
+    
+    setFileName(file.name);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('disbursementId', selectedTrxId);
+
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      setFileHash(hashHex);
-      setFileName(file.name);
+      const res = await apiClient.post('/disbursements/verify-hash', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      const data = res.data;
+      setFileHash(data.hashUpload);
+      setOnChainHash(data.hashTersimpan);
+      setIsMatch(data.cocok);
     } catch (error) {
-      console.error('Error calculating hash:', error);
+      console.error('Error verifying hash:', error);
+      alert("Terjadi kesalahan saat memverifikasi file.");
     }
   };
 
@@ -51,14 +66,14 @@ export default function IntegrityCheckerPage() {
     
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const file = e.dataTransfer.files[0];
-      await calculateHash(file);
+      await verifyFile(file);
     }
   };
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      await calculateHash(file);
+      await verifyFile(file);
     }
   };
 
@@ -70,7 +85,6 @@ export default function IntegrityCheckerPage() {
     <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH">
       <div className="mb-8">
         <PageHeader title="Uji Alat Bukti (Integrity Checker)" description="Integrity Checker: Verifikasi keaslian dokumen digital atau foto lapangan dengan mencocokkan *Hash Cryptography* lokal melawan data yang tercatat permanen di Ledger Blockchain." />
-
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8 max-w-5xl">
@@ -86,18 +100,17 @@ export default function IntegrityCheckerPage() {
             onChange={(e) => {
               setSelectedTrxId(e.target.value);
               setFileHash(null);
+              setOnChainHash(null);
               setFileName(null);
+              setIsMatch(false);
             }}
             className="w-full md:w-1/2 p-3.5 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm bg-slate-50 transition-colors"
           >
             <option value="" disabled>-- Pilih Transaksi --</option>
-            {DUMMY_TRANSACTIONS.map(trx => (
-              <option key={trx.id} value={trx.id}>{trx.id} - {trx.description}</option>
+            {disbursements.map(trx => (
+              <option key={trx.id} value={trx.id}>{trx.proposal?.judulUsulan} (Rp {Number(trx.nominal).toLocaleString('id-ID')})</option>
             ))}
           </select>
-          <p className="text-xs text-slate-500 mt-2">
-            *Untuk menguji simulasi sukses (Cocok), pilih ID "TRX-TEST" dan unggah file teks (.txt) yang hanya berisi tulisan "test".
-          </p>
         </div>
       </div>
 
@@ -144,14 +157,14 @@ export default function IntegrityCheckerPage() {
           )}
         </div>
 
-        {fileHash && selectedTrx && (
+        {fileHash && onChainHash !== null && (
           <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-6 max-w-5xl text-white overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
             <h2 className="text-lg font-bold text-white mb-6 flex items-center justify-between gap-2">
               <span className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" /></svg>
                 3. Hasil Komparasi Integritas
               </span>
-              <HashCheckerBadge isValid={fileHash === selectedTrx.hash} />
+              <HashCheckerBadge isValid={isMatch} />
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
@@ -186,7 +199,7 @@ export default function IntegrityCheckerPage() {
                 <div className="space-y-1">
                   <span className="text-[10px] text-slate-500 font-bold block uppercase tracking-wider">Hash Segel Original</span>
                   <div className="font-mono text-sm break-all text-yellow-300 font-bold leading-relaxed bg-slate-900 p-3 rounded-lg border border-slate-700">
-                    {selectedTrx.hash}
+                    {onChainHash || 'Hash tidak ditemukan (kosong)'}
                   </div>
                 </div>
               </div>

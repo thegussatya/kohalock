@@ -1,7 +1,9 @@
 import PageHeader from '../../components/PageHeader';
-import { Download } from 'lucide-react';
+import { Download, FileJson, FileText } from 'lucide-react';
 import RoleLayout from '../../components/RoleLayout';
 import { AUDITOR_MENU } from './menu';
+import { useState, useEffect } from 'react';
+import apiClient from '../../lib/apiClient';
 
 const INTEGRATED_AUDIT_PACKAGE = [
   { id: 'pkg-1', label: 'Laporan Keuangan Resmi (BKU, Buku Bank, Buku Pajak, Laporan Realisasi)' },
@@ -12,8 +14,50 @@ const INTEGRATED_AUDIT_PACKAGE = [
 ];
 
 export default function LegalExportPage() {
-  const handleExport = () => {
-    alert('Berhasil memulai unduhan Paket Bukti Audit Terpadu (.zip) yang disegel digital.');
+  const [disbursementIds, setDisbursementIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiClient.get('/disbursements')
+      .then(res => {
+        const ids = res.data.map((d: any) => d.id);
+        setDisbursementIds(ids);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleExportRawData = async () => {
+    if (disbursementIds.length === 0) return alert('Tidak ada data transaksi untuk diekspor');
+    try {
+      const res = await apiClient.post('/export/raw-data', { disbursementIds });
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'raw_data_export.json';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting raw data:', error);
+      alert('Gagal mengunduh raw data');
+    }
+  };
+
+  const handleExportLegalReport = async () => {
+    if (disbursementIds.length === 0) return alert('Tidak ada data transaksi untuk diekspor');
+    try {
+      const res = await apiClient.post('/export/legal-report', { disbursementIds }, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'legal_report.pdf';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error exporting legal report:', error);
+      alert('Gagal mengunduh legal report');
+    }
   };
 
   return (
@@ -33,7 +77,7 @@ export default function LegalExportPage() {
             Isi Paket Bukti (Otomatis Terangkum)
           </h2>
           <span className="text-sm font-bold text-slate-500 bg-slate-200 px-3 py-1 rounded-full">
-            1 Paket Utuh
+            {loading ? 'Memuat...' : `${disbursementIds.length} Transaksi`}
           </span>
         </div>
 
@@ -58,11 +102,20 @@ export default function LegalExportPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 border-t border-slate-200 pt-6">
             <button
-              onClick={handleExport}
-              className="w-full px-6 py-4 bg-slate-900 text-white font-bold rounded-xl shadow-sm hover:bg-slate-800 transition-colors flex justify-center items-center gap-3 text-sm uppercase tracking-wider"
+              onClick={handleExportRawData}
+              disabled={loading || disbursementIds.length === 0}
+              className="flex-1 px-6 py-4 bg-slate-100 text-slate-800 font-bold rounded-xl shadow-sm hover:bg-slate-200 border border-slate-300 transition-colors flex justify-center items-center gap-3 text-sm tracking-wider disabled:opacity-50"
             >
-              <Download className="w-5 h-5" />
-              Unduh Paket Bukti Audit Terpadu (Sekali Klik)
+              <FileJson className="w-5 h-5 text-blue-600" />
+              Unduh Raw JSON
+            </button>
+            <button
+              onClick={handleExportLegalReport}
+              disabled={loading || disbursementIds.length === 0}
+              className="flex-1 px-6 py-4 bg-slate-900 text-white font-bold rounded-xl shadow-sm hover:bg-slate-800 transition-colors flex justify-center items-center gap-3 text-sm tracking-wider disabled:opacity-50"
+            >
+              <FileText className="w-5 h-5 text-red-500" />
+              Unduh Legal PDF (Tersegel)
             </button>
           </div>
         </div>

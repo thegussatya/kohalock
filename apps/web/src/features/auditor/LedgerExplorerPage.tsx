@@ -45,10 +45,22 @@ export default function LedgerExplorerPage() {
   const [detailData, setDetailData] = useState<DisbursementDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const fetchTimeline = async (search: string = '') => {
+  const [aktor, setAktor] = useState('');
+  const [nominalMin, setNominalMin] = useState('');
+  const [nominalMax, setNominalMax] = useState('');
+  const [hasIntervention, setHasIntervention] = useState(false);
+
+  const fetchTimeline = async (searchStr = '', aktorStr = '', minStr = '', maxStr = '', hasInt = false) => {
     try {
       setLoading(true);
-      const res = await apiClient.get(`/ledger/timeline${search ? `?search=${search}` : ''}`);
+      const params: any = {};
+      if (searchStr) params.search = searchStr;
+      if (aktorStr) params.aktor = aktorStr;
+      if (minStr) params.nominalMin = minStr;
+      if (maxStr) params.nominalMax = maxStr;
+      if (hasInt) params.hasIntervention = 'true';
+
+      const res = await apiClient.get('/ledger/timeline', { params });
       setData(res.data);
     } catch (error) {
       console.error('Error fetching ledger timeline:', error);
@@ -58,16 +70,12 @@ export default function LedgerExplorerPage() {
   };
 
   useEffect(() => {
-    // Initial fetch or when search query changes (debounced by user pressing enter or just relying on change, here let's just trigger on mount and on enter or button click if there was one. We will just use an effect that watches searchQuery? No, let's just trigger it manually via a button or timeout.)
-  }, []); // Let's use standard effect
-
-  useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchTimeline(searchQuery);
+      fetchTimeline(searchQuery, aktor, nominalMin, nominalMax, hasIntervention);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
+  }, [searchQuery, aktor, nominalMin, nominalMax, hasIntervention]);
 
   const handleOpenDetail = async (id: string) => {
     setSelectedId(id);
@@ -125,7 +133,7 @@ export default function LedgerExplorerPage() {
       {/* Filter Section */}
       <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 mb-8 shadow-sm">
         <h3 className="text-sm font-bold text-slate-800 mb-4">Filter Penelusuran Blockchain</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="flex flex-col">
             <label htmlFor="search" className="text-xs font-semibold text-slate-600 mb-1.5">
               Nama Program
@@ -142,39 +150,55 @@ export default function LedgerExplorerPage() {
               <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
             </div>
           </div>
-          <div className="flex flex-col opacity-50">
-            <label htmlFor="idBlok" className="text-xs font-semibold text-slate-600 mb-1.5">
-              ID Blok / Hash (Soon)
+          <div className="flex flex-col">
+            <label htmlFor="aktor" className="text-xs font-semibold text-slate-600 mb-1.5">
+              Aktor (Kaur/Sekdes/Kades)
             </label>
             <input
               type="text"
-              id="idBlok"
-              disabled
-              placeholder="0x..."
-              className="border border-slate-300 bg-slate-100 rounded-md px-3 py-2 text-sm font-mono"
+              id="aktor"
+              value={aktor}
+              onChange={(e) => setAktor(e.target.value)}
+              placeholder="Nama aktor..."
+              className="border border-slate-300 bg-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div className="flex flex-col opacity-50">
-            <label htmlFor="startDate" className="text-xs font-semibold text-slate-600 mb-1.5">
-              Dari Tanggal (Soon)
+          <div className="flex flex-col">
+            <label htmlFor="nominalMin" className="text-xs font-semibold text-slate-600 mb-1.5">
+              Nominal Min (Rp)
             </label>
             <input
-              type="date"
-              id="startDate"
-              disabled
-              className="border border-slate-300 bg-slate-100 rounded-md px-3 py-2 text-sm text-slate-700"
+              type="number"
+              id="nominalMin"
+              value={nominalMin}
+              onChange={(e) => setNominalMin(e.target.value)}
+              placeholder="0"
+              className="border border-slate-300 bg-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          <div className="flex flex-col opacity-50">
-            <label htmlFor="endDate" className="text-xs font-semibold text-slate-600 mb-1.5">
-              Sampai Tanggal (Soon)
+          <div className="flex flex-col">
+            <label htmlFor="nominalMax" className="text-xs font-semibold text-slate-600 mb-1.5">
+              Nominal Max (Rp)
             </label>
             <input
-              type="date"
-              id="endDate"
-              disabled
-              className="border border-slate-300 bg-slate-100 rounded-md px-3 py-2 text-sm text-slate-700"
+              type="number"
+              id="nominalMax"
+              value={nominalMax}
+              onChange={(e) => setNominalMax(e.target.value)}
+              placeholder="100000000"
+              className="border border-slate-300 bg-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+          <div className="flex flex-col justify-end pb-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasIntervention}
+                onChange={(e) => setHasIntervention(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm font-semibold text-slate-700">Hanya Flag Merah</span>
+            </label>
           </div>
         </div>
       </div>
