@@ -1,12 +1,11 @@
 import PageHeader from '../../components/PageHeader';
-import { useState } from 'react';
-import { LayoutDashboard, Eye, Scale, Archive, Settings, HelpCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 import RoleLayout from '../../components/RoleLayout';
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import Badge from '../../components/Badge';
 import { BPD_ADAT_MENU } from './menu';
-
-
+import apiClient from '../../lib/apiClient';
 
 type BpdHistoryData = {
   id: string;
@@ -14,27 +13,6 @@ type BpdHistoryData = {
   program: string;
   isiCatatan: string;
 };
-
-const BPD_HISTORY: BpdHistoryData[] = [
-  { 
-    id: '1', 
-    tanggal: '2023-10-12', 
-    program: 'Pembangunan Posyandu Dusun 3', 
-    isiCatatan: 'Terdapat sedikit selisih pada RAB dan realisasi. Telah dikonfirmasi bahwa hal tersebut akibat kenaikan harga semen di pasar secara mendadak.' 
-  },
-  { 
-    id: '2', 
-    tanggal: '2023-09-28', 
-    program: 'Pengaspalan Jalan Utama', 
-    isiCatatan: 'Kualitas aspal sangat baik dan pengerjaan tepat waktu. Tidak ada indikasi pelanggaran administratif maupun material.' 
-  },
-  { 
-    id: '3', 
-    tanggal: '2023-09-15', 
-    program: 'Pengadaan Traktor BUMDes', 
-    isiCatatan: 'Pengadaan sudah selesai, namun garansi alat berat belum diserahkan ke Sekretariat. Menunggu proses penyusulan.' 
-  },
-];
 
 const COLUMNS: TableColumn[] = [
   { key: 'tanggal', label: 'Tanggal' },
@@ -49,35 +27,54 @@ type AdatHistoryData = {
   hasilPutusan: string;
 };
 
-const ADAT_HISTORY: AdatHistoryData[] = [
-  { 
-    id: 'AD-01', 
-    kasus: 'Sengketa Tanah Bpk. Ahmad & Ibu Siti', 
-    tanggalSelesai: '2023-08-20', 
-    hasilPutusan: 'Batas tanah dikembalikan ke patok awal tahun 2005 sesuai musyawarah mufakat di Balai Adat desa.' 
-  },
-  { 
-    id: 'AD-02', 
-    kasus: 'Konflik Taruna Pemuda Dusun 1 dan 2', 
-    tanggalSelesai: '2023-07-15', 
-    hasilPutusan: 'Kedua kelompok setuju berdamai secara kekeluargaan dan mengadakan acara syukuran bersama sebagai bentuk rekonsiliasi.' 
-  },
-  { 
-    id: 'AD-03', 
-    kasus: 'Perselisihan Panitia Lomba Desa', 
-    tanggalSelesai: '2023-06-10', 
-    hasilPutusan: 'Panitia bersedia merombak struktur secara transparan setelah dimediasi oleh Tetua Adat Desa.' 
-  },
-];
-
 type TabType = 'bpd' | 'adat';
 
 export default function SupervisionArchivePage() {
   const [activeTab, setActiveTab] = useState<TabType>('bpd');
   const [searchAdat, setSearchAdat] = useState('');
+  
+  const [bpdHistory, setBpdHistory] = useState<BpdHistoryData[]>([]);
+  const [adatHistory, setAdatHistory] = useState<AdatHistoryData[]>([]);
 
-  // Sederhana active filter untuk list adat
-  const filteredAdatHistory = ADAT_HISTORY.filter(
+  useEffect(() => {
+    // Fetch BPD History
+    apiClient.get('/supervision-notes/history')
+      .then(res => {
+        const mapped = res.data.map((item: any) => ({
+          id: item.id,
+          tanggal: item.createdAt.split('T')[0],
+          program: item.disbursement?.proposal?.judulUsulan || 'Tanpa Program',
+          isiCatatan: item.catatan
+        }));
+        setBpdHistory(mapped);
+      })
+      .catch(console.error);
+
+    // Fetch Adat History
+    apiClient.get('/adat-cases?status=SELESAI')
+      .then(res => {
+        const mapped = res.data.map((item: any) => {
+          let parties = '';
+          try {
+            if (Array.isArray(item.pihakTerlibat)) parties = item.pihakTerlibat.join(' vs ');
+            else if (typeof item.pihakTerlibat === 'string') parties = JSON.parse(item.pihakTerlibat).join(' vs ');
+          } catch (e) {
+            parties = 'Pihak Terkait';
+          }
+          
+          return {
+            id: item.id,
+            kasus: item.kategori + (parties ? ` (${parties})` : ''),
+            tanggalSelesai: item.createdAt.split('T')[0], // Since there's no finishedDate, fallback to createdAt
+            hasilPutusan: item.keputusanResolusi || 'Telah diselesaikan secara kekeluargaan.'
+          };
+        });
+        setAdatHistory(mapped);
+      })
+      .catch(console.error);
+  }, []);
+
+  const filteredAdatHistory = adatHistory.filter(
     (item) => 
       item.kasus.toLowerCase().includes(searchAdat.toLowerCase()) || 
       item.hasilPutusan.toLowerCase().includes(searchAdat.toLowerCase())
@@ -119,7 +116,7 @@ export default function SupervisionArchivePage() {
         <div className="animate-in fade-in duration-300">
           <DataTable
             columns={COLUMNS}
-            data={BPD_HISTORY}
+            data={bpdHistory}
           />
         </div>
       )}

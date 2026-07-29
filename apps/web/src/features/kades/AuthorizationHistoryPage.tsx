@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import { LayoutDashboard, BadgeCheck, History, ShieldAlert, QrCode, Settings, HelpCircle, Wallet, BarChart3 } from 'lucide-react';
 import { KADES_MENU } from './menu';
-
-
+import apiClient from '../../lib/apiClient';
 
 type AuthHistoryData = {
   id: string;
@@ -16,17 +15,6 @@ type AuthHistoryData = {
   nominal: number;
 };
 
-const DUMMY_HISTORY: AuthHistoryData[] = [
-  { id: '1', tanggal: '2023-10-15', namaProgram: 'Pembangunan Posyandu', dusun: 'Dusun 1', kategori: 'Kesehatan', nominal: 150000000 },
-  { id: '2', tanggal: '2023-10-14', namaProgram: 'Pengaspalan Jalan Utama', dusun: 'Dusun 3', kategori: 'Infrastruktur', nominal: 300000000 },
-  { id: '3', tanggal: '2023-10-12', namaProgram: 'Bantuan Bibit Jagung', dusun: 'Dusun 2', kategori: 'Pemberdayaan', nominal: 25000000 },
-  { id: '4', tanggal: '2023-10-10', namaProgram: 'Beasiswa Pendidikan', dusun: 'Dusun 4', kategori: 'Pendidikan', nominal: 50000000 },
-  { id: '5', tanggal: '2023-10-08', namaProgram: 'Pelatihan Kader PKK', dusun: 'Dusun 1', kategori: 'Pemberdayaan', nominal: 15000000 },
-  { id: '6', tanggal: '2023-10-05', namaProgram: 'Pengadaan Lampu Jalan', dusun: 'Dusun 3', kategori: 'Infrastruktur', nominal: 75000000 },
-  { id: '7', tanggal: '2023-10-02', namaProgram: 'Pembangunan Gapura Desa', dusun: 'Dusun 2', kategori: 'Infrastruktur', nominal: 30000000 },
-  { id: '8', tanggal: '2023-10-01', namaProgram: 'Dana Siaga Bencana', dusun: 'Dusun 4', kategori: 'Darurat', nominal: 20000000 },
-];
-
 const COLUMNS: TableColumn[] = [
   { key: 'tanggal', label: 'Tanggal' },
   { key: 'namaProgram', label: 'Nama Program' },
@@ -35,18 +23,38 @@ const COLUMNS: TableColumn[] = [
 ];
 
 export default function AuthorizationHistoryPage() {
+  const [historyData, setHistoryData] = useState<AuthHistoryData[]>([]);
   const [filterDusun, setFilterDusun] = useState('');
   const [filterKategori, setFilterKategori] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const filteredHistory = DUMMY_HISTORY.filter(h => {
-    if (filterDusun && h.dusun !== filterDusun) return false;
-    if (filterKategori && h.kategori !== filterKategori) return false;
-    if (dateFrom && new Date(h.tanggal) < new Date(dateFrom)) return false;
-    if (dateTo && new Date(h.tanggal) > new Date(dateTo)) return false;
-    return true;
-  });
+  useEffect(() => {
+    apiClient.get('/disbursements/authorizations')
+      .then(res => {
+        const mapped = res.data.map((item: any) => ({
+          ...item,
+          tanggalRaw: item.tanggal,
+          tanggal: new Date(item.tanggal).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }),
+        }));
+        setHistoryData(mapped);
+      })
+      .catch(console.error);
+  }, []);
+
+  const filteredHistory = useMemo(() => {
+    return historyData.filter((h: any) => {
+      if (filterDusun && h.dusun !== filterDusun) return false;
+      if (filterKategori && h.kategori !== filterKategori) return false;
+      if (dateFrom && new Date(h.tanggalRaw) < new Date(dateFrom)) return false;
+      if (dateTo && new Date(h.tanggalRaw) > new Date(dateTo)) return false;
+      return true;
+    });
+  }, [historyData, filterDusun, filterKategori, dateFrom, dateTo]);
 
   const totalNominal = filteredHistory.reduce((sum, item) => sum + item.nominal, 0);
 

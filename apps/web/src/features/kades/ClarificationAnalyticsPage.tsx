@@ -1,22 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
 import MetricCard from '../../components/MetricCard';
 import { LayoutDashboard, BadgeCheck, History, ShieldAlert, QrCode, BarChart3, Settings, HelpCircle, Clock } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { KADES_MENU } from './menu';
-
-
-
-const ANALYTICS_DATA = [
-  { label: 'Progres Proyek', value: 45 },
-  { label: 'Anggaran', value: 30 },
-  { label: 'Jadwal Kerja', value: 25 },
-  { label: 'Kualitas Material', value: 15 },
-  { label: 'Lainnya', value: 8 },
-];
+import apiClient from '../../lib/apiClient';
 
 export default function ClarificationAnalyticsPage() {
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [avgWaitTime, setAvgWaitTime] = useState('-');
+
+  useEffect(() => {
+    apiClient.get('/dashboard/kades/clarifications')
+      .then(res => {
+        setAnalyticsData(res.data.chartData);
+        setAvgWaitTime(res.data.avgWaitTime);
+      })
+      .catch(console.error);
+  }, []);
   return (
     <RoleLayout menuItems={KADES_MENU} userName="Ahmad Fauzi" userRole="Kepala Desa" settingsPath="/kades/pengaturan">
       <PageHeader 
@@ -28,7 +30,7 @@ export default function ClarificationAnalyticsPage() {
         <div className="lg:col-span-1">
           <MetricCard
             title="Rata-rata Waktu Respon"
-            value="4 Jam"
+            value={avgWaitTime}
             variant="default"
             icon={<Clock className="w-5 h-5 text-brand-600" />}
           />
@@ -40,7 +42,7 @@ export default function ClarificationAnalyticsPage() {
             <div className="flex-1 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={ANALYTICS_DATA}
+                  data={analyticsData}
                   margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
                 >
                   <XAxis

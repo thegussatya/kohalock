@@ -5,15 +5,21 @@ import { Download, FileBarChart, Scale } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { BPD_ADAT_MENU } from './menu';
-
-const QUARTERLY_DATA = [
-  { name: 'Kuartal 1', catatan: 24 },
-  { name: 'Kuartal 2', catatan: 35 },
-  { name: 'Kuartal 3', catatan: 18 },
-  { name: 'Kuartal 4', catatan: 42 },
-];
+import { useState, useEffect } from 'react';
+import apiClient from '../../lib/apiClient';
 
 export default function AnnualReportPage() {
+  const [data, setData] = useState({
+    completedAdatCases: 0,
+    quarterlyData: []
+  });
+
+  useEffect(() => {
+    apiClient.get('/dashboard/bpd-adat/annual-report')
+      .then(res => setData(res.data))
+      .catch(console.error);
+  }, []);
+
   const handleExport = () => {
     toast.success('Laporan sedang disiapkan untuk diunduh');
   };
@@ -39,7 +45,7 @@ export default function AnnualReportPage() {
         <div className="lg:col-span-1">
           <MetricCard
             title="Kasus Adat Terselesaikan Tahun Ini"
-            value="9"
+            value={String(data.completedAdatCases)}
             variant="success"
             icon={<Scale className="w-5 h-5 text-green-600" />}
             description="Mediasi dan sidang adat yang telah mencapai mufakat."
@@ -55,7 +61,7 @@ export default function AnnualReportPage() {
           
           <div className="w-full h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={QUARTERLY_DATA} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={data.quarterlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -65,7 +71,7 @@ export default function AnnualReportPage() {
                   formatter={(value: number) => [value, 'Catatan']}
                 />
                 <Bar dataKey="catatan" radius={[4, 4, 0, 0]}>
-                  {QUARTERLY_DATA.map((entry, index) => (
+                  {data.quarterlyData.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={index === 3 ? '#2563eb' : '#93c5fd'} />
                   ))}
                 </Bar>

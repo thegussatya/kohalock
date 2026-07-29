@@ -3,31 +3,18 @@ import RoleLayout from '../../components/RoleLayout';
 import { FileText } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { AUDITOR_MENU } from './menu';
-
-const TEMPLATES = [
-  {
-    id: 1,
-    title: 'Berita Acara Pemeriksaan (BAP)',
-    description: 'Format standar untuk mencatat hasil interogasi tertulis.',
-  },
-  {
-    id: 2,
-    title: 'Surat Panggilan Klarifikasi',
-    description: 'Dokumen pemanggilan pihak terkait untuk memberikan keterangan.',
-  },
-  {
-    id: 3,
-    title: 'Laporan Hasil Audit Investigatif',
-    description: 'Template komprehensif untuk merangkum temuan audit akhir.',
-  },
-  {
-    id: 4,
-    title: 'Surat Rekomendasi Tindak Lanjut',
-    description: 'Dokumen pengantar saran perbaikan berdasarkan temuan audit.',
-  },
-];
+import { useState, useEffect } from 'react';
+import apiClient from '../../lib/apiClient';
 
 export default function ReportTemplatesPage() {
+  const [templates, setTemplates] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiClient.get('/dashboard/auditor/templates')
+      .then(res => setTemplates(res.data))
+      .catch(console.error);
+  }, []);
+
   const handleUseTemplate = () => {
     toast.success('Template siap diisi');
   };
@@ -40,7 +27,7 @@ export default function ReportTemplatesPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-        {TEMPLATES.map((item) => (
+        {templates.map((item) => (
           <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-slate-100 p-3 rounded-xl">

@@ -5,6 +5,7 @@ import DataTable, { type TableColumn } from '../../components/DataTable';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import { toast } from 'react-hot-toast';
 import { Search, Eye, X, ShieldCheck, Lock } from 'lucide-react';
+import apiClient from '../../lib/apiClient';
 
 const COLUMNS: TableColumn[] = [
   { key: 'bulan', label: 'Bulan' },
@@ -13,27 +14,46 @@ const COLUMNS: TableColumn[] = [
   { key: 'aksi', label: 'Aksi' },
 ];
 
-const DUMMY_DATA = [
-  { id: 1, bulan: 'September 2023', tanggalKunci: '05 Okt 2023 09:12', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', penerimaan: 'Rp 140.000.000', pengeluaran: 'Rp 135.000.000' },
-  { id: 2, bulan: 'Agustus 2023', tanggalKunci: '03 Sep 2023 10:45', hash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', penerimaan: 'Rp 85.000.000', pengeluaran: 'Rp 80.000.000' },
-  { id: 3, bulan: 'Juli 2023', tanggalKunci: '02 Ags 2023 08:30', hash: 'b109f3bbbc244eb82441917ed06d618b9008dd09b3befd1b5e07394c706a8bb9', penerimaan: 'Rp 50.000.000', pengeluaran: 'Rp 45.000.000' },
-  { id: 4, bulan: 'Juni 2023', tanggalKunci: '05 Jul 2023 14:20', hash: 'ffc636f29fbca17855dbb5c2a05cfba943a4e9b720b080516fc463e26466f81a', penerimaan: 'Rp 130.000.000', pengeluaran: 'Rp 135.000.000' },
-  { id: 5, bulan: 'Mei 2023', tanggalKunci: '04 Jun 2023 11:15', hash: '9b3d0c27303f8339c3683a48e7ed3000ccb3b137f88cb0fa73b5eb22be58e5a3', penerimaan: 'Rp 160.000.000', pengeluaran: 'Rp 150.000.000' },
-];
-
 export default function LockedArchivePage() {
+  const [data, setData] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRow, setSelectedRow] = useState<typeof DUMMY_DATA[0] | null>(null);
+  const [selectedRow, setSelectedRow] = useState<any | null>(null);
+
+  const fetchArchive = () => {
+    apiClient.get('/monthly-closing/archive')
+      .then(res => {
+        const monthNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const mapped = res.data.map((item: any) => ({
+          id: item.id,
+          bulanRaw: item.bulan,
+          tahun: item.tahun,
+          bulan: `${monthNames[item.bulan]} ${item.tahun}`,
+          tanggalKunci: new Date(item.ditutupPada).toLocaleString('id-ID', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          }),
+          hash: item.hashKunci,
+          penerimaan: `Rp ${Number(item.penerimaan).toLocaleString('id-ID')}`,
+          pengeluaran: `Rp ${Number(item.pengeluaran).toLocaleString('id-ID')}`,
+          rawId: item.id, // Keep the actual closing ID for verify if needed
+        }));
+        setData(mapped);
+      })
+      .catch(console.error);
+  };
+
+  React.useEffect(() => {
+    fetchArchive();
+  }, []);
 
   const filteredData = useMemo(() => {
-    if (!searchTerm) return DUMMY_DATA;
-    return DUMMY_DATA.filter((item) => 
+    if (!searchTerm) return data;
+    return data.filter((item) => 
       item.bulan.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.tanggalKunci.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [data, searchTerm]);
 
-  const renderCell = (row: typeof DUMMY_DATA[0], columnKey: string) => {
+  const renderCell = (row: any, columnKey: string) => {
     switch (columnKey) {
       case 'bulan':
         return <span className="font-bold text-slate-900 text-sm">{row.bulan}</span>;
@@ -152,7 +172,20 @@ export default function LockedArchivePage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => toast.success("Hash cocok, data belum berubah sejak dikunci")}
+                  onClick={() => {
+                    toast.loading('Memverifikasi hash...', { id: 'verify' });
+                    apiClient.get(`/monthly-closing/${selectedRow.rawId}/verify`)
+                      .then(res => {
+                        if (res.data.match) {
+                          toast.success('Hash cocok, data belum berubah sejak dikunci', { id: 'verify' });
+                        } else {
+                          toast.error('Hash TIDAK cocok! Data kemungkinan telah dimanipulasi', { id: 'verify' });
+                        }
+                      })
+                      .catch(() => {
+                        toast.error('Gagal memverifikasi hash', { id: 'verify' });
+                      });
+                  }}
                   className="flex-1 px-4 py-3 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors font-bold shadow-sm flex items-center justify-center gap-2"
                 >
                   <ShieldCheck className="w-5 h-5" /> Verifikasi Ulang Hash

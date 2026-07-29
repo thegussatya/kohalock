@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RoleLayout from '../../components/RoleLayout';
 import PageHeader from '../../components/PageHeader';
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import { toast } from 'react-hot-toast';
 import { Plus, X } from 'lucide-react';
+import apiClient from '../../lib/apiClient';
 
 const COLUMNS: TableColumn[] = [
   { key: 'tanggal', label: 'Tanggal' },
@@ -13,18 +14,37 @@ const COLUMNS: TableColumn[] = [
   { key: 'nilai', label: 'Nilai Koreksi' },
 ];
 
-const DUMMY_DATA = [
-  { id: 1, tanggal: '05 Okt 2023', idAsal: 'TRX-101', alasan: 'Kelebihan catat nominal pembelian', nilai: '-Rp 5.000.000' },
-  { id: 2, tanggal: '12 Okt 2023', idAsal: 'TRX-095', alasan: 'Kekurangan catat pajak pungutan', nilai: '+Rp 1.500.000' },
-];
-
 export default function CorrectionTransactionPage() {
+  const [data, setData] = useState<any[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedTx, setSelectedTx] = useState('');
   const [reason, setReason] = useState('');
   const [amount, setAmount] = useState('');
 
-  const renderCell = (row: typeof DUMMY_DATA[0], columnKey: string) => {
+  const fetchCorrections = () => {
+    apiClient.get('/corrections')
+      .then(res => {
+        const mapped = res.data.map((item: any) => ({
+          ...item,
+          tanggal: new Date(item.createdAt).toLocaleDateString('id-ID', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          }),
+          idAsal: item.transaksiAsalId,
+          nilaiRaw: BigInt(item.nilaiKoreksi),
+          nilai: (BigInt(item.nilaiKoreksi) > 0n ? '+' : '') + `Rp ${Math.abs(Number(item.nilaiKoreksi)).toLocaleString('id-ID')}`
+        }));
+        setData(mapped);
+      })
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchCorrections();
+  }, []);
+
+  const renderCell = (row: any, columnKey: string) => {
     switch (columnKey) {
       case 'tanggal':
         return <span className="text-slate-600 text-sm">{row.tanggal}</span>;
@@ -33,7 +53,7 @@ export default function CorrectionTransactionPage() {
       case 'alasan':
         return <span className="text-slate-900 text-sm">{row.alasan}</span>;
       case 'nilai':
-        const isNegative = row.nilai.startsWith('-');
+        const isNegative = String(row.nilai).startsWith('-');
         return <span className={`text-sm font-bold ${isNegative ? 'text-red-600' : 'text-green-600'}`}>{row.nilai}</span>;
       default:
         return (row as any)[columnKey];
@@ -44,11 +64,27 @@ export default function CorrectionTransactionPage() {
     e.preventDefault();
     if (!selectedTx || !amount || !reason) return;
     
-    toast.success(`Transaksi koreksi berhasil dicatat, merujuk ke transaksi asal ${selectedTx}`);
-    setShowModal(false);
-    setSelectedTx('');
-    setReason('');
-    setAmount('');
+    // Parse amount correctly stripping dots
+    const cleanAmount = amount.replace(/\./g, '');
+    if (isNaN(Number(cleanAmount)) || Number(cleanAmount) === 0) {
+      toast.error('Nilai koreksi tidak valid');
+      return;
+    }
+
+    apiClient.post('/corrections', {
+      transaksiAsalId: selectedTx,
+      alasan: reason,
+      nilaiKoreksi: cleanAmount
+    }).then(() => {
+      toast.success(`Transaksi koreksi berhasil dicatat, merujuk ke transaksi asal ${selectedTx}`);
+      setShowModal(false);
+      setSelectedTx('');
+      setReason('');
+      setAmount('');
+      fetchCorrections();
+    }).catch(err => {
+      toast.error(err.response?.data?.error || 'Gagal menyimpan transaksi koreksi');
+    });
   };
 
   const isNegativeInput = amount.startsWith('-');
@@ -83,7 +119,7 @@ export default function CorrectionTransactionPage() {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <DataTable
           columns={COLUMNS}
-          data={DUMMY_DATA}
+          data={data}
           renderCell={renderCell}
         />
       </div>

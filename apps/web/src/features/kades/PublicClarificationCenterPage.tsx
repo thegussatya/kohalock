@@ -1,25 +1,32 @@
 import PageHeader from '../../components/PageHeader';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LayoutDashboard, BadgeCheck, ShieldAlert, QrCode, Settings, HelpCircle, History, BarChart3 } from 'lucide-react';
 import RoleLayout from '../../components/RoleLayout';
 import { KADES_MENU } from './menu';
-
-
-
-const DUMMY_PROJECTS = [
-  { id: 'PRJ-101', name: 'Pembangunan Posyandu Dusun 3', budget: 'Rp 45.000.000', status: 'Sedang Berjalan' },
-  { id: 'PRJ-102', name: 'Pengaspalan Jalan Utama (RT 01 - 04)', budget: 'Rp 60.000.000', status: 'Selesai' },
-  { id: 'PRJ-103', name: 'Bantuan Bibit Jagung Unggul', budget: 'Rp 25.000.000', status: 'Selesai' },
-  { id: 'PRJ-104', name: 'Perbaikan Saluran Irigasi Tersier', budget: 'Rp 30.000.000', status: 'Sedang Berjalan' },
-  { id: 'PRJ-105', name: 'Pengadaan Lampu Jalan Tenaga Surya', budget: 'Rp 15.000.000', status: 'Persiapan' },
-];
+import apiClient from '../../lib/apiClient';
 
 export default function PublicClarificationCenterPage() {
+  const [projects, setProjects] = useState<any[]>([]);
   const [search, setSearch] = useState('');
-  const [selectedProject, setSelectedProject] = useState<typeof DUMMY_PROJECTS[0] | null>(null);
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const filteredProjects = DUMMY_PROJECTS.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    apiClient.get('/public/projects')
+      .then(res => {
+        const mapped = res.data.map((item: any) => ({
+          id: item.id, // For display we might want a shorter ID like PRJ-101 but let's just use first 8 chars
+          displayId: `PRJ-${item.id.substring(item.id.length - 4).toUpperCase()}`,
+          name: item.judulUsulan,
+          budget: `Rp ${Number(item.paguMaksimal).toLocaleString('id-ID')}`,
+          status: item.status
+        }));
+        setProjects(mapped);
+      })
+      .catch(console.error);
+  }, []);
+
+  const filteredProjects = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
   const handleCopy = (id: string) => {
     navigator.clipboard.writeText(`https://kohalock.id/proyek/${id}`);
@@ -65,7 +72,7 @@ export default function PublicClarificationCenterPage() {
               >
                 <div>
                   <div className="flex justify-between items-start mb-3">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{project.id}</span>
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{project.displayId}</span>
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 mb-2 leading-tight group-hover:text-blue-600 transition-colors">
                     {project.name}

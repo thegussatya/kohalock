@@ -325,6 +325,33 @@ router.get('/verifications', authenticate, async (req: AuthRequest, res: Respons
   }
 });
 
+// GET /disbursements/authorizations
+router.get('/authorizations', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const kadesId = req.user?.userId;
+    
+    const authorized = await prisma.disbursement.findMany({
+      where: { kadesApproverId: kadesId },
+      include: { proposal: { select: { judulUsulan: true, dusun: true, kategori: true } } },
+      orderBy: { authorizedAt: 'desc' }
+    });
+
+    const mapped = authorized.map(a => ({
+      id: a.id,
+      tanggal: a.authorizedAt || new Date(),
+      namaProgram: a.proposal?.judulUsulan,
+      dusun: a.proposal?.dusun,
+      kategori: a.proposal?.kategori,
+      nominal: Number(a.nominal)
+    }));
+
+    res.json(serialize(mapped));
+  } catch (error: any) {
+    console.error('Error fetching authorizations:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // POST /disbursements/:id/return-revision
 router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
