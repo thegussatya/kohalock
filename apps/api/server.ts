@@ -18,6 +18,8 @@ import publicRouter from './routes/public.route';
 import correctionRouter from './routes/correction.route';
 import reportRouter from './routes/report.route';
 import exportRouter from './routes/export.route';
+import adatRouter from './routes/adat.route';
+import supervisionRouter from './routes/supervision.route';
 
 const app = express();
 app.use(cors());
@@ -39,6 +41,8 @@ app.use('/api/tax-book', taxBookRouter);
 app.use('/api/corrections', correctionRouter);
 app.use('/api/reports', reportRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/adat-cases', adatRouter);
+app.use('/api/supervision-notes', supervisionRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'KohaLock API jalan' });

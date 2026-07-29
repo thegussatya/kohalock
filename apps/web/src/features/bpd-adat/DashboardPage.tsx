@@ -2,7 +2,6 @@ import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Eye, Scale, Archive, Settings, HelpCircle } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
 import { BPD_ADAT_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
@@ -13,7 +12,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiClient.get('/dashboard/bpd')
+    apiClient.get('/dashboard/bpd-adat')
       .then(res => {
         setData(res.data);
         setLoading(false);
@@ -28,12 +27,13 @@ export default function DashboardPage() {
 
   const performanceRate = data?.performanceRate || "-";
   const redFlags = data?.redFlags?.toString() || "0";
+  const flags = data?.flags || [];
+  const timeline = data?.timeline || [];
 
   return (
     <RoleLayout menuItems={BPD_ADAT_MENU} userName="Bapak RT/Adat" userRole="BPD / Tokoh Adat" settingsPath="/bpd-adat/pengaturan">
       <div className="mb-8">
         <PageHeader title="Dashboard BPD & Tokoh Adat" description="Dashboard Bersama: Pusat komando pengawasan terpadu. Pantau realisasi anggaran, deteksi anomali keamanan sistem, dan telusuri jejak resolusi kearifan lokal." />
-
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-8">
@@ -64,25 +64,22 @@ export default function DashboardPage() {
           </h2>
           
           <div className="flex flex-col gap-4">
-            <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex gap-4 items-start">
-              <div className="mt-0.5">
-                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold">!</span>
+            {flags.length > 0 ? flags.map((flag: any) => (
+              <div key={flag.id} className={`p-4 border rounded-xl flex gap-4 items-start ${flag.type === 'danger' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'}`}>
+                <div className="mt-0.5">
+                  <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold ${flag.type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-600'}`}>
+                    {flag.type === 'danger' ? '!' : '?'}
+                  </span>
+                </div>
+                <div>
+                  <h4 className={`text-sm font-bold mb-1 ${flag.type === 'danger' ? 'text-red-900' : 'text-yellow-900'}`}>{flag.title}</h4>
+                  <p className={`text-xs font-medium ${flag.type === 'danger' ? 'text-red-700' : 'text-yellow-700'}`}>{flag.description}</p>
+                  <p className={`text-[10px] mt-1 ${flag.type === 'danger' ? 'text-red-500' : 'text-yellow-500'}`}>{new Date(flag.timestamp).toLocaleString('id-ID')}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-red-900 mb-1">Tombol Darurat Ditekan Kades</h4>
-                <p className="text-xs text-red-700 font-medium">Transaksi darurat diaktifkan oleh pihak eksekutif pada proyek pengadaan pada pukul 09:15 WIB.</p>
-              </div>
-            </div>
-
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl flex gap-4 items-start">
-              <div className="mt-0.5">
-                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-yellow-100 text-yellow-600 font-bold">?</span>
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-yellow-900 mb-1">Ditolak Sistem</h4>
-                <p className="text-xs text-yellow-700 font-medium">Sistem pintar menolak pencairan Termin 2 akibat ketidaksesuaian nominal bukti dengan pagu anggaran.</p>
-              </div>
-            </div>
+            )) : (
+              <p className="text-sm text-slate-500 text-center py-4">Belum ada anomali atau flag terbaru.</p>
+            )}
           </div>
         </div>
 
@@ -94,28 +91,20 @@ export default function DashboardPage() {
           </h2>
 
           <div className="relative border-l-2 border-slate-100 ml-3 space-y-6">
-            
-            <div className="relative pl-6">
-              <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-green-500 ring-4 ring-white border border-green-200"></div>
-              <p className="text-sm font-bold text-slate-900">Kades mencairkan Termin 1</p>
-              <p className="text-xs text-slate-500 mt-1">Pencairan program pembangunan posyandu Dusun 3 telah disetujui penuh.</p>
-              <p className="text-xs font-semibold text-slate-400 mt-1">Hari ini, 10:30 WIB</p>
-            </div>
-
-            <div className="relative pl-6">
-              <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-purple-500 ring-4 ring-white border border-purple-200"></div>
-              <p className="text-sm font-bold text-slate-900">Tokoh Adat mencatat Resolusi Sengketa Dusun 2</p>
-              <p className="text-xs text-slate-500 mt-1">Hasil mediasi adat terkait hak guna lahan berhasil dicatat secara on-chain.</p>
-              <p className="text-xs font-semibold text-slate-400 mt-1">Kemarin, 15:45 WIB</p>
-            </div>
-
-            <div className="relative pl-6">
-              <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-blue-500 ring-4 ring-white border border-blue-200"></div>
-              <p className="text-sm font-bold text-slate-900">BPD memantau transaksi masuk</p>
-              <p className="text-xs text-slate-500 mt-1">Aktivitas peninjauan ulang dan penelusuran arus kas oleh anggota BPD.</p>
-              <p className="text-xs font-semibold text-slate-400 mt-1">Kemarin, 09:12 WIB</p>
-            </div>
-
+            {timeline.length > 0 ? timeline.map((item: any) => (
+              <div key={item.id} className="relative pl-6">
+                <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full ring-4 ring-white border ${
+                  item.type === 'success' ? 'bg-green-500 border-green-200' : 
+                  item.type === 'purple' ? 'bg-purple-500 border-purple-200' : 
+                  'bg-blue-500 border-blue-200'
+                }`}></div>
+                <p className="text-sm font-bold text-slate-900">{item.title}</p>
+                <p className="text-xs text-slate-500 mt-1">{item.description}</p>
+                <p className="text-xs font-semibold text-slate-400 mt-1">{new Date(item.timestamp).toLocaleString('id-ID')}</p>
+              </div>
+            )) : (
+              <p className="text-sm text-slate-500 py-4 ml-6">Belum ada aktivitas tercatat.</p>
+            )}
           </div>
         </div>
       </div>

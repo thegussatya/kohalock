@@ -262,25 +262,91 @@ router.get('/auditor', authenticate, async (req: AuthRequest, res: Response): Pr
 });
 
 // 5. BPD & Tokoh Adat
-router.get('/bpd', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/bpd-adat', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const totalDisbursed = await prisma.disbursement.count({
-      where: { status: 'DISBURSED' }
+    // 1. Performance Rate (Realisasi Program)
+    const proposals = await prisma.proposal.findMany();
+    const totalPagu = proposals.reduce((acc, curr) => acc + curr.paguMaksimal, BigInt(0));
+    const disbursements = await prisma.disbursement.findMany({ where: { status: 'DISBURSED' } });
+    const totalDisbursed = disbursements.reduce((acc, curr) => acc + curr.nominal, BigInt(0));
+    const performanceRate = totalPagu > 0 ? `${((Number(totalDisbursed) / Number(totalPagu)) * 100).toFixed(1)}%` : '0%';
+
+    // 2. Red Flags count & Flags Widget
+    const interventions = await prisma.interventionLog.findMany({ include: { disbursement: { include: { proposal: true } } } });
+    const rejectedDisbursements = await prisma.disbursement.findMany({ where: { status: 'REJECTED_SYSTEM' }, include: { proposal: true } });
+    
+    const redFlags = interventions.length + rejectedDisbursements.length;
+
+    let flags: any[] = [];
+    interventions.forEach(inv => {
+      flags.push({
+        id: `inv-${inv.id}`,
+        type: 'danger',
+        title: 'Tombol Darurat Ditekan Kades',
+        description: `Transaksi darurat diaktifkan pada usulan ${inv.disbursement.proposal.judulUsulan}`,
+        timestamp: inv.createdAt
+      });
     });
 
-    const supervisionNoteCount = await prisma.supervisionNote.count();
-    
-    const adatCaseCount = await prisma.adatCase.count({
-      where: { status: 'MUSYAWARAH' }
+    rejectedDisbursements.forEach(rej => {
+      flags.push({
+        id: `rej-${rej.id}`,
+        type: 'warning',
+        title: 'Ditolak Sistem',
+        description: `Sistem menolak pencairan untuk usulan ${rej.proposal.judulUsulan} - ${rej.catatanRevisi || 'Anomali terdeteksi'}`,
+        timestamp: rej.submittedAt
+      });
     });
+
+    flags.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    flags = flags.slice(0, 5); // Limit to top 5 recent flags
+
+    // 3. Timeline Aktivitas Gabungan
+    const disbursed = await prisma.disbursement.findMany({ where: { status: 'DISBURSED' }, include: { proposal: true } });
+    const adatCases = await prisma.adatCase.findMany();
+    const supervisionNotes = await prisma.supervisionNote.findMany();
+
+    let timeline: any[] = [];
+    disbursed.forEach(d => {
+      if (d.disbursedAt) {
+        timeline.push({
+          id: `dis-${d.id}`,
+          type: 'success',
+          title: 'Pencairan Berhasil',
+          description: `Pencairan untuk ${d.proposal.judulUsulan} telah disetujui.`,
+          timestamp: d.disbursedAt
+        });
+      }
+    });
+
+    adatCases.forEach(a => {
+      timeline.push({
+        id: `adat-${a.id}`,
+        type: 'purple',
+        title: 'Pencatatan Kasus Adat',
+        description: `Kasus kategori ${a.kategori} dengan status ${a.status} telah dicatat.`,
+        timestamp: a.createdAt
+      });
+    });
+
+    supervisionNotes.forEach(s => {
+      timeline.push({
+        id: `sup-${s.id}`,
+        type: 'blue',
+        title: 'BPD Memantau Transaksi',
+        description: `Catatan pengawasan: ${s.catatan}`,
+        timestamp: s.createdAt
+      });
+    });
+
+    timeline.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    timeline = timeline.slice(0, 10); // Limit to top 10
 
     res.json(serialize({
-      totalDisbursed,
-      supervisionNoteCount,
-      adatCaseCount,
-      // Fallback UI fields
-      performanceRate: "68%",
-      redFlags: supervisionNoteCount
+      performanceRate,
+      redFlags,
+      flags,
+      timeline
     }));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
