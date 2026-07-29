@@ -50,10 +50,18 @@ export default function WhistleblowerInboxPage() {
     setErrorMsg(null);
   };
 
-  const handleDecrypt = () => {
+  const handleDecrypt = async () => {
     if (!selectedReport || !privateKeyInput.trim()) return;
     try {
-      const result = decryptReport(selectedReport.encryptedPayload, privateKeyInput.trim());
+      // Sesuai spec: POST ke backend dengan passprhase, backend hanya kembalikan ciphertext
+      const res = await apiClient.post(`/whistleblower/reports/${selectedReport.ticketCode}/decrypt`, {
+        privateKeyPassphrase: privateKeyInput.trim()
+      });
+
+      const { encryptedPayload } = res.data;
+
+      // Dekripsi asli terjadi di sisi client
+      const result = decryptReport(encryptedPayload, privateKeyInput.trim());
       if (result) {
         setDecryptedText(result);
         setErrorMsg(null);
@@ -61,10 +69,10 @@ export default function WhistleblowerInboxPage() {
       } else {
         throw new Error('Decryption failed');
       }
-    } catch (e) {
+    } catch (e: any) {
       setDecryptedText(null);
-      setErrorMsg('Gagal membuka - private key salah atau data rusak');
-      toast.error("Private key salah atau data rusak");
+      setErrorMsg(e.response?.data?.error || 'Gagal membuka - private key salah atau data rusak');
+      toast.error(e.response?.data?.error || "Private key salah atau data rusak");
     }
   };
 

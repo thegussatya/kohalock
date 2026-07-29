@@ -20,6 +20,7 @@ import reportRouter from './routes/report.route';
 import exportRouter from './routes/export.route';
 import adatRouter from './routes/adat.route';
 import supervisionRouter from './routes/supervision.route';
+import interventionRouter from './routes/intervention.route';
 
 const app = express();
 app.use(cors());
@@ -43,6 +44,7 @@ app.use('/api/reports', reportRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/adat-cases', adatRouter);
 app.use('/api/supervision-notes', supervisionRouter);
+app.use('/api/interventions', interventionRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'KohaLock API jalan' });

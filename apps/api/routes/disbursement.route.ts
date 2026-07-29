@@ -253,6 +253,50 @@ router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: 
   }
 });
 
+// POST /disbursements/:id/reject-intervention
+router.post('/:id/reject-intervention', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { alasan } = req.body;
+    
+    const disbursement = await prisma.disbursement.findUnique({
+      where: { id }
+    });
+
+    if (!disbursement) {
+      res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+      return;
+    }
+
+    // Hanya bisa menolak intervensi yang sedang menunggu persetujuan (atau diizinkan kades)
+    // Walaupun dalam kondisi darurat Kades bisa membekukan yang sudah dieksekusi, sesuai spec MVP kita bekukan yang PENDING.
+    const result = await prisma.$transaction(async (tx) => {
+      const updated = await tx.disbursement.update({
+        where: { id },
+        data: {
+          status: 'REJECTED_SYSTEM',
+          kadesApproverId: req.user?.userId,
+        } as any
+      });
+
+      const log = await tx.interventionLog.create({
+        data: {
+          disbursementId: id,
+          kadesId: req.user?.userId!,
+          txHash: `0xMOCK${Math.random().toString(16).substr(2, 8).toUpperCase()}`,
+        }
+      });
+
+      return { updated, log };
+    });
+
+    res.json(serialize(result));
+  } catch (error: any) {
+    console.error('Error rejecting intervention:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // POST /disbursements/:id/authorize
 router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {

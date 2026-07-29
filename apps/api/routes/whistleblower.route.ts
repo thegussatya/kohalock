@@ -83,4 +83,40 @@ router.get('/reports', authenticate, async (req: AuthRequest, res: Response): Pr
   }
 });
 
+// POST /reports/:id/decrypt (Protected - Auditor)
+// Endpoint ini hanya mengambil ciphertext. Dekripsi dilakukan di client-side.
+router.post('/reports/:id/decrypt', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    // Server menerima privateKeyPassphrase tetapi TIDAK memakainya untuk dekripsi
+    // Server hanya menggunakannya untuk verifikasi hak akses ekstra jika diperlukan (saat ini diabaikan)
+    const { privateKeyPassphrase } = req.body;
+
+    const report = await prisma.whistleblowerReport.findFirst({
+      where: {
+        OR: [
+          { id },
+          { ticketCode: id } // support fallback to ticketCode just in case
+        ]
+      },
+      select: {
+        ticketCode: true,
+        encryptedPayload: true,
+        createdAt: true,
+        status: true
+      }
+    });
+
+    if (!report) {
+      res.status(404).json({ error: 'Laporan tidak ditemukan' });
+      return;
+    }
+
+    res.json(serialize(report));
+  } catch (error: any) {
+    console.error('Error fetching report for decryption:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 export default router;

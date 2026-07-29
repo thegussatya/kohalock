@@ -9,21 +9,49 @@ Base URL: `/api/v1`. Auth: `Authorization: Bearer <JWT>`. Semua endpoint (kecual
 ## Proposal (Musrembang)
 - `POST /proposals` — `KAUR_TEKNIS`. Body: dusun, judul, kategori, volume, satuan, pagu, files (multipart). Alur: hash file → upload S3 → simpan DB → sign+kirim tx `registerProposal` → return `{ id, onChainTxHash, status: "pending_confirmation" }`
 - `GET /proposals` — semua role (read), filter `?dusun=&kategori=`
-- `GET /proposals/:id/sisa-pagu` — real-time dari contract `getSisaPagu`
 
 ## Disbursement (Pencairan)
+- `GET /disbursements/sisa-pagu/:proposalId` — real-time dari contract `getSisaPagu`
 - `POST /disbursements` — `KAUR_TEKNIS`. Body: proposalId, keterangan, nominal, beritaAcara (file), foto (file dgn geotag metadata), pin. Validasi nominal vs sisa pagu **sebelum** kirim tx (agar UI bisa warning merah instan, bukan nunggu revert on-chain).
 - `GET /disbursements?status=&dusun=&kaurId=` — read, scoped sesuai role (mis. Kaur hanya lihat riwayat sendiri kalau perlu, atau semua kalau desa kecil)
+- `GET /disbursements/execution-queue` — daftar antrean eksekusi pencairan (Kaur Keuangan)
 - `GET /disbursements/:id` — detail lengkap (dipakai Split-View Reviewer Sekdes & halaman detail Kades)
 - `POST /disbursements/:id/verify` — `SEKDES`. Body: `{ pin }` → sign tx `verifyBySekdes`
 - `POST /disbursements/:id/return-revision` — `SEKDES`. Body: `{ alasan }`
-- `POST /disbursements/:id/disburse` — `KADES`. Body: `{ pin }` → sign tx `disburse`
+- `POST /disbursements/:id/authorize` — `KADES`. Persetujuan kepala desa sebelum pencairan akhir.
+- `POST /disbursements/:id/execute` — `KAUR_KEUANGAN`. Eksekusi pencairan dan pemotongan pajak.
 - `POST /disbursements/:id/verify-hash` — upload file, hitung hash, bandingkan ke on-chain (dipakai Sekdes reviewer & Auditor integrity checker)
 
 ## Panic Button / Intervention
 - `POST /disbursements/:id/reject-intervention` — `KADES`. Body: `{ alasan, pin }` → sign tx `rejectIntervention`
 - `GET /interventions` — read (`KADES`, `AUDITOR`, `BPD`)
 - `GET /interventions/:id/certificate` — generate PDF "Sertifikat Penolakan"
+
+## Modul Bendahara & Kaur Keuangan
+- `GET /monthly-closing/status` — cek status penutupan buku kas
+- `GET /monthly-closing/archive` — arsip bulanan
+- `POST /monthly-closing/close` — menutup buku bulanan (mengunci CashBook & BankBook)
+- `GET /monthly-closing/:id/verify`
+- `GET /cash-book` — buku kas umum
+- `GET /bank-book` — buku pembantu bank
+- `POST /bank-book/reconcile` — rekonsiliasi bank
+- `GET /tax-book` — buku pembantu pajak
+- `POST /tax-book/:id/setor` — penyetoran pajak
+- `GET /corrections` — riwayat koreksi transaksi
+- `POST /corrections` — koreksi nilai nominal pencairan
+- `GET /reports/realization` — rekapitulasi realisasi anggaran
+
+## Notifikasi (Universal)
+- `GET /notifications` — daftar notifikasi user
+- `GET /notifications/unread-count` — jumlah notifikasi belum dibaca
+- `POST /notifications/:id/read` — menandai notifikasi dibaca
+
+## Dashboard Role-Based
+- `GET /dashboard/kaur-teknis`
+- `GET /dashboard/sekdes`
+- `GET /dashboard/kades`
+- `GET /dashboard/auditor`
+- `GET /dashboard/bpd-adat`
 
 ## Ledger Explorer (Auditor)
 - `GET /ledger/timeline?programId=&blockId=&dateFrom=&dateTo=`
