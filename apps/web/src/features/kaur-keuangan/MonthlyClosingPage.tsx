@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import RoleLayout from '../../components/RoleLayout';
 import PageHeader from '../../components/PageHeader';
 import Badge from '../../components/Badge';
@@ -15,6 +15,8 @@ export default function MonthlyClosingPage() {
   const [months, setMonths] = useState<any[]>([]);
   const [validations, setValidations] = useState<any>(null);
   const [currentOpenMonth, setCurrentOpenMonth] = useState<any>(null);
+  const [saldoAktual, setSaldoAktual] = useState('');
+  const [isReconciling, setIsReconciling] = useState(false);
 
   const fetchStatus = async () => {
     try {
@@ -30,6 +32,25 @@ export default function MonthlyClosingPage() {
   useEffect(() => {
     fetchStatus();
   }, []);
+
+  const handleReconcile = async () => {
+    if (!currentOpenMonth || !saldoAktual) return;
+    setIsReconciling(true);
+    try {
+      await apiClient.post('/bank-book/reconcile', {
+        bulan: currentOpenMonth.bulan,
+        tahun: currentOpenMonth.tahun,
+        saldoAktualBank: saldoAktual
+      });
+      toast.success('Rekonsiliasi bank berhasil');
+      setSaldoAktual('');
+      await fetchStatus();
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Gagal melakukan rekonsiliasi');
+    } finally {
+      setIsReconciling(false);
+    }
+  };
 
   const handleConfirmWarning = () => {
     setShowConfirmModal(false);
@@ -129,6 +150,38 @@ export default function MonthlyClosingPage() {
               </div>
             </div>
           </div>
+
+          {!validations?.bankCocok && currentOpenMonth && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-5 mb-8 shadow-sm">
+              <h3 className="text-lg font-bold text-red-900 mb-2 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" /> Butuh Rekonsiliasi Bank
+              </h3>
+              <p className="text-sm text-red-700 mb-4">
+                Saldo akhir Buku Bank tidak sama dengan saldo Buku Kas. Silakan masukkan Saldo Aktual Bank (sesuai rekening koran) untuk melakukan penyesuaian.
+              </p>
+              <div className="flex flex-col sm:flex-row items-end gap-3">
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-bold text-red-800 mb-1">Saldo Aktual Bank (Rp)</label>
+                  <input 
+                    type="number" 
+                    value={saldoAktual}
+                    onChange={(e) => setSaldoAktual(e.target.value)}
+                    onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                    placeholder="Contoh: 15000000"
+                    className="w-full px-4 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500/20 focus:border-red-500 outline-none"
+                  />
+                </div>
+                <button 
+                  onClick={handleReconcile}
+                  disabled={isReconciling || !saldoAktual}
+                  className="w-full sm:w-auto px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 h-[42px]"
+                >
+                  {isReconciling ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Rekonsiliasi
+                </button>
+              </div>
+            </div>
+          )}
 
           <button 
             type="button"

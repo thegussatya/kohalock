@@ -17,14 +17,34 @@ const COLUMNS: TableColumn[] = [
 ];
 
 export default function GeneralCashBookPage() {
-  const [selectedMonth, setSelectedMonth] = useState('10');
-  const [selectedYear, setSelectedYear] = useState('2023');
+  const currentDate = new Date();
+  const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+  const currentYear = currentDate.getFullYear();
+  
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
   const [data, setData] = useState<any[]>([]);
   const [summary, setSummary] = useState({
     saldoAwal: 0,
     totalPenerimaan: 0,
     totalPengeluaran: 0
   });
+
+  const years = Array.from({ length: currentYear - 2022 + 1 }, (_, i) => (2022 + i).toString());
+  const months = [
+    { value: '01', label: 'Januari' },
+    { value: '02', label: 'Februari' },
+    { value: '03', label: 'Maret' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'Mei' },
+    { value: '06', label: 'Juni' },
+    { value: '07', label: 'Juli' },
+    { value: '08', label: 'Agustus' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'Oktober' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'Desember' }
+  ];
 
   useEffect(() => {
     apiClient.get(`/cash-book?bulan=${selectedMonth}&tahun=${selectedYear}`)
@@ -61,7 +81,7 @@ export default function GeneralCashBookPage() {
       });
   }, [selectedMonth, selectedYear]);
 
-  const isCurrentMonth = selectedMonth === '10' && selectedYear === '2023';
+  const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear.toString();
 
   const renderCell = (row: any, columnKey: string) => {
     switch (columnKey) {
@@ -111,10 +131,9 @@ export default function GeneralCashBookPage() {
           onChange={(e) => setSelectedMonth(e.target.value)}
           className="px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-700 text-sm font-medium focus:ring-2 focus:ring-brand-500 outline-none"
         >
-          <option value="08">Agustus</option>
-          <option value="09">September</option>
-          <option value="10">Oktober</option>
-          <option value="11">November</option>
+          {months.map(m => (
+            <option key={m.value} value={m.value}>{m.label}</option>
+          ))}
         </select>
 
         <select 
@@ -122,8 +141,9 @@ export default function GeneralCashBookPage() {
           onChange={(e) => setSelectedYear(e.target.value)}
           className="px-4 py-2 border border-slate-300 rounded-lg bg-white text-slate-700 text-sm font-medium focus:ring-2 focus:ring-brand-500 outline-none"
         >
-          <option value="2022">2022</option>
-          <option value="2023">2023</option>
+          {years.map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
         </select>
       </div>
 
