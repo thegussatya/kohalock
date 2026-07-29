@@ -2,8 +2,12 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '../generated/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { createNotification } from '../lib/notify';
+import multer from 'multer';
+import crypto from 'crypto';
+
 const router = Router();
 const prisma = new PrismaClient();
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Helper to serialize BigInt
 function serialize(obj: any): any {
@@ -429,6 +433,45 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
     res.json(serialize(result));
   } catch (error: any) {
     console.error('Error executing disbursement:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+// POST /disbursements/verify-hash
+router.post('/verify-hash', authenticate, upload.single('file'), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { disbursementId } = req.body;
+    
+    if (!req.file) {
+      res.status(400).json({ error: 'File tidak ditemukan' });
+      return;
+    }
+
+    if (!disbursementId) {
+      res.status(400).json({ error: 'disbursementId wajib diisi' });
+      return;
+    }
+
+    const disbursement = await prisma.disbursement.findUnique({
+      where: { id: disbursementId }
+    });
+
+    if (!disbursement) {
+      res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+      return;
+    }
+
+    const hashUpload = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+    const hashTersimpan = disbursement.beritaAcaraHash;
+    const cocok = hashUpload === hashTersimpan;
+
+    res.json({
+      cocok,
+      hashUpload,
+      hashTersimpan
+    });
+  } catch (error: any) {
+    console.error('Error verifying hash:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });

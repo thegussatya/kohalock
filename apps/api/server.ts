@@ -17,6 +17,7 @@ import taxBookRouter from './routes/taxbook.route';
 import publicRouter from './routes/public.route';
 import correctionRouter from './routes/correction.route';
 import reportRouter from './routes/report.route';
+import exportRouter from './routes/export.route';
 
 const app = express();
 app.use(cors());
@@ -37,6 +38,8 @@ app.use('/api/monthly-closing', monthlyClosingRouter);
 app.use('/api/tax-book', taxBookRouter);
 app.use('/api/corrections', correctionRouter);
 app.use('/api/reports', reportRouter);
+app.use('/api/export', exportRouter);
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'KohaLock API jalan' });
 });

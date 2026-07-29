@@ -17,15 +17,41 @@ function serialize(obj: any): any {
 // GET /ledger/timeline
 router.get('/timeline', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { search } = req.query;
+    const { search, aktor, nominalMin, nominalMax, hasIntervention } = req.query;
 
     const whereClause: any = {};
+    
     if (search && typeof search === 'string') {
       whereClause.proposal = {
+        ...whereClause.proposal,
         judulUsulan: {
           contains: search,
           mode: 'insensitive'
         }
+      };
+    }
+
+    if (aktor && typeof aktor === 'string') {
+      whereClause.OR = [
+        { proposal: { kaurTeknis: { nama: { contains: aktor, mode: 'insensitive' } } } },
+        { sekdesVerifier: { nama: { contains: aktor, mode: 'insensitive' } } },
+        { kadesApprover: { nama: { contains: aktor, mode: 'insensitive' } } },
+      ];
+    }
+
+    if (nominalMin !== undefined || nominalMax !== undefined) {
+      whereClause.nominal = {};
+      if (nominalMin && typeof nominalMin === 'string') {
+        whereClause.nominal.gte = BigInt(nominalMin);
+      }
+      if (nominalMax && typeof nominalMax === 'string') {
+        whereClause.nominal.lte = BigInt(nominalMax);
+      }
+    }
+
+    if (hasIntervention === 'true') {
+      whereClause.interventionLogs = {
+        some: {}
       };
     }
 

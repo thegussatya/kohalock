@@ -207,7 +207,35 @@ router.get('/kades', authenticate, async (req: AuthRequest, res: Response): Prom
 // 4. Auditor
 router.get('/auditor', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const allDisbursements = await prisma.disbursement.findMany();
+    const userId = req.user?.userId;
+    let timeBoundAccess = "-";
+
+    if (userId) {
+      const token = await prisma.auditorAccessToken.findFirst({
+        where: { auditorId: userId, revoked: false, expiresAt: { gt: new Date() } },
+        orderBy: { expiresAt: 'desc' }
+      });
+      if (token) {
+        const diffMs = token.expiresAt.getTime() - Date.now();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays > 0) {
+          timeBoundAccess = `${diffDays} Hari`;
+        } else if (diffHours > 0) {
+          timeBoundAccess = `${diffHours} Jam`;
+        } else if (diffMs > 0) {
+          timeBoundAccess = `< 1 Jam`;
+        } else {
+          timeBoundAccess = "Expired";
+        }
+      } else {
+        timeBoundAccess = "Tidak Ada Akses";
+      }
+    }
+
+    const allDisbursements = await prisma.disbursement.findMany({
+      where: { status: 'DISBURSED' }
+    });
     const totalTurnover = allDisbursements.reduce((acc, curr) => acc + curr.nominal, BigInt(0));
 
     const allInterventions = await prisma.interventionLog.findMany();
@@ -225,7 +253,8 @@ router.get('/auditor', authenticate, async (req: AuthRequest, res: Response): Pr
     res.json(serialize({
       totalTurnover,
       redFlagCount,
-      chartData
+      chartData,
+      timeBoundAccess
     }));
   } catch (error: any) {
     res.status(500).json({ error: error.message });
