@@ -222,34 +222,7 @@ router.get('/execution-queue', authenticate, async (req: AuthRequest, res: Respo
   }
 });
 
-// GET /disbursements/:id
-router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const id = req.params.id as string;
-    const disbursement = await prisma.disbursement.findUnique({
-      where: { id },
-      include: {
-        proposal: {
-          include: {
-            kaurTeknis: {
-              select: { nama: true }
-            }
-          }
-        }
-      }
-    });
 
-    if (!disbursement) {
-      res.status(404).json({ error: 'Disbursement tidak ditemukan' });
-      return;
-    }
-
-    res.json(serialize(disbursement));
-  } catch (error: any) {
-    console.error('Error fetching disbursement:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
-  }
-});
 
 // POST /disbursements/:id/verify
 router.post('/:id/verify', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
@@ -348,6 +321,35 @@ router.get('/authorizations', authenticate, async (req: AuthRequest, res: Respon
     res.json(serialize(mapped));
   } catch (error: any) {
     console.error('Error fetching authorizations:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+// GET /disbursements/:id
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const disbursement = await prisma.disbursement.findUnique({
+      where: { id },
+      include: {
+        proposal: {
+          include: {
+            kaurTeknis: {
+              select: { nama: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!disbursement) {
+      res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+      return;
+    }
+
+    res.json(serialize(disbursement));
+  } catch (error: any) {
+    console.error('Error fetching disbursement:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });

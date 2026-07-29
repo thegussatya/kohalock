@@ -1,40 +1,116 @@
 import PageHeader from '../../components/PageHeader';
 import BackLink from '../../components/BackLink';
 import { toast } from 'react-hot-toast';
-import { useState, useEffect } from 'react';
-import { LayoutDashboard, BadgeCheck, ShieldAlert, QrCode, Settings, AlertTriangle, HelpCircle, History, BarChart3 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ShieldAlert, AlertTriangle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import RoleLayout from '../../components/RoleLayout';
 import Badge from '../../components/Badge';
 import { KADES_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 
-
-
 export default function DisbursementDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectAlasan, setRejectAlasan] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [interventionId, setInterventionId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      apiClient.get(`/disbursements/${id}`).then(res => {
-        setData(res.data);
-      }).catch(err => {
-        console.error(err);
-        toast.error('Gagal mengambil data pengajuan');
-      });
+  const fetchDisbursementData = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await apiClient.get(`/disbursements/${id}`);
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error('Gagal mengambil data pengajuan');
     }
   }, [id]);
+
+  const fetchInterventionLog = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await apiClient.get('/interventions');
+      const item = res.data.find((l: any) => l.disbursementId === id || l.disbursement?.id === id);
+      if (item) {
+        setInterventionId(item.id);
+      }
+    } catch (err) {
+      console.error('Failed to fetch intervention log', err);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchDisbursementData();
+  }, [fetchDisbursementData]);
+
+  useEffect(() => {
+    if (data?.status === 'REJECTED_SYSTEM') {
+      fetchInterventionLog();
+    }
+  }, [data?.status, fetchInterventionLog]);
 
   if (!data) return <div className="p-8 text-center text-slate-500 font-bold">Memuat data...</div>;
 
   const judulUsulan = data.proposal?.judulUsulan || 'Program';
   const nominalStr = Number(data.nominal).toLocaleString('id-ID');
   const namaKaur = data.proposal?.kaurTeknis?.nama || 'Kaur Teknis';
+
+  const handleDownloadSertifikat = async (certId: string) => {
+    try {
+      const res = await apiClient.get(`/interventions/${certId}/certificate`);
+      if (res.data && res.data.pdfUrl) {
+        window.open(res.data.pdfUrl, '_blank');
+      } else {
+        toast.error('Gagal memuat sertifikat');
+      }
+    } catch (error) {
+      toast.error('Gagal mengunduh sertifikat');
+    }
+  };
+
+  const handleLockTransaction = async () => {
+    if (!id) return;
+    setIsRejecting(true);
+    try {
+      const res = await apiClient.post(`/disbursements/${id}/reject-intervention`, {
+        alasan: rejectAlasan || 'Intervensi non-prosedural (darurat)',
+      });
+
+      if (res.data?.log?.id) {
+        setInterventionId(res.data.log.id);
+      }
+      
+      toast.success('Intervensi berhasil ditolak & dicatat permanen di Blockchain');
+      setShowRejectModal(false);
+      await fetchDisbursementData();
+      await fetchInterventionLog();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Gagal menolak transaksi');
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
+  const getStatusBadge = () => {
+    switch (data.status) {
+      case 'PENDING_KADES':
+        return <Badge label="Menunggu Otorisasi Kades" variant="warning" />;
+      case 'REJECTED_SYSTEM':
+        return <Badge label="Intervensi Ditolak (Locked)" variant="danger" />;
+      case 'PENDING_EKSEKUSI':
+        return <Badge label="Diotorisasi Kades" variant="success" />;
+      case 'DISBURSED':
+        return <Badge label="Sudah Dicairkan" variant="success" />;
+      default:
+        return <Badge label={data.status} variant="neutral" />;
+    }
+  };
 
   return (
     <RoleLayout menuItems={KADES_MENU} userName="Ahmad Fauzi" userRole="Kepala Desa" settingsPath="/kades/pengaturan">
@@ -44,15 +120,7 @@ export default function DisbursementDetailPage() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Badge label={id || 'TRX-XYZ'} variant="info" />
-              <Badge 
-                label={
-                  <span className="flex items-center gap-1">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
-                    Siap Dicairkan
-                  </span>
-                } 
-                variant="success" 
-              />
+              {getStatusBadge()}
             </div>
             <PageHeader title={judulUsulan} />
           </div>
@@ -114,7 +182,7 @@ export default function DisbursementDetailPage() {
                 <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-blue-500 ring-4 ring-slate-50"></div>
                 <h4 className="text-sm font-bold text-slate-900">{namaKaur} (Kaur Teknis)</h4>
                 <p className="text-xs font-semibold text-slate-500 mb-1">Mengajukan Pencairan</p>
-                <p className="text-xs text-slate-400">{new Date(data.submittedAt).toLocaleDateString('id-ID')}</p>
+                <p className="text-xs text-slate-400">{data.submittedAt ? new Date(data.submittedAt).toLocaleDateString('id-ID') : '-'}</p>
               </div>
 
               <div className="relative pl-6">
@@ -125,21 +193,56 @@ export default function DisbursementDetailPage() {
               </div>
 
               <div className="relative pl-6">
-                <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-slate-200 ring-4 ring-slate-50"></div>
-                <h4 className="text-sm font-bold text-slate-400">Kepala Desa</h4>
-                <p className="text-xs font-semibold text-slate-400">Menunggu Tanda Tangan Final</p>
+                <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full ${data.status === 'REJECTED_SYSTEM' ? 'bg-rose-500' : data.status === 'PENDING_EKSEKUSI' || data.status === 'DISBURSED' ? 'bg-green-500' : 'bg-slate-300'} ring-4 ring-slate-50`}></div>
+                <h4 className="text-sm font-bold text-slate-900">Kepala Desa</h4>
+                <p className="text-xs font-semibold text-slate-500">
+                  {data.status === 'REJECTED_SYSTEM' 
+                    ? 'Intervensi Ditolak (Tolak Intervensi)' 
+                    : data.status === 'PENDING_EKSEKUSI' || data.status === 'DISBURSED' 
+                    ? 'Sudah Diotorisasi' 
+                    : 'Menunggu Tanda Tangan Final'}
+                </p>
               </div>
 
             </div>
 
             {data.status === 'PENDING_KADES' ? (
-              <button 
-                onClick={() => setShowConfirmModal(true)}
-                className="w-full px-5 py-4 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition-transform active:scale-95 flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                Otorisasi Pencairan (Tanda Tangan Digital)
-              </button>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => setShowConfirmModal(true)}
+                  className="w-full px-5 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 uppercase tracking-wide text-xs sm:text-sm"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                  Otorisasi Pencairan (Tanda Tangan Digital)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRejectAlasan('');
+                    setShowRejectModal(true);
+                  }}
+                  className="w-full px-5 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-98 flex items-center justify-center gap-2 uppercase tracking-wide text-xs sm:text-sm border-b-2 border-rose-800"
+                >
+                  <ShieldAlert className="w-5 h-5" />
+                  Tolak Intervensi Non-Prosedural
+                </button>
+              </div>
+            ) : data.status === 'REJECTED_SYSTEM' ? (
+              <div className="flex flex-col gap-3">
+                <div className="w-full px-4 py-3 bg-rose-50 text-rose-700 font-bold rounded-xl border border-rose-200 flex items-center justify-center gap-2 uppercase tracking-wide text-xs text-center">
+                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                  Transaksi Dibekukan (Intervensi Ditolak)
+                </div>
+                {interventionId && (
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadSertifikat(interventionId)}
+                    className="w-full px-4 py-3 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 font-bold rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 text-xs"
+                  >
+                    <span>📄</span> Unduh Sertifikat Penolakan
+                  </button>
+                )}
+              </div>
             ) : (
               <div className="w-full px-5 py-4 bg-slate-100 text-slate-500 font-bold rounded-xl border border-slate-200 flex items-center justify-center gap-2 uppercase tracking-wide text-sm text-center">
                 Pengajuan sudah diproses
@@ -173,7 +276,7 @@ export default function DisbursementDetailPage() {
                   setShowConfirmModal(false);
                   setShowModal(true);
                 }}
-                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-bold shadow-sm"
+                className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-bold shadow-sm"
               >
                 Ya, Lanjutkan
               </button>
@@ -225,9 +328,63 @@ export default function DisbursementDetailPage() {
                     setIsSubmitting(false);
                   }
                 }}
-                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Memproses...' : 'Tanda Tangani'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Tolak Intervensi Non-Prosedural */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-lg shadow-2xl border border-rose-300 animate-in zoom-in-95 duration-200">
+            <h3 className="text-2xl font-black text-rose-600 mb-3 flex items-center gap-3">
+              <span className="p-2 bg-rose-100 rounded-full">
+                <ShieldAlert className="w-6 h-6 text-rose-600" />
+              </span>
+              Tolak Intervensi Non-Prosedural
+            </h3>
+
+            <div className="bg-rose-50/80 border border-rose-200 p-4 rounded-xl mb-5 text-rose-900 text-sm font-semibold">
+              Anda akan mengunci pos dana ini sementara. Tindakan ini akan dicatat permanen.
+            </div>
+
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+              <p className="text-slate-800 font-semibold text-xs uppercase tracking-wider mb-2">
+                Alasan Penolakan / Intervensi (Opsional):
+              </p>
+              <textarea
+                className="w-full p-3 border border-slate-300 rounded-xl mb-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 bg-white"
+                rows={3}
+                placeholder="Deskripsikan bentuk intervensi jika perlu..."
+                value={rejectAlasan}
+                onChange={(e) => setRejectAlasan(e.target.value)}
+              ></textarea>
+              
+              <p className="text-slate-500 text-xs leading-relaxed mt-2">
+                Tindakan ini akan dicatat secara permanen di Blockchain dan otomatis mengirimkan notifikasi audit darurat kepada BPD dan Tokoh Adat. Aksi ini tidak dapat dibatalkan.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowRejectModal(false)}
+                disabled={isRejecting}
+                className="px-6 py-3 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold w-full sm:w-auto disabled:opacity-50 text-sm"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleLockTransaction}
+                disabled={isRejecting}
+                className="px-6 py-3 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors font-bold shadow-md w-full sm:w-auto border-b-2 border-rose-800 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+              >
+                {isRejecting ? 'Memproses...' : 'Ya, Kunci Transaksi Ini'}
               </button>
             </div>
           </div>

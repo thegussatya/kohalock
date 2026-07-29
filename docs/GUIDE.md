@@ -8,9 +8,16 @@
 2. [Masalah yang Ingin Diatasi](#2-masalah-yang-ingin-diatasi)
 3. [Teknologi yang Digunakan](#3-teknologi-yang-digunakan)
 4. [Status Pengembangan Saat Ini](#4-status-pengembangan-saat-ini)
-5. [Daftar Role & Fitur](#5-daftar-role--fitur)
-6. [Keterkaitan Antar Fitur](#6-keterkaitan-antar-fitur)
-7. [Skenario Penggunaan](#7-skenario-penggunaan)
+5. [Konsep Keamanan & PIN Custodial Wallet](#5-konsep-keamanan--pin-custodial-wallet) *(baru)*
+6. [Daftar Role & Fitur](#6-daftar-role--fitur)
+7. [Matriks Input ➔ Harapan Output per Role](#7-matriks-input--harapan-output-per-role) *(baru)*
+8. [Keterkaitan Antar Fitur](#8-keterkaitan-antar-fitur)
+9. [Skenario Penggunaan](#9-skenario-penggunaan)
+   - [Skenario 1: Alur Normal Pencairan Dana (Happy Path)](#skenario-1-alur-normal-pencairan-dana-happy-path)
+   - [Skenario 2: Pencairan Ditolak & Direvisi](#skenario-2-pencairan-ditolak--direvisi)
+   - [Skenario 3: Panic Button & Pengawasan Forensik](#skenario-3-panic-button--pengawasan-forensik)
+   - [Skenario 4: Tolak Intervensi Non-Prosedural & Sertifikat Penolakan (Kades)](#skenario-4-tolak-intervensi-non-prosedural--sertifikat-penolakan-kades) *(baru)*
+   - [Skenario 5: Penutupan Buku Bulanan & Koreksi Jurnal](#skenario-5-penutupan-buku-bulanan--koreksi-jurnal) *(baru)*
 
 ---
 
@@ -105,7 +112,26 @@ kohalock/
 
 ---
 
-## 5. Daftar Role & Fitur
+## 5. Konsep Keamanan & PIN Custodial Wallet
+
+### Mengapa Beberapa Aksi Membutuhkan PIN?
+
+Dalam KOHALOCK, aksi-aksi krusial seperti **otorisasi pencairan** dan **penutupan buku** merupakan transaksi yang harus bisa dibuktikan secara kriptografis — artinya harus ada tanda tangan digital yang sah dari pejabat yang berwenang.
+
+Namun aparat desa tidak bisa diminta menginstal wallet crypto seperti MetaMask. Solusinya adalah **Custodial Wallet** yang dikelola sistem:
+
+| Konsep | Penjelasan |
+|---|---|
+| **Private Key Terenkripsi** | Setiap user punya Private Key yang disimpan terenkripsi di server. Key ini tidak pernah bisa diakses langsung dari luar. |
+| **PIN 6-Digit sebagai Dekriptor** | Saat user memasukkan PIN, server mendekripsi Private Key tersebut **secara sementara di memori** (milidetik), menandatangani transaksi, lalu langsung menghapus key dari memori. |
+| **Non-Repudiation (Tolak Penyangkalan)** | Karena hanya pemilik akun yang tahu PIN-nya, tanda tangan yang dihasilkan membuktikan bahwa transaksi dilakukan secara sadar dan sah. |
+| **PIN Per-Akun, Bukan Per-Transaksi** | PIN adalah identitas kriptografis pemilik akun. PIN digunakan setiap kali transaksi krusial dilakukan, tapi nilainya tetap (tidak berubah per transaksi). |
+
+> **Analogi:** PIN ATM. Kamu tidak perlu tahu cara kerja mesin kriptografinya — tapi ATM tidak akan mencairkan dana tanpa PIN yang benar.
+
+---
+
+## 6. Daftar Role & Fitur
 
 ### 5.1. Kaur Teknis (Operator Desa)
 **Siapa:** Staf teknis desa yang bertanggung jawab menginput usulan dan mengajukan pencairan.
@@ -203,7 +229,70 @@ kohalock/
 
 ---
 
-## 6. Keterkaitan Antar Fitur
+## 7. Matriks Input ➔ Harapan Output per Role
+
+Bagian ini menjelaskan secara spesifik: **jika input data sekian → harapan hasil yang muncul di fitur/role terhubung adalah sekian.**
+
+### 7.1. Kaur Teknis — Input & Output Terhubung
+
+| Fitur | Input Pengguna | Harapan Output di Fitur Lain |
+|---|---|---|
+| **Formulir Musrembang** | Dusun, Judul, Kategori, Volume + Satuan, Pagu Maksimal, Upload RAB/PDF | 1. Record `Proposal` dibuat.<br>2. Muncul di **Program Saya** Kaur Teknis.<br>3. Muncul di **Dashboard Publik → Pantau Proyek** (progress 0%).<br>4. Menjadi pilihan di dropdown **Ajukan Pencairan**. |
+| **Ajukan Pencairan** | Pilih Proposal, Keterangan Termin, Nominal (mis. `50000000`), Upload PDF Berita Acara, Ambil Foto Geotagging Native | 1. Validasi: jika `Nominal > Sisa Pagu` → ditolak sistem, pesan error muncul.<br>2. Jika lolos: `Disbursement` dibuat status `PENDING_SEKDES`.<br>3. Item otomatis muncul di **Verifikasi Pengajuan Sekdes** (Split-View Reviewer). |
+| **Riwayat Penolakan** | Klik item yang statusnya `RETURNED_FOR_REVISION` | 1. Detail alasan revisi dari Sekdes ditampilkan.<br>2. Tombol **[Perbaiki & Ajukan Ulang]** membuka form Ajukan Pencairan dengan data lama (*pre-filled*), Kaur Teknis cukup mengganti berkas yang salah. |
+
+### 7.2. Sekdes — Input & Output Terhubung
+
+| Fitur | Input Pengguna | Harapan Output di Fitur Lain |
+|---|---|---|
+| **Split-View Reviewer** | Klik item `PENDING_SEKDES` di Verifikasi Pengajuan | Membuka tampilan dua panel: (kiri) detail nominal & keterangan, (kanan) preview PDF Berita Acara + Peta GPS Geotag + Badge Hash Checker. |
+| **Aksi: Setujui** | Klik **[Verifikasi & Teruskan ke Kades]** + PIN Sekdes | 1. Status `Disbursement` → `PENDING_KADES`.<br>2. Item berpindah ke **Persetujuan Pencairan Kades**.<br>3. Notifikasi dikirim ke Kades. |
+| **Aksi: Kembalikan** | Klik **[Kembalikan untuk Revisi]** + Isi teks alasan | 1. Status → `RETURNED_FOR_REVISION`.<br>2. Item muncul di **Riwayat Penolakan Kaur Teknis** beserta catatan alasan.<br>3. `RejectionLog` tercatat. |
+| **Inbox Klarifikasi** | Pilih tiket warga + Ketik teks jawaban resmi + Kirim | 1. Jawaban tersimpan di `ClarificationTicket`.<br>2. Tampil otomatis di **halaman Klarifikasi Publik** untuk warga yang bertanya. |
+
+### 7.3. Kades — Input & Output Terhubung
+
+| Fitur | Input Pengguna | Harapan Output di Fitur Lain |
+|---|---|---|
+| **Buka Detail Pengajuan** | Klik item `PENDING_KADES` di Persetujuan Pencairan | Menampilkan ringkasan pengajuan: nominal, keterangan, nama Sekdes yang memverifikasi, dan timestamp verifikasi. |
+| **Otorisasi Pencairan** | Klik **[Setujui & Otorisasi]** → Konfirmasi → Masukkan PIN 6-Digit | 1. Status → `PENDING_EKSEKUSI`.<br>2. Notifikasi dikirim ke Kaur Keuangan.<br>3. Item masuk ke **Antrean Eksekusi Kaur Keuangan**. |
+| **Tolak Intervensi Non-Prosedural** | Klik tombol merah **[Tolak Intervensi Non-Prosedural]** (di halaman Detail Pengajuan atau Perisai Integritas) → Isi Alasan → Konfirmasi | 1. Status → `REJECTED_SYSTEM` (Terkunci permanen).<br>2. `InterventionLog` dibuat dan dicatat on-chain.<br>3. Tombol **[Unduh Sertifikat Penolakan PDF]** aktif langsung di halaman.<br>4. Red-flag bertambah +1 di **Dashboard Auditor & BPD**. |
+
+### 7.4. Kaur Keuangan — Input & Output Terhubung
+
+| Fitur | Input Pengguna | Harapan Output di Fitur Lain |
+|---|---|---|
+| **Eksekusi Pencairan** | Pilih item `PENDING_EKSEKUSI`, isi rincian Potongan Pajak (PPh/PPN), klik **[Eksekusi Pencairan]** | 1. Status → `DISBURSED`.<br>2. Entri pengeluaran otomatis di **Buku Kas Umum**.<br>3. Entri kredit otomatis di **Buku Bank**.<br>4. Potongan pajak dicatat di **Buku Pajak**.<br>5. **Dashboard Publik** menampilkan progress realisasi proyek yang meningkat. |
+| **Penutupan Buku Bulanan** | Pilih Bulan & Tahun → Verifikasi checklist saldo seimbang → Masukkan PIN | 1. `MonthlyClosing` dibuat dengan SHA-256 Hash Lock.<br>2. Semua transaksi bulan itu dikunci (`statusTerkunci = true`).<br>3. Eksekusi pencairan baru pada bulan tersebut diblokir sistem secara otomatis. |
+| **Transaksi Koreksi** | Pilih entri terkunci yang salah → Isi Nominal Koreksi & Uraian Jurnal Pembalik | 1. Entri Jurnal Pembalik dibuat tanpa menghapus data asli.<br>2. Saldo Buku Kas & Bank terhitung ulang secara presisi. Audit trail terjaga 100%. |
+
+### 7.5. Masyarakat (Publik) — Input & Output Terhubung
+
+| Fitur | Input Pengguna | Harapan Output di Fitur Lain |
+|---|---|---|
+| **Pantau Proyek** | Ketik nama program / filter kategori / klik detail proyek | Menampilkan: progress bar serapan anggaran, rincian setiap termin yang sudah cair, foto geotagging dengan koordinat GPS, dan badge hash otentisitas dokumen. |
+| **Klarifikasi Warga** | Input Nama (opsional), Pilih Program, Ketik Pertanyaan → Kirim | 1. `ClarificationTicket` status `MENUNGGU` dibuat.<br>2. Muncul di **Inbox Klarifikasi Sekdes**.<br>3. Saat Sekdes membalas → Jawaban tampil otomatis di halaman ini untuk publik. |
+| **Lapor Rahasia (Whistleblower)** | Isi teks laporan anonim → Klik **[Kirim Laporan Anonim]** | 1. Laporan dienkripsi di browser (E2EE, TweetNaCl) sebelum dikirim ke server.<br>2. Server hanya menyimpan Ciphertext — tidak bisa dibaca siapapun selain Auditor.<br>3. Pelapor mendapat Kode Tiket Unik untuk cek status tanpa mengungkapkan identitas.<br>4. Laporan muncul di **Kotak Masuk Rahasia Auditor** sebagai ciphertext. |
+
+### 7.6. Auditor / Inspektorat — Input & Output Terhubung
+
+| Fitur | Input Pengguna | Harapan Output di Fitur Lain |
+|---|---|---|
+| **Uji Alat Bukti (Integrity Checker)** | Pilih ID Disbursement → Upload ulang file PDF Berita Acara | Sistem menghitung SHA-256 file tersebut dan mencocokkan dengan hash yang disimpan saat upload pertama.<br>→ **Cocok:** Badge hijau "Dokumen Otentik".<br>→ **Tidak Cocok:** Badge merah "Dokumen Dimodifikasi" + timestamp perubahan. |
+| **Kotak Masuk Rahasia** | Klik laporan whistleblower → Masukkan Passphrase Kunci Privat Inspektorat | Mendekripsi Ciphertext menjadi teks asli laporan rahasia warga di memori browser (tidak pernah dikirim ke server dalam bentuk plaintext). |
+| **Kronologi Transaksi (Ledger Explorer)** | Pilih ID Disbursement atau rentang tanggal | Timeline visual lengkap: Submitted by Kaur Teknis → Verified by Sekdes → Authorized/Rejected by Kades → Executed by Bendahara. Setiap tahap ada timestamp, nama user, dan hash dokumen. |
+| **Ekspor Laporan Hukum** | Centang transaksi yang relevan → Klik **[Generate PDF]** atau **[Export CSV]** | File PDF Berita Acara Pemeriksaan (BAP) atau CSV data mentah siap digunakan untuk keperluan hukum dan penyidikan. |
+
+### 7.7. BPD & Tokoh Adat — Input & Output Terhubung
+
+| Fitur | Input Pengguna | Harapan Output di Fitur Lain |
+|---|---|---|
+| **Pantauan Transaksi** | Pilih transaksi → Klik **[Tulis Catatan Pengawasan]** → Isi teks catatan resmi | `SupervisionNote` tersimpan dan otomatis terkirim sebagai Notifikasi ke Kades & Sekdes. Tercatat di Laporan Tahunan BPD. |
+| **Papan Resolusi Adat** | Input: Nama Pihak Bersengketa, Detail Masalah, Keputusan Resolusi Adat | `AdatCase` dibuat untuk mengarsipkan musyawarah desa. Muncul di **Kalender Musyawarah** selama statusnya aktif. Tidak mempengaruhi saldo keuangan desa. |
+
+---
+
+## 8. Keterkaitan Antar Fitur
 
 Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
@@ -259,7 +348,7 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 ---
 
-## 7. Skenario Penggunaan
+## 9. Skenario Penggunaan
 
 ### Skenario 1: Alur Normal Pencairan Dana (Happy Path)
 
@@ -411,6 +500,86 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 3. Buka **Pantauan Transaksi**, cari pencairan yang bermasalah
 4. Tulis catatan pengawasan: `"BPD mencatat adanya intervensi Kades pada pencairan Termin 3 proyek Jembatan Mekar. Mohon tindak lanjut oleh pihak berwenang."`
 5. ✅ Catatan ini tercatat di `SupervisionNote` dan terkirim sebagai notifikasi ke Kades & Sekdes
+
+---
+
+### Skenario 4: Tolak Intervensi Non-Prosedural & Sertifikat Penolakan (Kades)
+
+> **Kasus:** Kades mendapat tekanan dari pihak tertentu untuk segera menyetujui pencairan yang mencurigakan. Kades memanfaatkan fitur "Tolak Intervensi Non-Prosedural" langsung dari halaman detail pengajuan untuk membekukan transaksi dan menerbitkan sertifikat resmi penolakan.
+
+#### Langkah 1 — Kades: Buka Halaman Detail Pengajuan yang Mencurigakan
+1. Login sebagai **Ahmad Fauzi** (`ahmad.fauzi.kades@kohalock.desa` / `password123`)
+2. Buka menu **Persetujuan Pencairan** — muncul pencairan yang statusnya `PENDING_KADES`
+3. Klik item tersebut → buka `DisbursementDetailPage`
+4. Lihat detail: nominal mencurigakan, dokumen yang tidak konsisten
+
+#### Langkah 2 — Kades: Aktifkan Panic Button di Halaman Detail
+1. Di bawah tombol **[Otorisasi Pencairan]**, tersedia tombol merah **[Tolak Intervensi Non-Prosedural]**
+   - *(Tombol ini hanya muncul jika status masih `PENDING_KADES`)*
+2. Klik tombol tersebut → muncul **Modal Konfirmasi Peringatan Kritis**:
+   > *"Anda akan mengunci pos dana ini sementara. Tindakan ini akan dicatat permanen."*
+3. Isi textarea alasan: `"Terdapat dugaan nominal tidak sesuai RAB. Dana dikunci sementara untuk investigasi."`
+4. Klik **[Ya, Kunci Transaksi Ini]**
+
+#### Langkah 3 — Sistem: Hasil Otomatis
+- ✅ Status transaksi berubah menjadi **REJECTED_SYSTEM** (Terkunci)
+- ✅ `InterventionLog` dibuat dan dicatat on-chain dengan timestamp & alasan
+- ✅ Badge status di halaman berubah menjadi *"Intervensi Ditolak (Locked)"*
+- ✅ Tombol **[Unduh Sertifikat Penolakan]** muncul langsung di halaman detail ini
+- ✅ Red-flag di **Dashboard Auditor** dan **Dashboard BPD** bertambah +1
+
+#### Langkah 4 — Kades: Unduh Sertifikat
+1. Klik **[Unduh Sertifikat Penolakan]** — mengambil PDF dari `GET /interventions/:id/certificate`
+2. ✅ Sertifikat PDF berisi: ID transaksi, nominal, alasan penolakan, timestamp, dan tanda tangan digital Kades
+3. Sertifikat ini adalah bukti formal bahwa penolakan dilakukan secara prosedural dan tercatat
+
+#### Langkah 5 — Kades: Cek Riwayat di Perisai Integritas
+1. Buka menu **Perisai Integritas** (IntegrityShieldPage)
+2. ✅ Semua riwayat penolakan intervensi tampil di sini sebagai log lengkap
+3. Sertifikat bisa diunduh ulang dari sini kapan saja
+
+---
+
+### Skenario 5: Penutupan Buku Bulanan & Koreksi Jurnal
+
+> **Kasus:** Di akhir bulan, Kaur Keuangan menutup buku bulan Juli. Setelah dikunci, ditemukan kesalahan nominal pada satu entri — Kaur Keuangan melakukan koreksi melalui jurnal pembalik tanpa merusak audit trail.
+
+#### Langkah 1 — Kaur Keuangan: Verifikasi Sebelum Menutup Buku
+1. Login sebagai **Hastuti** (`hastuti.kaur-keuangan@kohalock.desa` / `password123`)
+2. Buka menu **Penutupan Buku Bulanan**
+3. Pilih Bulan: `Juli`, Tahun: `2025`
+4. Sistem menampilkan checklist:
+   - Total Penerimaan: ✅
+   - Total Pengeluaran: ✅
+   - Saldo Akhir seimbang: ✅
+5. Semua hijau → klik **[Kunci Buku Bulan Ini]** + Masukkan PIN Bendahara
+
+#### Langkah 2 — Sistem: Hasil Penutupan Buku
+- ✅ `MonthlyClosing` dibuat dengan **SHA-256 Hash Lock** dari semua transaksi bulan Juli
+- ✅ Semua entri bulan Juli dikunci (`statusTerkunci = true`)
+- ✅ Sistem memblokir eksekusi pencairan baru yang mencoba menggunakan tanggal bulan Juli
+- ✅ Badge bulan Juli di Buku Kas berubah menjadi **"Terkunci"** (dengan ikon gembok)
+
+#### Langkah 3 — Kaur Keuangan: Temukan Kesalahan Entri
+1. Buka **Buku Kas Umum** → filter bulan Juli
+2. Temukan entri: `Eksekusi Pencairan Termin 1 - Pengaspalan` tercatat `Rp 40.000.000`
+3. Seharusnya `Rp 4.000.000` (kesalahan input satu nol lebih)
+4. Karena sudah terkunci, tidak bisa diedit langsung
+
+#### Langkah 4 — Kaur Keuangan: Buat Transaksi Koreksi
+1. Buka menu **Transaksi Koreksi**
+2. Pilih entri yang salah: `Eksekusi Pencairan Termin 1 - Pengaspalan / Rp 40.000.000`
+3. Isi form koreksi:
+   - Jenis: `Jurnal Pembalik (Kredit)`
+   - Nominal Koreksi: `36000000` *(selisih Rp 40jt - Rp 4jt)*
+   - Uraian: `"Koreksi kesalahan input Termin 1. Nominal seharusnya Rp 4.000.000 bukan Rp 40.000.000."`
+4. Klik **[Simpan Koreksi]**
+
+#### Langkah 5 — Sistem: Hasil Transaksi Koreksi
+- ✅ Entri asli `Rp 40.000.000` **tidak dihapus** — tetap ada untuk audit trail
+- ✅ Entri baru Jurnal Pembalik `Rp 36.000.000 (Kredit)` ditambahkan di bawahnya
+- ✅ Saldo bersih Buku Kas terhitung ulang: `Rp 40.000.000 - Rp 36.000.000 = Rp 4.000.000` ✓
+- ✅ Laporan Realisasi otomatis menggunakan saldo koreksi terbaru
 
 ---
 
