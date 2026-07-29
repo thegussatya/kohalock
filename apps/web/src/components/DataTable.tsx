@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 export type TableColumn = {
   key: string;
@@ -17,33 +17,33 @@ export default function DataTable<T extends Record<string, any>>({
   renderCell,
 }: DataTableProps<T>) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden w-full">
+    <div className="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden w-full transition-all">
       <div className="overflow-x-auto w-full">
         <table className="w-full min-w-full text-sm text-left text-slate-700">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 border-b border-slate-100">
+          <thead className="bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200/80 font-bold">
             <tr>
               {columns.map((col) => (
-                <th key={col.key} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
+                <th key={col.key} scope="col" className="px-5 py-4 whitespace-nowrap">
                   {col.label}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100">
             {data.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length}
-                  className="px-4 py-12 text-center text-slate-500 italic"
+                  className="px-5 py-12 text-center text-slate-400 text-xs italic"
                 >
-                  Tidak ada data
+                  Belum ada data tersedia
                 </td>
               </tr>
             ) : (
               data.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className="bg-white border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors"
+                  className="bg-white hover:bg-brand-50/20 transition-colors"
                 >
                   {columns.map((col) => {
                     const cellContent = renderCell
@@ -51,7 +51,7 @@ export default function DataTable<T extends Record<string, any>>({
                       : row[col.key];
 
                     return (
-                      <td key={col.key} className="px-4 py-4 whitespace-nowrap">
+                      <td key={col.key} className="px-5 py-4 whitespace-nowrap text-xs font-medium text-slate-700">
                         {cellContent !== undefined && cellContent !== null
                           ? cellContent
                           : row[col.key]}
@@ -67,3 +67,4 @@ export default function DataTable<T extends Record<string, any>>({
     </div>
   );
 }
+
