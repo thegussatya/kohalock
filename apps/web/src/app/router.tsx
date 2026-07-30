@@ -63,6 +63,7 @@ import AuditorHelp from '../features/auditor/HelpPage';
 import BpdAdatHelp from '../features/bpd-adat/HelpPage';
 import KaurKeuanganDashboard from '../features/kaur-keuangan/DashboardPage';
 import KaurKeuanganExecutionQueue from '../features/kaur-keuangan/ExecutionQueuePage';
+import KaurKeuanganVillageIncome from '../features/kaur-keuangan/VillageIncomePage';
 import KaurKeuanganGeneralCashBook from '../features/kaur-keuangan/GeneralCashBookPage';
 import KaurKeuanganBankBook from '../features/kaur-keuangan/BankBookPage';
 import KaurKeuanganTaxBook from '../features/kaur-keuangan/TaxBookPage';
@@ -328,6 +329,10 @@ export const router = createBrowserRouter([
       {
         path: '/kaur-keuangan/antrean-eksekusi',
         element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganExecutionQueue /></ProtectedRoute>,
+      },
+      {
+        path: '/kaur-keuangan/pendapatan-desa',
+        element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganVillageIncome /></ProtectedRoute>,
       },
       {
         path: '/kaur-keuangan/buku-kas-umum',

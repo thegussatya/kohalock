@@ -127,6 +127,77 @@ model AuditorAccessToken {
   revoked     Boolean  @default(false)
   createdAt   DateTime @default(now())
 }
+
+// Model-model Kaur Keuangan / Bendahara
+
+model CashBookEntry {
+  id             String   @id @default(cuid())
+  tanggal        DateTime
+  uraian         String
+  penerimaan     BigInt
+  pengeluaran    BigInt
+  saldoBerjalan  BigInt
+  bulan          Int
+  tahun          Int
+  statusTerkunci Boolean  @default(false)
+  incomeEntries  VillageIncomeEntry[]
+}
+
+model BankBookEntry {
+  id         String   @id @default(cuid())
+  tanggal    DateTime
+  keterangan String
+  debit      BigInt
+  kredit     BigInt
+  saldo      BigInt
+  bulan      Int
+  tahun      Int
+}
+
+model TaxBookEntry {
+  id             String        @id @default(cuid())
+  tanggal        DateTime
+  jenisPajak     String
+  nominal        BigInt
+  statusSetor    String        @default("BELUM_SETOR")
+  bulan          Int
+  tahun          Int
+  disbursementId String?
+  disbursement   Disbursement? @relation(fields: [disbursementId], references: [id])
+}
+
+model MonthlyClosing {
+  id            String   @id @default(cuid())
+  bulan         Int
+  tahun         Int
+  hashKunci     String
+  ditutupOlehId String
+  ditutupPada   DateTime
+}
+
+model CorrectionTransaction {
+  id              String   @id @default(cuid())
+  transaksiAsalId String
+  alasan          String
+  nilaiKoreksi    BigInt
+  dibuatOlehId    String
+  createdAt       DateTime @default(now())
+}
+
+model VillageIncomeEntry {
+  id              String         @id @default(cuid())
+  tanggal         DateTime
+  kelompok        String
+  jenis           String
+  uraian          String
+  nominal         BigInt
+  sumberReferensi String?
+  bulan           Int
+  tahun           Int
+  dicatatOlehId   String
+  cashBookEntryId String?
+  createdAt       DateTime       @default(now())
+}
 ```
 
 ## Catatan Implementasi

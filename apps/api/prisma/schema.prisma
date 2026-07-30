@@ -28,6 +28,7 @@ model User {
   auditorTokens        AuditorAccessToken[]
   monthlyClosings      MonthlyClosing[]
   corrections          CorrectionTransaction[]
+  villageIncomes       VillageIncomeEntry[]
 }
 
 model Proposal {
@@ -171,6 +172,8 @@ model CashBookEntry {
   bulan          Int
   tahun          Int
   statusTerkunci Boolean  @default(false)
+  
+  incomeEntries  VillageIncomeEntry[]
 }
 
 model BankBookEntry {
@@ -214,4 +217,24 @@ model CorrectionTransaction {
   dibuatOlehId    String
   dibuatOleh      User     @relation(fields: [dibuatOlehId], references: [id])
   createdAt       DateTime @default(now())
+}
+
+model VillageIncomeEntry {
+  id              String         @id @default(cuid())
+  tanggal         DateTime
+  kelompok        String
+  jenis           String
+  uraian          String
+  nominal         BigInt
+  sumberReferensi String?
+  bulan           Int
+  tahun           Int
+  
+  dicatatOlehId   String
+  dicatatOleh     User           @relation(fields: [dicatatOlehId], references: [id])
+  
+  cashBookEntryId String?
+  cashBookEntry   CashBookEntry? @relation(fields: [cashBookEntryId], references: [id])
+  
+  createdAt       DateTime       @default(now())
 }

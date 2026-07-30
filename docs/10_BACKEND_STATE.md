@@ -8,7 +8,7 @@ Berikut adalah daftar model, *field*, dan relasinya:
 
 *   **`User`**: Data pengguna.
     *   *Fields*: `id`, `nama`, `role`, `email`, `passwordHash`, `jabatan`, `createdAt`.
-    *   *Relasi*: `proposals`, `sekdesVerifications`, `kadesApprovals`, `kadesInterventions`, `clarificationAnswers`, `adatCases`, `supervisionNotes`, `auditorTokens`, `monthlyClosings`, `corrections`.
+    *   *Relasi*: `proposals`, `sekdesVerifications`, `kadesApprovals`, `kadesInterventions`, `clarificationAnswers`, `adatCases`, `supervisionNotes`, `auditorTokens`, `monthlyClosings`, `corrections`, `villageIncomes`.
 *   **`Proposal`**: Data program hasil Musrembang.
     *   *Fields*: `id`, `onChainId`, `dusun`, `judulUsulan`, `kategori`, `volume`, `satuan`, `paguMaksimal`, `dokumenHash`, `fileUrls`, `kaurTeknisId`, `createdAt`.
     *   *Relasi*: `kaurTeknis` (User), `disbursements`.
@@ -31,6 +31,7 @@ Berikut adalah daftar model, *field*, dan relasinya:
     *   *Fields*: `id`, `auditorId`, `expiresAt`, `revoked`, `createdAt`.
 *   **`CashBookEntry`**: Entri Buku Kas Umum (BKU).
     *   *Fields*: `id`, `tanggal`, `uraian`, `penerimaan`, `pengeluaran`, `saldoBerjalan`, `bulan`, `tahun`, `statusTerkunci`.
+    *   *Relasi*: `incomeEntries` (VillageIncomeEntry).
 *   **`BankBookEntry`**: Entri Buku Bank.
     *   *Fields*: `id`, `tanggal`, `keterangan`, `debit`, `kredit`, `saldo`, `bulan`, `tahun`.
 *   **`TaxBookEntry`**: Entri Buku Pajak.
@@ -39,6 +40,9 @@ Berikut adalah daftar model, *field*, dan relasinya:
     *   *Fields*: `id`, `bulan`, `tahun`, `hashKunci`, `ditutupOlehId`, `ditutupPada`.
 *   **`CorrectionTransaction`**: Transaksi koreksi/pembetulan BKU.
     *   *Fields*: `id`, `transaksiAsalId`, `alasan`, `nilaiKoreksi`, `dibuatOlehId`, `createdAt`.
+*   **`VillageIncomeEntry`**: Catatan pendapatan desa (PADes, Transfer, Lain-lain). **(Model Baru)**
+    *   *Fields*: `id`, `tanggal`, `kelompok`, `jenis`, `uraian`, `nominal` (BigInt), `sumberReferensi`, `bulan`, `tahun`, `dicatatOlehId`, `cashBookEntryId`, `createdAt`.
+    *   *Relasi*: `dicatatOleh` (User), `cashBookEntry` (CashBookEntry — opsional, dibuat otomatis saat pendapatan dicatat).
 
 ## 2. Endpoint API
 Lokasi: `apps/api/routes/`
@@ -53,6 +57,7 @@ Lokasi: `apps/api/routes/`
 | `/api/disbursements/` | GET | Ya | Mengambil daftar pengajuan, mendukung *query parameter* `?status=` untuk memfilter berdasarkan status. |
 | `/api/disbursements/execution-queue` | GET | Ya | Mengambil khusus pengajuan dengan status `PENDING_EKSEKUSI` (untuk Kaur Keuangan). |
 | `/api/disbursements/:id` | GET | Ya | Mengambil detail spesifik pengajuan pencairan. |
+| `/api/disbursements/:id` | PUT | Ya | (Kaur Teknis) Menyimpan revisi pengajuan pencairan yang dikembalikan (update nominal/geotag), mereset status kembali ke `PENDING_SEKDES`. |
 | `/api/disbursements/:id/verify` | POST | Ya | (Sekdes) Memverifikasi pengajuan. Mengubah status ke `PENDING_KADES` dan set `verifiedAt`. |
 | `/api/disbursements/:id/return-revision` | POST | Ya | (Sekdes/Kades) Menolak dengan catatan revisi, mengubah status ke `RETURNED_FOR_REVISION`. |
 | `/api/disbursements/:id/authorize` | POST | Ya | (Kades) Mengotorisasi pencairan. Mengubah status ke `PENDING_EKSEKUSI` dan set `authorizedAt`. |
@@ -76,7 +81,12 @@ Lokasi: `apps/api/routes/`
 | `/api/public/projects/:id` | GET | Tidak | Mengambil detail publik 1 proyek lengkap dengan informasi termin pencairan dan galeri geotagging. |
 | `/api/public/clarifications` | POST/GET | Tidak | Mengirim pertanyaan publik (POST) dan mengambil seluruh daftar tiket diskusi terbuka (GET). |
 | `/api/public/whistleblower` | POST | Tidak | Menerima payload whistleblower (encrypted-only) dari masyarakat tanpa logging backend. |
-| `/api/public/whistleblower/:ticketCode/status` | GET | Tidak | Cek status tiket laporan whistleblower tanpa mengembalikan payload enkripsi aslinya. |
+| `/api/disbursements/authorizations` | GET | Ya | Mengambil riwayat otorisasi pencairan oleh Kades. |
+| `/api/interventions/:id/reject` | POST | Ya | (Kades) Menolak intervensi/pencairan mencurigakan, membuat InterventionLog, mengubah status ke `REJECTED_SYSTEM`. |
+| `/api/interventions/:id/certificate` | GET | Ya | Mengunduh sertifikat PDF penolakan intervensi non-prosedural. |
+| `/api/village-income/` | POST | Ya (Kaur Keuangan) | Mencatat pendapatan desa baru. Dalam 1 transaksi atomik: buat `VillageIncomeEntry` + buat `CashBookEntry` penerimaan + link keduanya. Tolak jika periode sudah di-closing. |
+| `/api/village-income/` | GET | Ya | Mengambil daftar pendapatan desa, mendukung filter `?bulan=`, `?tahun=`, `?kelompok=`, `?jenis=`, `?search=`. |
+| `/api/village-income/summary` | GET | Ya | Mengembalikan agregat total nominal per kelompok (`Transfer`, `PADes`, `Pendapatan Lain-lain`) untuk periode tertentu. |
 
 ## 3. Middleware Autentikasi
 Lokasi: `apps/api/middleware/auth.middleware.ts`
@@ -96,7 +106,14 @@ Rute (*route*) didaftarkan pada Express *app* dengan urutan berikut:
 7.  `app.use('/api/ledger', ledgerRouter)`
 8.  `app.use('/api/monthly-closing', monthlyClosingRouter)`
 9.  `app.use('/api/tax-book', taxBookRouter)`
-10. `app.get('/health', ...)` (Health check inline route)
+10. `app.use('/api/corrections', correctionRouter)`
+11. `app.use('/api/reports', reportRouter)`
+12. `app.use('/api/export', exportRouter)`
+13. `app.use('/api/adat-cases', adatRouter)`
+14. `app.use('/api/supervision-notes', supervisionRouter)`
+15. `app.use('/api/interventions', interventionRouter)`
+16. `app.use('/api/village-income', villageIncomeRouter)` **(Baru)**
+17. `app.get('/health', ...)` (Health check inline route)
 
 ## 5. Alur Inti yang Sudah Terhubung End-to-End
 Sistem tata kelola desa KohaLock saat ini telah memfasilitasi alur transaksi dari hulu ke hilir:
@@ -112,7 +129,8 @@ Sistem tata kelola desa KohaLock saat ini telah memfasilitasi alur transaksi dar
 Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data langsung dari API asli (bukan data statis):
 
 *   **Formulir Musrembang** (`SubmitDisbursementPage.tsx`)
-*   **Ajukan Pencairan** (`SubmitDisbursementPage.tsx`)
+*   **Ajukan Pencairan** (`SubmitDisbursementPage.tsx`) - *Termasuk mode Edit / Revisi!*
+*   **Riwayat Penolakan** (`RejectionHistoryPage.tsx`) - *Baru disambungkan!*
 *   **Verifikasi Pengajuan & Antrean Sekdes** (`VerificationQueuePage.tsx`)
 *   **Split-View Reviewer (Sekdes)** (`ReviewSubmissionPage.tsx`)
 *   **Persetujuan Pencairan (Kades)** (`DisbursementApprovalPage.tsx`)
@@ -133,6 +151,8 @@ Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data lang
 *   **Detail Proyek Publik** (`ProjectDetailPage.tsx`) - *Baru disambungkan!*
 *   **Klarifikasi Warga** (`ClarificationPage.tsx`) - *Baru disambungkan!*
 *   **Whistleblower Report** (`WhistleblowerReportPage.tsx`) - *Baru disambungkan!*
+*   **Perisai Integritas (Panic Button)** (`IntegrityShieldPage.tsx` & `DisbursementDetailPage.tsx`) - *Baru disambungkan!*
+*   **Pendapatan Desa** (`VillageIncomePage.tsx`) - *Baru disambungkan! Full-stack: POST/GET/summary terintegrasi, otomatis buat CashBookEntry.*
 
 ## 7. Yang MASIH Dummy
 Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum terhubung (maupun belum ada) ke *endpoint* API asli:
@@ -140,9 +160,9 @@ Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum 
 *   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Notifikasi, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
 *   **Auditor**: Case Management, Integrity Checker, Legal Export, Notifikasi, Report Templates, Whistleblower Inbox.
 *   **Publik**: Notifikasi.
-*   **Kaur Keuangan**: Dashboard.
-*   **Kades**: Authorization History, Clarification Analytics, Integrity Shield, Public Clarification Center, Notifikasi.
-*   **Kaur Teknis**: My Programs, Program Detail, Rejection History, Notifikasi.
+*   **Kaur Keuangan**: Dashboard (satu-satunya yang tertinggal di role ini).
+*   **Kades**: Authorization History, Clarification Analytics, Public Clarification Center, Notifikasi.
+*   **Kaur Teknis**: My Programs, Program Detail, Notifikasi.
 *   **Sekdes**: Budget Monitoring, Clarification Inbox, Verification History, Notifikasi.
 
 ## 8. Konfigurasi & Environment
@@ -157,6 +177,6 @@ Variabel *environment* (`.env`) yang saat ini digunakan di backend (tanpa _value
 *   **Ketidaksesuaian Caching TypeScript**: Mengubah struktur schema Prisma terkadang membuat *compiler* internal `ts-node-dev` gagal mendeteksi penambahan tipe baru, sehingga memerlukan casting `as any` di kode atau restart bersih dari lingkungan pengembangan.
 
 ## 10. Row Level Security (RLS) Status
-Seluruh **16 tabel** di Supabase saat ini **SUDAH DIBERLAKUKAN (ENABLED)** Row Level Security (RLS) untuk keamanan. 
-Tabel-tabel tersebut adalah: `User`, `Proposal`, `Disbursement`, `RejectionLog`, `InterventionLog`, `ClarificationTicket`, `WhistleblowerReport`, `Notification`, `AdatCase`, `SupervisionNote`, `AuditorAccessToken`, `CashBookEntry`, `BankBookEntry`, `TaxBookEntry`, `MonthlyClosing`, dan `CorrectionTransaction`.
+Seluruh **17 tabel** di Supabase saat ini **SUDAH DIBERLAKUKAN (ENABLED)** Row Level Security (RLS) untuk keamanan.
+Tabel-tabel tersebut adalah: `User`, `Proposal`, `Disbursement`, `RejectionLog`, `InterventionLog`, `ClarificationTicket`, `WhistleblowerReport`, `Notification`, `AdatCase`, `SupervisionNote`, `AuditorAccessToken`, `CashBookEntry`, `BankBookEntry`, `TaxBookEntry`, `MonthlyClosing`, `CorrectionTransaction`, dan `VillageIncomeEntry`.
 *Catatan: Backend Prisma secara default melakukan bypass pada RLS karena dikoneksikan dengan service role credentials (postgres) di URL database-nya.*

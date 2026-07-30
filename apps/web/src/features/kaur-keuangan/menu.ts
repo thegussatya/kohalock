@@ -1,8 +1,9 @@
-import { LayoutDashboard, Landmark, BookOpen, Building2, Receipt, Lock, FileBarChart, Undo2, Archive, Settings, HelpCircle } from "lucide-react";
+import { LayoutDashboard, Landmark, BookOpen, Building2, Receipt, Lock, FileBarChart, Undo2, Archive, Settings, HelpCircle, Coins } from "lucide-react";
 
 export const KAUR_KEUANGAN_MENU = [
   { label: "Dashboard", path: "/kaur-keuangan", icon: LayoutDashboard },
   { label: "Antrean Eksekusi", path: "/kaur-keuangan/antrean-eksekusi", icon: Landmark },
+  { label: "Pendapatan Desa", path: "/kaur-keuangan/pendapatan-desa", icon: Coins },
   { label: "Buku Kas Umum", path: "/kaur-keuangan/buku-kas-umum", icon: BookOpen },
   { label: "Buku Bank", path: "/kaur-keuangan/buku-bank", icon: Building2 },
   { label: "Buku Pajak", path: "/kaur-keuangan/buku-pajak", icon: Receipt },

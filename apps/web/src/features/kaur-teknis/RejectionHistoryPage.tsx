@@ -1,6 +1,6 @@
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
-import { LayoutDashboard, FilePlus, Wallet, History, HelpCircle, FolderKanban } from 'lucide-react';
+
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import { KAUR_TEKNIS_MENU } from './menu';
 
@@ -25,6 +25,7 @@ const COLUMNS: TableColumn[] = [
   { key: 'tahap', label: 'Tahap' },
   { key: 'alasan', label: 'Alasan Penolakan' },
   { key: 'status', label: 'Status' },
+  { key: 'aksi', label: 'Aksi' },
 ];
 
 export default function RejectionHistoryPage() {
@@ -83,6 +84,22 @@ export default function RejectionHistoryPage() {
           {row.status}
         </span>
       );
+    }
+    if (columnKey === 'aksi') {
+      const isFixed = row.status === 'Sudah Diperbaiki';
+      const isSekdes = row.jenis === 'sekdes';
+      
+      if (!isFixed && isSekdes) {
+        return (
+          <button
+            onClick={() => window.location.href = `/kaur-teknis/ajukan-pencairan?edit=${(row as any).disbursementId}`}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors shadow-sm"
+          >
+            Perbaiki
+          </button>
+        );
+      }
+      return <span className="text-xs text-slate-400 italic">Tidak tersedia</span>;
     }
     return undefined;
   };

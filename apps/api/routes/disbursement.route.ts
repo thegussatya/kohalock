@@ -117,6 +117,70 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
   }
 });
 
+// PUT /disbursements/:id
+router.put('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { keterangan, nominal, geotagLat, geotagLng } = req.body;
+
+    const existingDisbursement = await prisma.disbursement.findUnique({
+      where: { id },
+      include: { proposal: true }
+    });
+
+    if (!existingDisbursement) {
+      res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+      return;
+    }
+
+    if (existingDisbursement.status !== 'RETURNED_FOR_REVISION') {
+      res.status(400).json({ error: 'Hanya pengajuan yang dikembalikan untuk revisi yang dapat diubah' });
+      return;
+    }
+
+    const reqNominal = BigInt(nominal);
+
+    // Cek sisa pagu
+    const existingDisbursements = await prisma.disbursement.findMany({
+      where: {
+        proposalId: existingDisbursement.proposalId,
+        status: {
+          notIn: ['REJECTED_SYSTEM', 'RETURNED_FOR_REVISION']
+        },
+        id: { not: id } // Exclude the current one just in case, though it's already in RETURNED_FOR_REVISION
+      }
+    });
+
+    const totalTerpakai = existingDisbursements.reduce((acc, curr) => acc + curr.nominal, BigInt(0));
+    const sisaPagu = existingDisbursement.proposal.paguMaksimal - totalTerpakai;
+
+    if (reqNominal > sisaPagu) {
+      res.status(400).json({ 
+        error: `Nominal melebihi sisa pagu, sisa pagu saat ini: Rp ${sisaPagu.toString()}` 
+      });
+      return;
+    }
+
+    const updated = await prisma.disbursement.update({
+      where: { id },
+      data: {
+        keterangan,
+        nominal: reqNominal,
+        geotagLat: Number(geotagLat),
+        geotagLng: Number(geotagLng),
+        geotagTimestamp: new Date(),
+        status: 'PENDING_SEKDES',
+        catatanRevisi: null // Clear the rejection note
+      }
+    });
+
+    res.json(serialize(updated));
+  } catch (error: any) {
+    console.error('Error updating disbursement:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 // GET /disbursements
 router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -176,21 +240,25 @@ router.get('/rejections', authenticate, async (req: AuthRequest, res: Response):
     const combined = [
       ...rejectionLogs.map(l => ({
         id: `rej_${l.id}`,
+        disbursementId: l.disbursementId,
+        proposalId: l.disbursement?.proposalId,
         tanggal: l.createdAt,
         namaProgram: l.disbursement?.proposal?.judulUsulan || '-',
         tahap: 'Pencairan (Verifikasi Sekdes)',
         jenis: 'sekdes',
         alasan: l.pesanError,
-        status: 'Belum Diperbaiki' // as default status based on UI mockup
+        status: l.disbursement?.status === 'RETURNED_FOR_REVISION' ? 'Belum Diperbaiki' : 'Sudah Diperbaiki'
       })),
       ...interventionLogs.map(l => ({
         id: `int_${l.id}`,
+        disbursementId: l.disbursementId,
+        proposalId: l.disbursement?.proposalId,
         tanggal: l.createdAt,
         namaProgram: l.disbursement?.proposal?.judulUsulan || '-',
         tahap: 'Pencairan (Otorisasi Kades)',
         jenis: 'sistem',
         alasan: l.disbursement?.catatanRevisi || 'Penolakan Sistem/Intervensi',
-        status: 'Belum Diperbaiki'
+        status: l.disbursement?.status === 'REJECTED_SYSTEM' ? 'Belum Diperbaiki' : 'Sudah Diperbaiki'
       }))
     ].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime());
 
@@ -575,7 +643,7 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
             const nominalPajak = BigInt(p.nominal);
             if (nominalPajak <= 0n) continue;
 
-            const newTax = await (tx as any).taxBookEntry.create({
+            const newTax = await tx.taxBookEntry.create({
               data: {
                 tanggal: sekarang,
                 jenisPajak: p.jenisPajak,

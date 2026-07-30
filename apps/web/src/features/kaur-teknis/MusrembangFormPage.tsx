@@ -62,7 +62,7 @@ export default function MusrembangFormPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Daftar Hadir Warga (PDF)</label>
               <input 
@@ -73,6 +73,14 @@ export default function MusrembangFormPage() {
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Notulensi Rapat (PDF)</label>
+              <input 
+                type="file" 
+                accept=".pdf"
+                className="w-full text-sm text-slate-600 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-300 rounded-xl cursor-pointer bg-white transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Unggah RAB & Desain (PDF)</label>
               <input 
                 type="file" 
                 accept=".pdf"

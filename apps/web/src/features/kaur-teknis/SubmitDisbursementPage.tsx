@@ -1,7 +1,7 @@
 import PageHeader from '../../components/PageHeader';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, FilePlus, Wallet, History, HelpCircle, FolderKanban } from 'lucide-react';
+
 import RoleLayout from '../../components/RoleLayout';
 import GeotagCameraCapture from '../../components/GeotagCameraCapture';
 import { KAUR_TEKNIS_MENU } from './menu';
@@ -14,8 +14,32 @@ export default function SubmitDisbursementPage() {
   const [keterangan, setKeterangan] = useState('');
   const [nominal, setNominal] = useState<number | ''>('');
   const [geotagCoords, setGeotagCoords] = useState<{lat: number, lng: number} | null>(null);
+  
+  const [editId, setEditId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
+    // Check for edit mode
+    const params = new URLSearchParams(window.location.search);
+    const edit = params.get('edit');
+    if (edit) {
+      setEditId(edit);
+      setIsEditing(true);
+      // Fetch existing disbursement
+      apiClient.get(`/disbursements/${edit}`).then(res => {
+        const d = res.data;
+        setSelectedProgramId(d.proposalId);
+        setKeterangan(d.keterangan);
+        setNominal(Number(d.nominal));
+        if (d.geotagLat && d.geotagLng) {
+          setGeotagCoords({ lat: d.geotagLat, lng: d.geotagLng });
+        }
+      }).catch(err => {
+        console.error(err);
+        toast.error('Gagal mengambil data pengajuan yang akan direvisi');
+      });
+    }
+
     apiClient.get('/proposals').then(res => {
       setProgramList(res.data);
     }).catch(err => {
@@ -44,7 +68,10 @@ export default function SubmitDisbursementPage() {
 
   return (
     <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
-      <PageHeader title="Ajukan Pencairan" description="Formulir pengajuan pencairan dana untuk program yang telah disetujui di Musrembang." />
+      <PageHeader 
+        title={isEditing ? "Revisi Pengajuan Pencairan" : "Ajukan Pencairan"} 
+        description={isEditing ? "Perbaiki data pengajuan yang dikembalikan oleh Sekdes." : "Formulir pengajuan pencairan dana untuk program yang telah disetujui di Musrembang."} 
+      />
 
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 max-w-4xl">
@@ -69,23 +96,42 @@ export default function SubmitDisbursementPage() {
 
           try {
             const cleanNominal = Number(nominal.toString().replace(/[^0-9]/g, ''));
-            const response = await apiClient.post('/disbursements', {
-              proposalId: selectedProgramId,
-              keterangan,
-              nominal: cleanNominal,
-              geotagLat: geotagCoords.lat,
-              geotagLng: geotagCoords.lng
-            });
+            
+            let response;
+            if (isEditing && editId) {
+              response = await apiClient.put(`/disbursements/${editId}`, {
+                keterangan,
+                nominal: cleanNominal,
+                geotagLat: geotagCoords.lat,
+                geotagLng: geotagCoords.lng
+              });
+            } else {
+              response = await apiClient.post('/disbursements', {
+                proposalId: selectedProgramId,
+                keterangan,
+                nominal: cleanNominal,
+                geotagLat: geotagCoords.lat,
+                geotagLng: geotagCoords.lng
+              });
+            }
 
-            if (response.status === 201) {
-              toast.success("Pengajuan pencairan berhasil dikirim ke Sekdes");
+            if (response.status === 201 || response.status === 200) {
+              toast.success(isEditing ? "Revisi berhasil dikirim kembali ke Sekdes" : "Pengajuan pencairan berhasil dikirim ke Sekdes");
               // Refresh sisa pagu
               apiClient.get(`/disbursements/sisa-pagu/${selectedProgramId}`).then(res => {
                 setSisaPagu(Number(res.data.sisaPagu));
               });
-              setNominal('');
-              setKeterangan('');
-              setGeotagCoords(null);
+              
+              if (isEditing) {
+                // If edit mode is complete, optionally redirect back to rejection history
+                setTimeout(() => {
+                  window.location.href = '/kaur-teknis/riwayat-penolakan';
+                }, 1500);
+              } else {
+                setNominal('');
+                setKeterangan('');
+                setGeotagCoords(null);
+              }
             }
           } catch (error: any) {
             const msg = error.response?.data?.error || error.response?.data?.message || "Gagal mengajukan pencairan";
@@ -191,7 +237,7 @@ export default function SubmitDisbursementPage() {
               type="submit"
               className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors uppercase tracking-wide text-sm"
             >
-              Tanda Tangani & Ajukan
+              {isEditing ? "Tanda Tangani & Kirim Revisi" : "Tanda Tangani & Ajukan"}
             </button>
           </div>
         </form>

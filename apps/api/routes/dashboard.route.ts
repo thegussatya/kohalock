@@ -505,7 +505,7 @@ router.get('/bpd-adat', authenticate, async (req: AuthRequest, res: Response): P
 router.get('/kaur-keuangan', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const pendingDisbursementsCount = await prisma.disbursement.count({
-      where: { status: 'PENDING_KEUANGAN' }
+      where: { status: 'PENDING_EKSEKUSI' }
     });
 
     const now = new Date();

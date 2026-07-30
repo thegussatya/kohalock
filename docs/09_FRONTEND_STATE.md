@@ -118,6 +118,7 @@
 |---|---|---|---|
 | `/kaur-keuangan` | `DashboardPage` | Dashboard | `LayoutDashboard` |
 | `/kaur-keuangan/antrean-eksekusi` | `ExecutionQueuePage` | Antrean Eksekusi | `Landmark` |
+| `/kaur-keuangan/pendapatan-desa` | `VillageIncomePage` | Pendapatan Desa | `Coins` |
 | `/kaur-keuangan/buku-kas-umum` | `GeneralCashBookPage` | Buku Kas Umum | `BookOpen` |
 | `/kaur-keuangan/buku-bank` | `BankBookPage` | Buku Bank | `Building2` |
 | `/kaur-keuangan/buku-pajak` | `TaxBookPage` | Buku Pajak | `Receipt` |
@@ -162,3 +163,12 @@ Role ini dirancang untuk mendigitalisasi penatausahaan keuangan setelah pencaira
 ## Catatan/Isu Diketahui
 1. **Pengecekan Duplikasi Array Menu Lokal**: Dari hasil pemindaian langsung pada kode sumber `src/features/`, **TIDAK DITEMUKAN** satupun duplikasi dari definisi tipe _array menu_ lokal di dalam file komponen halaman. Semua dependensi terkait navigasi (`KADES_MENU`, `KAUR_KEUANGAN_MENU`, dsb) telah dengan rapi di-ekstrak dan disentralisasi ke dalam file `menu.ts` di masing-masing modul. Pola *bug* yang pernah ada di versi-versi lampau kini sudah dipastikan bersih seutuhnya.
 2. **Crash Variant pada MetricCard**: Ditemukan sebelumnya *error crash* pada UI akibat properti string untuk warna komponen di `MetricCard` yang tidak dikenali (`info`). Perbaikan telah dikerjakan dengan menambahkan _fallback style_ statis sehingga komponen tidak akan *crash* di saat aplikasi berjalan, betapapun keliru _props_ diturunkan.
+
+## Pembaruan Terkini (Full-Stack Integrations)
+1. **Alur Revisi Pencairan (Kaur Teknis - Sekdes)**: 
+   - Halaman `RejectionHistoryPage` kini memiliki tombol aksi "Perbaiki" untuk pencairan yang dikembalikan.
+   - Halaman `SubmitDisbursementPage` mendukung mode edit (`?edit=id`) yang otomatis memuat ulang data lama, dan menggunakan tombol "Kirim Revisi" untuk mengupdate data via API `PUT /disbursements/:id` (mengubah status kembali ke `PENDING_SEKDES`).
+2. **Uji Alat Bukti / Integrity Checker (Auditor)**:
+   - Filter `?status=DISBURSED` telah dilepas. Auditor sekarang dapat melihat dan memindai hash dokumen dari seluruh riwayat pencairan, termasuk yang berstatus ditolak (`REJECTED_SYSTEM`) untuk keperluan investigasi forensik.
+3. **Formulir Musrembang (Kaur Teknis)**:
+   - Menambahkan kolom unggahan **RAB & Gambar Desain (PDF)** untuk melengkapi dokumen induk selain Daftar Hadir dan Notulensi.

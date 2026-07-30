@@ -18,7 +18,7 @@ export default function IntegrityCheckerPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    apiClient.get('/disbursements?status=DISBURSED')
+    apiClient.get('/disbursements')
       .then(res => setDisbursements(res.data))
       .catch(console.error);
   }, []);
@@ -108,7 +108,10 @@ export default function IntegrityCheckerPage() {
           >
             <option value="" disabled>-- Pilih Transaksi --</option>
             {disbursements.map(trx => (
-              <option key={trx.id} value={trx.id}>{trx.proposal?.judulUsulan} (Rp {Number(trx.nominal).toLocaleString('id-ID')})</option>
+              <option key={trx.id} value={trx.id}>
+                {trx.status !== 'DISBURSED' ? `[${trx.status.replace('_', ' ')}] ` : ''}
+                {trx.proposal?.judulUsulan} (Rp {Number(trx.nominal).toLocaleString('id-ID')})
+              </option>
             ))}
           </select>
         </div>
