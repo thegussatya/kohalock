@@ -81,6 +81,9 @@ Lokasi: `apps/api/routes/`
 | `/api/public/projects/:id` | GET | Tidak | Mengambil detail publik 1 proyek lengkap dengan informasi termin pencairan dan galeri geotagging. |
 | `/api/public/clarifications` | POST/GET | Tidak | Mengirim pertanyaan publik (POST) dan mengambil seluruh daftar tiket diskusi terbuka (GET). |
 | `/api/public/whistleblower` | POST | Tidak | Menerima payload whistleblower (encrypted-only) dari masyarakat tanpa logging backend. |
+| `/api/notifications` | GET | Ya | Mengambil daftar notifikasi terbaru milik user yang login. |
+| `/api/notifications/unread-count` | GET | Ya | Mengambil jumlah notifikasi yang belum dibaca. |
+| `/api/notifications/:id/read` | POST | Ya | Menandai notifikasi spesifik menjadi sudah dibaca. |
 | `/api/disbursements/authorizations` | GET | Ya | Mengambil riwayat otorisasi pencairan oleh Kades. |
 | `/api/interventions/:id/reject` | POST | Ya | (Kades) Menolak intervensi/pencairan mencurigakan, membuat InterventionLog, mengubah status ke `REJECTED_SYSTEM`. |
 | `/api/interventions/:id/certificate` | GET | Ya | Mengunduh sertifikat PDF penolakan intervensi non-prosedural. |
@@ -113,7 +116,8 @@ Rute (*route*) didaftarkan pada Express *app* dengan urutan berikut:
 14. `app.use('/api/supervision-notes', supervisionRouter)`
 15. `app.use('/api/interventions', interventionRouter)`
 16. `app.use('/api/village-income', villageIncomeRouter)` **(Baru)**
-17. `app.get('/health', ...)` (Health check inline route)
+17. `app.use('/api/notifications', notificationRouter)`
+18. `app.get('/health', ...)` (Health check inline route)
 
 ## 5. Alur Inti yang Sudah Terhubung End-to-End
 Sistem tata kelola desa KohaLock saat ini telah memfasilitasi alur transaksi dari hulu ke hilir:
@@ -153,17 +157,18 @@ Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data lang
 *   **Whistleblower Report** (`WhistleblowerReportPage.tsx`) - *Baru disambungkan!*
 *   **Perisai Integritas (Panic Button)** (`IntegrityShieldPage.tsx` & `DisbursementDetailPage.tsx`) - *Baru disambungkan!*
 *   **Pendapatan Desa** (`VillageIncomePage.tsx`) - *Baru disambungkan! Full-stack: POST/GET/summary terintegrasi, otomatis buat CashBookEntry.*
+*   **Notifikasi (semua 7 role)** - *Menggunakan komponen `shared/NotificationsPage.tsx` yang tersambung penuh ke API.*
 
 ## 7. Yang MASIH Dummy
 Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum terhubung (maupun belum ada) ke *endpoint* API asli:
 
-*   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Notifikasi, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
-*   **Auditor**: Case Management, Integrity Checker, Legal Export, Notifikasi, Report Templates, Whistleblower Inbox.
-*   **Publik**: Notifikasi.
+*   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
+*   **Auditor**: Case Management, Integrity Checker, Legal Export, Report Templates, Whistleblower Inbox.
+*   **Publik**: (Tidak ada halaman statis yang tercatat).
 *   **Kaur Keuangan**: Dashboard (satu-satunya yang tertinggal di role ini).
-*   **Kades**: Authorization History, Clarification Analytics, Public Clarification Center, Notifikasi.
-*   **Kaur Teknis**: My Programs, Program Detail, Notifikasi.
-*   **Sekdes**: Budget Monitoring, Clarification Inbox, Verification History, Notifikasi.
+*   **Kades**: Authorization History, Clarification Analytics, Public Clarification Center.
+*   **Kaur Teknis**: My Programs, Program Detail.
+*   **Sekdes**: Budget Monitoring, Clarification Inbox, Verification History.
 
 ## 8. Konfigurasi & Environment
 Variabel *environment* (`.env`) yang saat ini digunakan di backend (tanpa _value_ asli):

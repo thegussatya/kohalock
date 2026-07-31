@@ -74,8 +74,7 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
 - Endpoint Klarifikasi (publik <-> Sekdes) - sudah tersambung
 - Endpoint Whistleblower - sudah tersambung (ciphertext only, backend
   tidak pernah lihat plaintext)
-- Endpoint Notifikasi - SEDANG DIDEBUG, lihat bagian "Isu Aktif" di
-  bawah
+- Endpoint Notifikasi - SUDAH SELESAI 100% end-to-end (termasuk trigger otomatis di setiap tahapan pencairan dan sinkronisasi realtime).
 - Kronologi Transaksi (Auditor) & Pantauan Transaksi (BPD) - sudah
   disambungkan ke data asli
 - Prisma schema: banyak model (User, Proposal, Disbursement,

@@ -110,6 +110,21 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
       }
     });
 
+    try {
+      const sekdesUsers = await prisma.user.findMany({ where: { role: 'sekdes' } });
+      for (const sekdes of sekdesUsers) {
+        await createNotification(
+          prisma, 
+          sekdes.id, 
+          "Pengajuan Pencairan Baru", 
+          `Pengajuan pencairan baru menunggu verifikasi Anda: ${proposal.judulUsulan}`
+        );
+      }
+      console.log(`[Notification] Berhasil mengirim notifikasi ke ${sekdesUsers.length} Sekdes`);
+    } catch (notifErr) {
+      console.error('[Notification] Gagal mengirim notifikasi ke Sekdes:', notifErr);
+    }
+
     res.status(201).json(serialize(disbursement));
   } catch (error: any) {
     console.error('Error creating disbursement:', error);
@@ -173,6 +188,21 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response): Promis
         catatanRevisi: null // Clear the rejection note
       }
     });
+
+    try {
+      const sekdesUsers = await prisma.user.findMany({ where: { role: 'sekdes' } });
+      for (const sekdes of sekdesUsers) {
+        await createNotification(
+          prisma, 
+          sekdes.id, 
+          "Pengajuan Revisi Dikirim Ulang", 
+          `Pengajuan revisi telah dikirim ulang, menunggu verifikasi: ${existingDisbursement.proposal.judulUsulan}`
+        );
+      }
+      console.log(`[Notification] Berhasil mengirim notifikasi revisi ke ${sekdesUsers.length} Sekdes`);
+    } catch (notifErr) {
+      console.error('[Notification] Gagal mengirim notifikasi revisi ke Sekdes:', notifErr);
+    }
 
     res.json(serialize(updated));
   } catch (error: any) {
@@ -308,11 +338,16 @@ router.post('/:id/verify', authenticate, async (req: AuthRequest, res: Response)
     });
 
     try {
-      const kadesUser = await prisma.user.findFirst({ where: { role: 'kades' } });
-      if (kadesUser) {
-        await createNotification(prisma, kadesUser.id, "Pengajuan Baru Menunggu Otorisasi", `Pengajuan ${updated.proposal?.judulUsulan} menunggu otorisasi Anda`);
-        console.log(`[Notification] Berhasil mengirim notifikasi ke Kades (ID: ${kadesUser.id})`);
+      const kadesUsers = await prisma.user.findMany({ where: { role: 'kades' } });
+      for (const kades of kadesUsers) {
+        await createNotification(
+          prisma, 
+          kades.id, 
+          "Pengajuan Menunggu Otorisasi", 
+          `Pengajuan pencairan menunggu otorisasi Anda: ${updated.proposal?.judulUsulan}`
+        );
       }
+      console.log(`[Notification] Berhasil mengirim notifikasi ke ${kadesUsers.length} Kades`);
     } catch (notifErr) {
       console.error('[Notification] Gagal mengirim notifikasi ke Kades:', notifErr);
     }
@@ -439,7 +474,8 @@ router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: 
       data: {
         status: 'RETURNED_FOR_REVISION',
         catatanRevisi: catatan
-      }
+      },
+      include: { proposal: true }
     });
 
     await prisma.rejectionLog.create({
@@ -449,6 +485,20 @@ router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: 
         pesanError: catatan
       }
     });
+
+    try {
+      if (updated.proposal?.kaurTeknisId) {
+        await createNotification(
+          prisma,
+          updated.proposal.kaurTeknisId,
+          "Pengajuan Dikembalikan (Revisi)",
+          `Pengajuan Anda dikembalikan untuk revisi: ${catatan}`
+        );
+        console.log(`[Notification] Berhasil mengirim notifikasi revisi ke Kaur Teknis (ID: ${updated.proposal.kaurTeknisId})`);
+      }
+    } catch (notifErr) {
+      console.error('[Notification] Gagal mengirim notifikasi revisi ke Kaur Teknis:', notifErr);
+    }
 
     res.json(serialize(updated));
   } catch (error: any) {
@@ -531,11 +581,16 @@ router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Respon
     });
 
     try {
-      const kaurKeuanganUser = await prisma.user.findFirst({ where: { role: 'kaur-keuangan' } });
-      if (kaurKeuanganUser) {
-        await createNotification(prisma, kaurKeuanganUser.id, "Transaksi Baru di Antrean Eksekusi", `Proposal: ${updated.proposal?.judulUsulan}`);
-        console.log(`[Notification] Berhasil mengirim notifikasi ke Kaur Keuangan (ID: ${kaurKeuanganUser.id})`);
+      const kaurKeuanganUsers = await prisma.user.findMany({ where: { role: 'kaur-keuangan' } });
+      for (const kaurKeuangan of kaurKeuanganUsers) {
+        await createNotification(
+          prisma, 
+          kaurKeuangan.id, 
+          "Transaksi Baru di Antrean Eksekusi", 
+          `Proposal: ${updated.proposal?.judulUsulan}`
+        );
       }
+      console.log(`[Notification] Berhasil mengirim notifikasi ke ${kaurKeuanganUsers.length} Kaur Keuangan`);
     } catch (notifErr) {
       console.error('[Notification] Gagal mengirim notifikasi ke Kaur Keuangan:', notifErr);
     }

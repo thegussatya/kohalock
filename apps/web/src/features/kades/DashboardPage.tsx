@@ -2,7 +2,7 @@ import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BadgeCheck, ShieldAlert, QrCode, Settings, HelpCircle, History, BarChart3, Calendar } from 'lucide-react';
+import { LayoutDashboard, BadgeCheck, ShieldAlert, QrCode, Settings, HelpCircle, History, BarChart3 } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
 import MonthlyBarChart from '../../components/MonthlyBarChart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip } from 'recharts';
@@ -127,78 +127,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          {penyerapanData && penyerapanData.length > 0 && (
-            <MonthlyBarChart
-              title="Penyerapan Anggaran: Target vs Realisasi"
-              data={penyerapanData}
-              series1Name="Target"
-              series2Name="Realisasi"
-              series1Color="#94a3b8"
-              series2Color="#10b981"
-            />
-          )}
-        </div>
-        
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-full mt-6 flex flex-col">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="bg-brand-100 p-2.5 rounded-xl">
-                <Calendar className="w-5 h-5 text-brand-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800">Jatuh Tempo Mendatang</h3>
-            </div>
-            
-            <div className="space-y-4 flex-1">
-              <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors">
-                <div className="flex flex-col items-center justify-center bg-white border border-slate-200 rounded-lg p-2 min-w-[56px] shadow-sm">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Jul</span>
-                  <span className="text-lg font-black text-slate-800 leading-none mt-0.5">31</span>
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800 leading-tight">Akhir Termin 2 Pengaspalan Jalan</h4>
-                  <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-500"></span>
-                    Dusun 3
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors">
-                <div className="flex flex-col items-center justify-center bg-white border border-slate-200 rounded-lg p-2 min-w-[56px] shadow-sm">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Agu</span>
-                  <span className="text-lg font-black text-slate-800 leading-none mt-0.5">15</span>
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800 leading-tight">Tenggat Laporan Triwulan</h4>
-                  <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                    Administrasi Desa
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors">
-                <div className="flex flex-col items-center justify-center bg-white border border-slate-200 rounded-lg p-2 min-w-[56px] shadow-sm">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sep</span>
-                  <span className="text-lg font-black text-slate-800 leading-none mt-0.5">05</span>
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-800 leading-tight">Masa Garansi Bibit Selesai</h4>
-                  <p className="text-xs font-medium text-slate-500 mt-1 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                    Dusun 2
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <button className="w-full mt-4 py-2 text-sm font-bold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-xl transition-colors">
-              Lihat Semua Kalender
-            </button>
-          </div>
-        </div>
+      <div className="mt-6">
+        {penyerapanData && penyerapanData.length > 0 && (
+          <MonthlyBarChart
+            title="Penyerapan Anggaran: Target vs Realisasi"
+            data={penyerapanData}
+            series1Name="Target"
+            series2Name="Realisasi"
+            series1Color="#94a3b8"
+            series2Color="#10b981"
+          />
+        )}
       </div>
     </RoleLayout>
   );
