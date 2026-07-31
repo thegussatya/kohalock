@@ -147,7 +147,7 @@ Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data lang
 *   **Transaksi Koreksi** (`CorrectionTransactionPage.tsx`) - *Baru disambungkan!*
 *   **Laporan Realisasi** (`RealizationReportPage.tsx`) - *Baru disambungkan!*
 *   **Arsip Buku Terkunci** (`LockedArchivePage.tsx`) - *Baru disambungkan!*
-*   **Dashboard (Kaur Teknis, Sekdes, Kades, Auditor, BPD/Adat)** (`DashboardPage.tsx`) - *Baru disambungkan!*
+*   **Dashboard (Semua Role: Kaur Teknis, Sekdes, Kades, Auditor, BPD/Adat, Kaur Keuangan, Publik)** (`DashboardPage.tsx`) - *Semua dashboard telah tersambung penuh ke API.*
 *   **Kronologi Transaksi (Auditor)** (`LedgerExplorerPage.tsx`) - *Baru disambungkan!*
 *   **Pantauan Transaksi (BPD/Adat)** (`TransactionMonitoringPage.tsx`) - *Baru disambungkan!*
 *   **Dashboard Publik** (`DashboardPage.tsx`) - *Baru disambungkan!*
@@ -165,7 +165,7 @@ Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum 
 *   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
 *   **Auditor**: Case Management, Integrity Checker, Legal Export, Report Templates, Whistleblower Inbox.
 *   **Publik**: (Tidak ada halaman statis yang tercatat).
-*   **Kaur Keuangan**: Dashboard (satu-satunya yang tertinggal di role ini).
+*   **Kaur Keuangan**: (Semua sudah tersambung).
 *   **Kades**: Authorization History, Clarification Analytics, Public Clarification Center.
 *   **Kaur Teknis**: My Programs, Program Detail.
 *   **Sekdes**: Budget Monitoring, Clarification Inbox, Verification History.
