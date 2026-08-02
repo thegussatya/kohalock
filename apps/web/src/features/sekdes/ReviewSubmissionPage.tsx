@@ -8,6 +8,8 @@ import RoleLayout from '../../components/RoleLayout';
 import MapWidget from '../../components/MapWidget';
 import HashCheckerBadge from '../../components/HashCheckerBadge';
 import Badge from '../../components/Badge';
+import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
+import { getMediaUrl } from '../../lib/getMediaUrl';
 import { SEKDES_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 
@@ -101,38 +103,49 @@ export default function ReviewSubmissionPage() {
 
         {/* Kolom Kanan */}
         <div className="flex flex-col">
-          <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 h-[800px] lg:h-full min-h-[600px] shadow-sm flex flex-col">
-            <div className="flex justify-between items-center mb-3 px-2">
-              <span className="text-sm font-bold text-slate-700">Dokumen RAB & Proposal (PDF)</span>
-              <Badge label="Read-Only" variant="neutral" />
+          <div className="bg-slate-50 rounded-xl border border-slate-200 p-6 h-[800px] lg:h-full min-h-[600px] shadow-sm flex flex-col">
+            <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Pemeriksaan Dokumen
+            </h3>
+            
+            <div className="flex-grow flex flex-col overflow-y-auto">
+              <DocumentPreviewViewer 
+                fotoUrl={data.fotoUrl} 
+                beritaAcaraUrl={data.beritaAcaraUrl} 
+                lpjUrl={data.lpjUrl} 
+              />
             </div>
-            {/* Dummy PDF viewer - menggunakan URL dummy w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf */}
-            <iframe 
-              src="https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-              title="PDF Viewer"
-              className="w-full flex-grow rounded-lg border border-slate-300 bg-white"
-            ></iframe>
           </div>
         </div>
       </div>
 
       {/* Aksi Bawah */}
-      <div className="flex flex-col sm:flex-row gap-4 border-t border-slate-200 pt-8 pb-4">
-        <button
-          type="button"
-          onClick={() => setShowPinModal(true)}
-          className="px-8 py-3.5 bg-green-600 text-white font-bold rounded-lg shadow-sm hover:bg-green-700 transition-all text-sm uppercase tracking-wide"
-        >
-          Verifikasi & Teruskan ke Kades
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowRevisiModal(true)}
-          className="px-8 py-3.5 bg-yellow-500 text-white font-bold rounded-lg shadow-sm hover:bg-yellow-600 transition-all text-sm uppercase tracking-wide"
-        >
-          Kembalikan untuk Revisi
-        </button>
-      </div>
+      {data.status === 'PENDING_SEKDES' && (
+        <div className="flex flex-col sm:flex-row gap-4 border-t border-slate-200 pt-8 pb-4">
+          <button
+            type="button"
+            onClick={() => setShowPinModal(true)}
+            className="px-8 py-3.5 bg-green-600 text-white font-bold rounded-lg shadow-sm hover:bg-green-700 transition-all text-sm uppercase tracking-wide"
+          >
+            Verifikasi & Teruskan ke Kades
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRevisiModal(true)}
+            className="px-8 py-3.5 bg-yellow-500 text-white font-bold rounded-lg shadow-sm hover:bg-yellow-600 transition-all text-sm uppercase tracking-wide"
+          >
+            Kembalikan untuk Revisi
+          </button>
+        </div>
+      )}
+
+      {/* Jika bukan PENDING_SEKDES, beri info */}
+      {data.status !== 'PENDING_SEKDES' && (
+        <div className="mt-8 p-4 bg-slate-50 border border-slate-200 rounded-xl text-center">
+          <p className="text-sm font-bold text-slate-500">Mode Read-Only: Berkas ini sudah diverifikasi atau dikembalikan.</p>
+        </div>
+      )}
 
       {/* Modal PIN */}
       {showPinModal && (

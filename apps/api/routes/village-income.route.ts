@@ -6,9 +6,13 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // Inisialisasi JSON replacer untuk BigInt supaya bisa dikembalikan di response JSON
-(BigInt.prototype as any).toJSON = function () {
-  return this.toString();
-};
+function serialize(obj: any): any {
+  return JSON.parse(
+    JSON.stringify(obj, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    )
+  );
+}
 
 const VALID_KELOMPOK = ["Transfer", "PADes", "Pendapatan Lain-lain"];
 
@@ -69,7 +73,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
           sumberReferensi: sumberReferensi || null,
           bulan: inputBulan,
           tahun: inputTahun,
-          dicatatOlehId: req.user!.id,
+          dicatatOlehId: req.user!.userId,
         }
       });
 
@@ -94,16 +98,35 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
         }
       });
 
+      // Calculate BankBook balance
+      const lastBankEntry = await tx.bankBookEntry.findFirst({
+        orderBy: { tanggal: 'desc' }
+      });
+      const saldoBankSebelumnya = lastBankEntry ? lastBankEntry.saldo : BigInt(0);
+      const saldoBankBaru = saldoBankSebelumnya + nominalBigInt;
+
+      // Create BankBook Entry
+      const newBankEntry = await tx.bankBookEntry.create({
+        data: {
+          tanggal: inputDate,
+          keterangan: "Penerimaan: " + uraian,
+          debit: nominalBigInt,
+          kredit: BigInt(0),
+          saldo: saldoBankBaru,
+          bulan: inputBulan,
+          tahun: inputTahun
+        }
+      });
+
       // Link Income Entry to CashBook Entry
       const updatedIncomeEntry = await tx.villageIncomeEntry.update({
         where: { id: incomeEntry.id },
         data: { cashBookEntryId: newCashBookEntry.id }
       });
 
-      return { incomeEntry: updatedIncomeEntry, cashBookEntry: newCashBookEntry };
+      return { incomeEntry: updatedIncomeEntry, cashBookEntry: newCashBookEntry, bankBookEntry: newBankEntry };
     });
-
-    res.status(201).json(result);
+    res.status(201).json(serialize(result));
   } catch (error: any) {
     console.error('Error creating village income:', error);
     res.status(500).json({ error: 'Terjadi kesalahan pada server.' });
@@ -146,7 +169,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
       }
     });
 
-    res.json(incomeEntries);
+    res.json(serialize(incomeEntries));
   } catch (error: any) {
     console.error('Error fetching village income:', error);
     res.status(500).json({ error: 'Terjadi kesalahan pada server.' });
@@ -186,7 +209,7 @@ router.get('/summary', authenticate, async (req: AuthRequest, res: Response): Pr
       }
     });
 
-    res.json(result);
+    res.json(serialize(result));
   } catch (error: any) {
     console.error('Error fetching village income summary:', error);
     res.status(500).json({ error: 'Terjadi kesalahan pada server.' });

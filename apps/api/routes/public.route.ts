@@ -172,7 +172,9 @@ router.get('/projects/:id', async (req: Request, res: Response) => {
         cair: d.status === 'DISBURSED' ? d.nominal : BigInt(0),
         status: d.status,
         tanggal: d.submittedAt,
-        beritaAcaraHash: d.beritaAcaraHash
+        beritaAcaraHash: d.beritaAcaraHash,
+        beritaAcaraUrl: d.beritaAcaraUrl,
+        lpjUrl: d.lpjUrl
       };
     });
 
@@ -193,6 +195,8 @@ router.get('/projects/:id', async (req: Request, res: Response) => {
       totalRealisasi: projectRealisasi,
       progress: progress > 100 ? 100 : progress,
       status: calcStatus,
+      formulirMusrembangUrl: typeof proposal.fileUrls === 'object' && proposal.fileUrls ? (proposal.fileUrls as any).formulirMusrembangUrl : null,
+      rabUrl: typeof proposal.fileUrls === 'object' && proposal.fileUrls ? (proposal.fileUrls as any).rabUrl : null,
       terms,
       photos
     }));

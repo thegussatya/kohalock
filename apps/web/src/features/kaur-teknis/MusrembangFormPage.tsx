@@ -13,6 +13,10 @@ export default function MusrembangFormPage() {
   const [volume, setVolume] = useState('');
   const [satuan, setSatuan] = useState('Meter');
   const [pagu, setPagu] = useState('');
+  
+  const [formulirMusrembangFile, setFormulirMusrembangFile] = useState<File | null>(null);
+  const [rabFile, setRabFile] = useState<File | null>(null);
+
   const [showModal, setShowModal] = useState(false);
   const [pin, setPin] = useState('');
 
@@ -62,20 +66,13 @@ export default function MusrembangFormPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Daftar Hadir Warga (PDF)</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Formulir Musrenbang (Notulensi & Daftar Hadir PDF)</label>
               <input 
                 type="file" 
                 accept=".pdf"
-                className="w-full text-sm text-slate-600 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-300 rounded-xl cursor-pointer bg-white transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Unggah Notulensi Rapat (PDF)</label>
-              <input 
-                type="file" 
-                accept=".pdf"
+                onChange={(e) => setFormulirMusrembangFile(e.target.files?.[0] || null)}
                 className="w-full text-sm text-slate-600 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-300 rounded-xl cursor-pointer bg-white transition-colors"
               />
             </div>
@@ -84,6 +81,7 @@ export default function MusrembangFormPage() {
               <input 
                 type="file" 
                 accept=".pdf"
+                onChange={(e) => setRabFile(e.target.files?.[0] || null)}
                 className="w-full text-sm text-slate-600 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-300 rounded-xl cursor-pointer bg-white transition-colors"
               />
             </div>
@@ -202,13 +200,23 @@ export default function MusrembangFormPage() {
                     const cleanPagu = Number(pagu.replace(/[^0-9]/g, ''));
                     const numVolume = Number(volume);
 
-                    const response = await apiClient.post('/proposals', {
-                      dusun,
-                      judulUsulan: judul,
-                      kategori,
-                      volume: numVolume,
-                      satuan,
-                      paguMaksimal: cleanPagu
+                    const formData = new FormData();
+                    formData.append('dusun', dusun);
+                    formData.append('judulUsulan', judul);
+                    formData.append('kategori', kategori);
+                    formData.append('volume', numVolume.toString());
+                    formData.append('satuan', satuan);
+                    formData.append('paguMaksimal', cleanPagu.toString());
+
+                    if (formulirMusrembangFile) {
+                      formData.append('formulirMusrembang', formulirMusrembangFile);
+                    }
+                    if (rabFile) {
+                      formData.append('rab', rabFile);
+                    }
+
+                    const response = await apiClient.post('/proposals', formData, {
+                      headers: { 'Content-Type': 'multipart/form-data' }
                     });
                     
                     if (response.status === 201) {
@@ -219,6 +227,8 @@ export default function MusrembangFormPage() {
                       setVolume('');
                       setSatuan('Meter');
                       setPagu('');
+                      setFormulirMusrembangFile(null);
+                      setRabFile(null);
                     } else {
                       toast.error("Gagal menyimpan usulan");
                     }

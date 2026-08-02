@@ -28,7 +28,6 @@ import PublikProjectList from '../features/publik/ProjectListPage';
 import PublikProjectDetail from '../features/publik/ProjectDetailPage';
 import AuditorDashboard from '../features/auditor/DashboardPage';
 import AuditorCaseManagement from '../features/auditor/CaseManagementPage';
-import AuditorReportTemplates from '../features/auditor/ReportTemplatesPage';
 import AuditorIntegrityChecker from '../features/auditor/IntegrityCheckerPage';
 import AuditorLedgerExplorer from '../features/auditor/LedgerExplorerPage';
 import AuditorWhistleblowerInbox from '../features/auditor/WhistleblowerInboxPage';
@@ -210,10 +209,7 @@ export const router = createBrowserRouter([
         path: '/auditor/ekspor-laporan',
         element: <ProtectedRoute allowedRole="auditor"><AuditorLegalExport /></ProtectedRoute>,
       },
-      {
-        path: '/auditor/template-laporan',
-        element: <ProtectedRoute allowedRole="auditor"><AuditorReportTemplates /></ProtectedRoute>,
-      },
+
       {
         path: '/bpd-adat',
         element: <ProtectedRoute allowedRole="bpd-adat"><BpdAdatDashboard /></ProtectedRoute>,

@@ -6,8 +6,11 @@ import { ShieldAlert, AlertTriangle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import RoleLayout from '../../components/RoleLayout';
 import Badge from '../../components/Badge';
+import MapWidget from '../../components/MapWidget';
+import HashCheckerBadge from '../../components/HashCheckerBadge';
 import { KADES_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
+import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
 
 export default function DisbursementDetailPage() {
   const { id } = useParams();
@@ -19,6 +22,7 @@ export default function DisbursementDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [sisaPagu, setSisaPagu] = useState<number>(0);
   const [interventionId, setInterventionId] = useState<string | null>(null);
 
   const fetchDisbursementData = useCallback(async () => {
@@ -26,6 +30,10 @@ export default function DisbursementDetailPage() {
     try {
       const res = await apiClient.get(`/disbursements/${id}`);
       setData(res.data);
+      if (res.data.proposalId) {
+        const resPagu = await apiClient.get(`/disbursements/sisa-pagu/${res.data.proposalId}`);
+        setSisaPagu(Number(resPagu.data.sisaPagu));
+      }
     } catch (err) {
       console.error(err);
       toast.error('Gagal mengambil data pengajuan');
@@ -58,8 +66,10 @@ export default function DisbursementDetailPage() {
   if (!data) return <div className="p-8 text-center text-slate-500 font-bold">Memuat data...</div>;
 
   const judulUsulan = data.proposal?.judulUsulan || 'Program';
-  const nominalStr = Number(data.nominal).toLocaleString('id-ID');
+  const nominalDiajukan = Number(data.nominal);
+  const nominalStr = nominalDiajukan.toLocaleString('id-ID');
   const namaKaur = data.proposal?.kaurTeknis?.nama || 'Kaur Teknis';
+  const isMelebihi = nominalDiajukan > sisaPagu;
 
   const handleDownloadSertifikat = async (certId: string) => {
     try {
@@ -129,35 +139,65 @@ export default function DisbursementDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Kolom Kiri: Ringkasan Pemeriksaan */}
+        {/* Kolom Kiri: Detail Pengajuan & Ringkasan */}
         <div className="lg:col-span-2 flex flex-col gap-6">
+          
+          {/* Status Pagu Anggaran (Diadopsi dari Sekdes) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">
+              Status Pagu Anggaran
+            </h3>
+            <p className="text-lg font-bold text-slate-800">
+              Sisa Pagu: <span className="text-green-600">Rp {sisaPagu.toLocaleString('id-ID')}</span> <span className="text-slate-400 font-normal">vs</span> Diajukan: <span className={isMelebihi ? "text-red-600" : "text-blue-600"}>Rp {nominalStr}</span>
+            </p>
+            {isMelebihi && (
+              <p className="text-xs text-red-500 font-medium mt-2 flex items-center gap-1">
+                ⚠️ Pengajuan melebihi sisa pagu anggaran berjalan.
+              </p>
+            )}
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <p className="text-sm font-bold text-slate-700">Kaur Teknis: {namaKaur}</p>
+              <p className="text-xs text-slate-600 mt-2 italic">"{data.keterangan}"</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
+                Status Otentikasi
+              </h3>
+              <HashCheckerBadge isValid={true} />
+              <p className="text-xs text-slate-500 mt-3">
+                Hash dokumen cocok dengan metadata di blockchain.
+              </p>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
+              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
+                Lokasi Geo-Tagging
+              </h3>
+              <div className="flex-1 min-h-[200px]">
+                <MapWidget 
+                  latitude={data.geotagLat} 
+                  longitude={data.geotagLng} 
+                  photoUrl={data.fotoUrl || "https://images.unsplash.com/photo-1541888086925-9276d418296a?q=80&w=600&auto=format&fit=crop"}
+                  popupText={data.keterangan || "Lokasi Proyek"}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Ringkasan Pemeriksaan Dokumen
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-4">
-                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /></svg>
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-1">Bukti Foto Geotagging</h4>
-                  <p className="text-sm font-semibold text-green-600">Ada & Valid</p>
-                </div>
-              </div>
-
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-start gap-4">
-                <div className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-1">Hash Berita Acara</h4>
-                  <p className="text-sm font-semibold text-green-600">Dokumen Otentik</p>
-                </div>
-              </div>
-            </div>
+            <DocumentPreviewViewer 
+              fotoUrl={data.fotoUrl} 
+              beritaAcaraUrl={data.beritaAcaraUrl} 
+              lpjUrl={data.lpjUrl} 
+            />
 
             <div className="mt-6 p-5 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
               <div>
@@ -166,6 +206,7 @@ export default function DisbursementDetailPage() {
               </div>
             </div>
           </div>
+
         </div>
 
         {/* Kolom Kanan: Chain of Trust & Action */}

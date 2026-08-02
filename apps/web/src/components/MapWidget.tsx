@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { getMediaUrl } from '../lib/getMediaUrl';
 
 // Fix untuk masalah default icon leaflet di Vite/Webpack
 // Membuat icon SVG pin merah kustom agar tidak bergantung pada asset lokal
@@ -43,7 +44,7 @@ export default function MapWidget({
       {photoUrl && (
         <div className="w-full relative overflow-hidden rounded-lg shadow-sm border border-slate-200">
           <img
-            src={photoUrl}
+            src={getMediaUrl(photoUrl)}
             alt="Preview Lokasi"
             className="w-full h-48 object-cover"
           />

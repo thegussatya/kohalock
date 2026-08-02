@@ -12,11 +12,12 @@ import toast from 'react-hot-toast';
 
 
 const COLUMNS: TableColumn[] = [
-  { key: 'tanggal', label: 'Tanggal' },
-  { key: 'program', label: 'Nama Program' },
-  { key: 'dusun', label: 'Dusun' },
-  { key: 'nominal', label: 'Nominal' },
-  { key: 'status', label: 'Status' },
+  { key: 'tanggal', label: 'TANGGAL' },
+  { key: 'program', label: 'NAMA PROGRAM' },
+  { key: 'dusun', label: 'DUSUN' },
+  { key: 'nominal', label: 'NOMINAL' },
+  { key: 'status', label: 'STATUS' },
+  { key: 'aksi', label: 'AKSI' },
 ];
 
 export default function DisbursementApprovalPage() {
@@ -47,26 +48,27 @@ export default function DisbursementApprovalPage() {
   };
 
   const renderCell = (row: any, columnKey: string) => {
-    let content;
     if (columnKey === 'nominal') {
-      content = <span className="font-bold text-slate-900">{row.nominal}</span>;
-    } else if (columnKey === 'status') {
-      content = <Badge label={row.status} variant="success" />;
-    } else if (columnKey === 'program') {
-      content = <span className="font-bold text-blue-600 group-hover:underline">{row.program}</span>;
-    } else {
-      content = <span className="font-medium text-slate-600">{row[columnKey]}</span>;
+      return <span className="font-bold text-slate-900">{row.nominal}</span>;
     }
-
-    // Wrap with clickable div to simulate row click without modifying DataTable
-    return (
-      <div 
-        onClick={() => handleRowClick(row.id)}
-        className="cursor-pointer w-full h-full min-h-[2rem] flex items-center group"
-      >
-        {content}
-      </div>
-    );
+    if (columnKey === 'status') {
+      return <Badge label={row.status} variant="success" />;
+    }
+    if (columnKey === 'program') {
+      return <span className="font-bold text-slate-900">{row.program}</span>;
+    }
+    if (columnKey === 'aksi') {
+      return (
+        <button
+          onClick={() => handleRowClick(row.id)}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors"
+        >
+          Periksa Berkas
+        </button>
+      );
+    }
+    
+    return <span className="font-medium text-slate-600">{row[columnKey]}</span>;
   };
 
   return (
@@ -76,17 +78,15 @@ export default function DisbursementApprovalPage() {
 
       </div>
 
-      <div className="w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-6 overflow-hidden">
-        <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-          Dokumen Menunggu Tanda Tangan
-        </h2>
-        <DataTable
-          columns={COLUMNS}
-          data={data}
-          renderCell={renderCell}
-        />
-      </div>
+      <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+        Dokumen Menunggu Tanda Tangan
+      </h2>
+      <DataTable
+        columns={COLUMNS}
+        data={data}
+        renderCell={renderCell}
+      />
     </RoleLayout>
   );
 }

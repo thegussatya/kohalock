@@ -6,6 +6,7 @@ import DataTable, { type TableColumn } from '../../components/DataTable';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import { toast } from 'react-hot-toast';
 import { ShieldAlert, AlertTriangle, Trash2 } from 'lucide-react';
+import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
 
 const COLUMNS: TableColumn[] = [
   { key: 'tanggal', label: 'Tanggal Otorisasi' },
@@ -32,7 +33,10 @@ export default function ExecutionQueuePage() {
         tanggal: item.verifiedAt ? new Date(item.verifiedAt).toLocaleDateString('id-ID') : new Date(item.submittedAt).toLocaleDateString('id-ID'),
         program: item.proposal?.judulUsulan || '-',
         nominal: `Rp ${Number(item.nominal).toLocaleString('id-ID')}`,
-        kades: item.kadesApprover?.nama || '-'
+        kades: item.kadesApprover?.nama || '-',
+        fotoUrl: item.fotoUrl,
+        beritaAcaraUrl: item.beritaAcaraUrl,
+        lpjUrl: item.lpjUrl
       }));
       setData(formatted);
     }).catch(err => {
@@ -105,6 +109,14 @@ export default function ExecutionQueuePage() {
               Anda akan mengeksekusi dana sebesar <strong className="text-slate-900">{selectedTx.nominal}</strong> untuk <strong className="text-slate-900">{selectedTx.program}</strong>.
             </p>
 
+            <div className="mb-8 max-h-64 overflow-y-auto text-left rounded-xl border border-slate-100 bg-slate-50/50 p-2">
+              <DocumentPreviewViewer
+                fotoUrl={selectedTx.fotoUrl}
+                beritaAcaraUrl={selectedTx.beritaAcaraUrl}
+                lpjUrl={selectedTx.lpjUrl}
+              />
+            </div>
+
             <div className="text-left mb-8">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-bold text-slate-800">Potongan Pajak (Opsional)</h4>
@@ -132,11 +144,13 @@ export default function ExecutionQueuePage() {
                   <div className="flex-1 relative">
                     <span className="absolute left-3 top-2.5 text-slate-500 text-sm font-bold">Rp</span>
                     <input 
-                      type="number"
+                      type="text"
                       value={p.nominal}
                       onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        const formatted = val ? new Intl.NumberFormat('id-ID').format(parseInt(val, 10)) : '';
                         const newList = [...pajakList];
-                        newList[idx].nominal = e.target.value;
+                        newList[idx].nominal = formatted;
                         setPajakList(newList);
                       }}
                       placeholder="0"
@@ -156,7 +170,7 @@ export default function ExecutionQueuePage() {
               {pajakList.length > 0 && (
                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mt-4 text-xs text-blue-800">
                   <strong className="block mb-1">Informasi:</strong>
-                  Kas keluar tetap dicatat penuh sesuai tagihan. Pajak akan dicatat terpisah ke dalam Buku Pajak. Total pajak: <strong>Rp {pajakList.reduce((acc, curr) => acc + (Number(curr.nominal) || 0), 0).toLocaleString('id-ID')}</strong>.
+                  Kas keluar tetap dicatat penuh sesuai tagihan. Pajak akan dicatat terpisah ke dalam Buku Pajak. Total pajak: <strong>Rp {pajakList.reduce((acc, curr) => acc + (Number(curr.nominal.replace(/\\D/g, '')) || 0), 0).toLocaleString('id-ID')}</strong>.
                 </div>
               )}
             </div>
@@ -215,10 +229,10 @@ export default function ExecutionQueuePage() {
                   setIsSubmitting(true);
                   try {
                     await apiClient.post(`/disbursements/${selectedTx.id}/execute`, {
-                      pajak: pajakList.map(p => ({
+                      pajak: pajakList.filter(p => p.jenisPajak && p.nominal).map(p => ({
                         jenisPajak: p.jenisPajak,
-                        nominal: Number(p.nominal)
-                      })).filter(p => p.nominal > 0 && p.jenisPajak)
+                        nominal: Number(p.nominal.replace(/\./g, ''))
+                      }))
                     });
                     setShowModal(false);
                     toast.success("Dana berhasil dieksekusi & otomatis tercatat ke Buku Kas Umum");

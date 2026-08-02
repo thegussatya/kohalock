@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 type LocationState = {
   latitude: number | null;
@@ -7,7 +7,7 @@ type LocationState = {
 };
 
 type GeotagCameraCaptureProps = {
-  onCapture?: (coords: { lat: number; lng: number } | null) => void;
+  onCapture?: (coords: { lat: number; lng: number } | null, photoUrl: string | null) => void;
 };
 
 export default function GeotagCameraCapture({ onCapture }: GeotagCameraCaptureProps) {
@@ -24,8 +24,8 @@ export default function GeotagCameraCapture({ onCapture }: GeotagCameraCapturePr
   const [currentTime, setCurrentTime] = useState<string>('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Update waktu setiap detik selama kamera terbuka
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function GeotagCameraCapture({ onCapture }: GeotagCameraCapturePr
     }
   }, []);
 
-  // Membuka kamera dengan environment mode (kamera belakang jika di HP)
+  // Membuka kamera dengan environment mode (kamera belakang jika di HP, webcam jika di PC)
   const openCamera = async () => {
     setErrorMsg(null);
     setHasCaptured(false);
@@ -91,11 +91,7 @@ export default function GeotagCameraCapture({ onCapture }: GeotagCameraCapturePr
         audio: false,
       });
       streamRef.current = stream;
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setIsCameraOpen(true);
+      setIsCameraOpen(true); // Trigger state change to mount video tag
     } catch (err: any) {
       console.error('Camera access error:', err);
       let errText = 'Gagal mengakses kamera.';
@@ -105,14 +101,23 @@ export default function GeotagCameraCapture({ onCapture }: GeotagCameraCapturePr
     }
   };
 
+  // Callback ref untuk memastikan stream dihubungkan SETELAH tag <video> ter-render di DOM
+  const videoCallbackRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play().catch(e => console.error("Error playing video:", e));
+    }
+  }, []);
+
   // Mengambil gambar dari video dan menambahkan watermark lewat Canvas
   const takePhoto = () => {
     if (!videoRef.current) return;
 
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext('2d');
     
     if (!ctx) return;
@@ -162,9 +167,9 @@ export default function GeotagCameraCapture({ onCapture }: GeotagCameraCapturePr
     
     if (onCapture) {
       if (location.latitude && location.longitude) {
-        onCapture({ lat: location.latitude, lng: location.longitude });
+        onCapture({ lat: location.latitude, lng: location.longitude }, dataUrl);
       } else {
-        onCapture(null);
+        onCapture({ lat: 0, lng: 0 }, dataUrl); // Fallback koordinat jika belum dapat tapi terpaksa jepret
       }
     }
     
@@ -208,7 +213,7 @@ export default function GeotagCameraCapture({ onCapture }: GeotagCameraCapturePr
           
           {errorMsg && (
             <p className="text-sm font-bold text-red-600 mt-4 bg-red-50 px-4 py-2 rounded-lg border border-red-200 flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
               {errorMsg}
             </p>
           )}
@@ -219,7 +224,7 @@ export default function GeotagCameraCapture({ onCapture }: GeotagCameraCapturePr
       {isCameraOpen && !hasCaptured && (
         <div className="relative w-full rounded-xl overflow-hidden bg-black aspect-[4/3] md:aspect-video shadow-md border border-slate-300">
           <video 
-            ref={videoRef} 
+            ref={videoCallbackRef} 
             autoPlay 
             playsInline 
             muted

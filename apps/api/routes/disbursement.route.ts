@@ -7,8 +7,19 @@ import crypto from 'crypto';
 
 const router = Router();
 const prisma = new PrismaClient();
-const upload = multer({ storage: multer.memoryStorage() });
+import path from 'path';
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '..', 'uploads'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 // Helper to serialize BigInt
 function serialize(obj: any): any {
   return JSON.parse(
@@ -52,9 +63,10 @@ router.get('/sisa-pagu/:proposalId', authenticate, async (req: AuthRequest, res:
 });
 
 // POST /disbursements
-router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, upload.fields([{ name: 'beritaAcara', maxCount: 1 }, { name: 'foto', maxCount: 1 }]), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { proposalId, keterangan, nominal, geotagLat, geotagLng } = req.body;
+
 
     const proposal = await prisma.proposal.findUnique({
       where: { id: proposalId },
@@ -94,6 +106,11 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
       // return;
     }
 
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const beritaAcaraUrl = files?.['beritaAcara']?.[0] ? `/uploads/${files['beritaAcara'][0].filename}` : '';
+    const fotoUrl = files?.['foto']?.[0] ? `/uploads/${files['foto'][0].filename}` : '';
+    const beritaAcaraHash = beritaAcaraUrl ? '0x' + crypto.randomBytes(32).toString('hex') : ''; // Generate dummy hash if file exists
+
     const disbursement = await prisma.disbursement.create({
       data: {
         proposalId,
@@ -104,9 +121,9 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
         geotagTimestamp: new Date(),
         status: 'PENDING_SEKDES',
         onChainId: Math.floor(Math.random() * 1000000), // Dummy
-        beritaAcaraUrl: '', // Dummy string
-        beritaAcaraHash: '', // Dummy string
-        fotoUrl: '', // Dummy string
+        beritaAcaraUrl,
+        beritaAcaraHash,
+        fotoUrl,
       }
     });
 
@@ -207,6 +224,46 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response): Promis
     res.json(serialize(updated));
   } catch (error: any) {
     console.error('Error updating disbursement:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
+// POST /disbursements/:id/lpj
+router.post('/:id/lpj', authenticate, upload.single('file'), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+
+    if (!req.file) {
+      res.status(400).json({ error: 'File tidak ditemukan' });
+      return;
+    }
+
+    const disbursement = await prisma.disbursement.findUnique({
+      where: { id }
+    });
+
+    if (!disbursement) {
+      res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+      return;
+    }
+
+    if (disbursement.status !== 'DISBURSED') {
+      res.status(400).json({ error: 'Pencairan belum selesai, tidak dapat upload LPJ' });
+      return;
+    }
+
+    const fileUrl = `http://localhost:3000/uploads/${req.file.filename}`;
+
+    const updated = await prisma.disbursement.update({
+      where: { id },
+      data: {
+        lpjUrl: fileUrl
+      }
+    });
+
+    res.json(serialize(updated));
+  } catch (error: any) {
+    console.error('Error uploading LPJ:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
@@ -418,7 +475,10 @@ router.get('/authorizations', authenticate, async (req: AuthRequest, res: Respon
       namaProgram: a.proposal?.judulUsulan,
       dusun: a.proposal?.dusun,
       kategori: a.proposal?.kategori,
-      nominal: Number(a.nominal)
+      nominal: Number(a.nominal),
+      fotoUrl: a.fotoUrl,
+      beritaAcaraUrl: a.beritaAcaraUrl,
+      lpjUrl: a.lpjUrl
     }));
 
     res.json(serialize(mapped));
@@ -606,7 +666,7 @@ router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Respon
 router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const id = req.params.id as string;
-    const { potonganPajak } = req.body;
+    const potonganPajak = req.body.potonganPajak || req.body.pajak;
     
     const disbursement = await prisma.disbursement.findUnique({
       where: { id },

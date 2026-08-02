@@ -381,29 +381,27 @@ export default function VillageIncomePage() {
                   />
                 </div>
 
+                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0 mt-6 -mx-6 -mb-6">
+                  <button 
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-5 py-2 text-sm font-bold bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed text-white rounded-lg shadow-sm transition-colors flex items-center justify-center min-w-[160px]"
+                  >
+                    {isSubmitting ? (
+                      <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                    ) : (
+                      'Simpan Pendapatan'
+                    )}
+                  </button>
+                </div>
               </form>
-            </div>
-
-            <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 sticky bottom-0">
-              <button 
-                type="button"
-                onClick={handleCloseModal}
-                className="px-5 py-2 text-sm font-semibold text-slate-600 hover:text-slate-800 transition-colors"
-              >
-                Batal
-              </button>
-              <button 
-                type="submit"
-                form="income-form"
-                disabled={isSubmitting}
-                className="px-5 py-2 text-sm font-bold bg-brand-500 hover:bg-brand-600 disabled:bg-brand-300 disabled:cursor-not-allowed text-white rounded-lg shadow-sm transition-colors flex items-center justify-center min-w-[160px]"
-              >
-                {isSubmitting ? (
-                  <span className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
-                ) : (
-                  'Simpan Pendapatan'
-                )}
-              </button>
             </div>
           </div>
         </div>

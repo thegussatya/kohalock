@@ -4,6 +4,19 @@ import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 const prisma = new PrismaClient();
+import multer from 'multer';
+import path from 'path';
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '..', 'uploads'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 // Helper to serialize BigInt since JSON.stringify doesn't support it natively
 function serialize(obj: any): any {
@@ -14,7 +27,7 @@ function serialize(obj: any): any {
   );
 }
 
-router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, upload.fields([{ name: 'formulirMusrembang', maxCount: 1 }, { name: 'rab', maxCount: 1 }]), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const {
       dusun,
@@ -26,6 +39,10 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
       dokumenHash = 'dummy-hash'
     } = req.body;
 
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const formulirMusrembangUrl = files?.['formulirMusrembang']?.[0] ? `/uploads/${files['formulirMusrembang'][0].filename}` : null;
+    const rabUrl = files?.['rab']?.[0] ? `/uploads/${files['rab'][0].filename}` : null;
+
     const proposal = await prisma.proposal.create({
       data: {
         dusun,
@@ -35,7 +52,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
         satuan,
         paguMaksimal: BigInt(paguMaksimal),
         dokumenHash,
-        fileUrls: [], // Provide empty array as dummy
+        fileUrls: { formulirMusrembangUrl, rabUrl },
         kaurTeknisId: req.user.userId,
         onChainId: Math.floor(Math.random() * 1000000) // Dummy unique integer
       }

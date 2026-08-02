@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
 import DataTable, { type TableColumn } from '../../components/DataTable';
-import { LayoutDashboard, BadgeCheck, History, ShieldAlert, QrCode, Settings, HelpCircle, Wallet, BarChart3 } from 'lucide-react';
+import { Wallet } from 'lucide-react';
 import { KADES_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
+import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
 
 type AuthHistoryData = {
   id: string;
@@ -13,6 +14,9 @@ type AuthHistoryData = {
   dusun: string;
   kategori: string;
   nominal: number;
+  fotoUrl?: string;
+  beritaAcaraUrl?: string;
+  lpjUrl?: string;
 };
 
 const COLUMNS: TableColumn[] = [
@@ -20,6 +24,7 @@ const COLUMNS: TableColumn[] = [
   { key: 'namaProgram', label: 'Nama Program' },
   { key: 'dusun', label: 'Dusun' },
   { key: 'nominal_formatted', label: 'Nominal' },
+  { key: 'aksi', label: 'Aksi' },
 ];
 
 export default function AuthorizationHistoryPage() {
@@ -28,6 +33,8 @@ export default function AuthorizationHistoryPage() {
   const [filterKategori, setFilterKategori] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  
+  const [selectedDoc, setSelectedDoc] = useState<AuthHistoryData | null>(null);
 
   useEffect(() => {
     apiClient.get('/disbursements/authorizations')
@@ -128,7 +135,56 @@ export default function AuthorizationHistoryPage() {
       <DataTable 
         columns={COLUMNS} 
         data={tableData} 
+        renderCell={(row, columnKey) => {
+          if (columnKey === 'aksi') {
+            return (
+              <button
+                onClick={() => setSelectedDoc(row)}
+                className="inline-flex items-center text-xs font-bold text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-200 hover:bg-brand-100 transition-colors"
+              >
+                Lihat Dokumen
+              </button>
+            );
+          }
+          return row[columnKey];
+        }}
       />
+
+      {/* Modal Preview Dokumen */}
+      {selectedDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white p-6 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 relative">
+            <button
+              onClick={() => setSelectedDoc(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 bg-slate-100 hover:bg-slate-200 p-2 rounded-full transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            
+            <h3 className="text-xl font-bold text-slate-900 mb-2">
+              Preview Dokumen - {selectedDoc.namaProgram}
+            </h3>
+            <p className="text-sm text-slate-500 mb-6 border-b border-slate-100 pb-4">
+              Dusun: {selectedDoc.dusun} | Kategori: {selectedDoc.kategori} | Nominal: Rp {selectedDoc.nominal.toLocaleString('id-ID')}
+            </p>
+
+            <DocumentPreviewViewer
+              fotoUrl={selectedDoc.fotoUrl}
+              beritaAcaraUrl={selectedDoc.beritaAcaraUrl}
+              lpjUrl={selectedDoc.lpjUrl}
+            />
+
+            <div className="mt-8 flex justify-end">
+              <button
+                onClick={() => setSelectedDoc(null)}
+                className="px-5 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold text-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </RoleLayout>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import RoleLayout from '../../components/RoleLayout';
 import PageHeader from '../../components/PageHeader';
 import MetricCard from '../../components/MetricCard';
-import { Landmark, Wallet, Calendar, Lock, CheckCircle2, Receipt, Building2, Activity } from 'lucide-react';
+import { Landmark, Wallet, Calendar, Lock, CheckCircle2, Receipt, Building2, Activity, PieChart } from 'lucide-react';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 
@@ -11,6 +11,8 @@ export default function DashboardPage() {
     pendingExecutions: 0,
     saldoKas: 0,
     tenggatPelaporan: '-',
+    totalPagu: 0,
+    sisaPagu: 0,
     recentActivities: []
   });
 
@@ -43,25 +45,53 @@ export default function DashboardPage() {
         title="Dashboard Kaur Keuangan" 
         description="Ringkasan eksekusi keuangan dan saldo kas desa."
       />
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <MetricCard
-          title="Transaksi Menunggu Eksekusi"
-          value={String(data.pendingExecutions)}
-          variant="warning"
-          icon={<Landmark className="w-5 h-5" />}
-        />
-        <MetricCard
-          title="Saldo Kas Bulan Ini"
-          value={`Rp ${Number(data.saldoKas).toLocaleString('id-ID')}`}
-          variant="default"
-          icon={<Wallet className="w-5 h-5" />}
-        />
-        <MetricCard
-          title="Tenggat Pelaporan Berikutnya"
-          value={data.tenggatPelaporan}
-          variant="info"
-          icon={<Calendar className="w-5 h-5" />}
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2">
+          <MetricCard
+            title="Saldo Kas Bulan Ini"
+            value={`Rp ${Number(data.saldoKas).toLocaleString('id-ID')}`}
+            variant="default"
+            icon={<Wallet className="w-5 h-5" />}
+            className="h-full"
+            description="Total uang likuid yang tersedia di Rekening Kas Desa saat ini."
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <MetricCard
+            title="Transaksi Menunggu"
+            value={String(data.pendingExecutions)}
+            variant="warning"
+            icon={<Landmark className="w-5 h-5" />}
+            className="h-full"
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <MetricCard
+            title="Sisa Pagu Desa"
+            value={`Rp ${Number(data.sisaPagu).toLocaleString('id-ID')}`}
+            variant="success"
+            icon={<PieChart className="w-5 h-5" />}
+            className="h-full"
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <MetricCard
+            title="Total Pagu Desa"
+            value={`Rp ${Number(data.totalPagu).toLocaleString('id-ID')}`}
+            variant="info"
+            icon={<Building2 className="w-5 h-5" />}
+            className="h-full"
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <MetricCard
+            title="Tenggat Pelaporan"
+            value={data.tenggatPelaporan}
+            variant="danger"
+            icon={<Calendar className="w-5 h-5" />}
+            className="h-full"
+          />
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden max-w-3xl">

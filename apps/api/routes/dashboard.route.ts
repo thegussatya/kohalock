@@ -221,13 +221,28 @@ router.get('/kades', authenticate, async (req: AuthRequest, res: Response): Prom
       percentage: Number(sum) / 1000000 // Simplified to fit UI scale if needed, or send raw
     })).sort((a, b) => b.percentage - a.percentage);
 
-    // Dummy values for the missing UI fields to not break frontend completely
-    const kasBalance = "Rp 350.000.000"; // Dummy fallback
-    const absorptionRate = "65%";
+    // Calculate realistic values based on a dummy total APBDes for now
+    const totalTarget = 1000000000; // 1 Milyar target
+    const sisaTarget = totalTarget - Number(totalDisbursedYear);
+    const percentage = (Number(totalDisbursedYear) / totalTarget) * 100;
+    const absorptionRate = `${percentage.toFixed(1)}%`;
+    
+    const currentKas = BigInt(350000000) - totalDisbursedYear;
+    const kasBalance = `Rp ${Number(currentKas).toLocaleString('id-ID')}`; 
+
     const donutData = [
       { name: 'Terserap', value: Number(totalDisbursedYear), color: '#00AEEF' },
-      { name: 'Sisa Target', value: 280000000, color: '#e2e8f0' }, // Dummy sisa
+      { name: 'Sisa Target', value: Math.max(0, sisaTarget), color: '#e2e8f0' },
     ];
+    
+    // Add dummy fallback if no disbursed data exists yet so the chart isn't empty
+    if (barData.length === 0) {
+      barData.push(
+        { name: 'Dusun Mekar', percentage: 0 },
+        { name: 'Dusun Sari', percentage: 0 },
+        { name: 'Dusun Indah', percentage: 0 }
+      );
+    }
 
     res.json(serialize({
       pendingAuthCount,
@@ -525,7 +540,21 @@ router.get('/kaur-keuangan', authenticate, async (req: AuthRequest, res: Respons
       { id: 2, title: 'Pengecekan saldo awal bulan berjalan', time: '1 hari lalu', iconType: 'wallet', color: 'text-blue-600', bg: 'bg-blue-100' }
     ];
 
+    const allProposals = await prisma.proposal.aggregate({
+      _sum: { paguMaksimal: true }
+    });
+    const totalPagu = allProposals._sum.paguMaksimal || BigInt(0);
+
+    const executedDisbursements = await prisma.disbursement.aggregate({
+      _sum: { nominal: true },
+      where: { status: 'DISBURSED' }
+    });
+    const totalTerpakai = executedDisbursements._sum.nominal || BigInt(0);
+    const sisaPagu = totalPagu - totalTerpakai;
+
     res.json(serialize({
+      totalPagu,
+      sisaPagu,
       pendingExecutions: pendingDisbursementsCount,
       saldoKas,
       tenggatPelaporan: `31 ${now.toLocaleDateString('id-ID', { month: 'long' })} ${currentTahun}`,

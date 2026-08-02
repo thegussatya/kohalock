@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
 import DataTable, { type TableColumn } from '../../components/DataTable';
@@ -16,13 +17,15 @@ type HistoryData = {
 };
 
 const COLUMNS: TableColumn[] = [
-  { key: 'tanggal', label: 'Tanggal' },
-  { key: 'namaProgram', label: 'Nama Program' },
-  { key: 'keputusan', label: 'Keputusan' },
-  { key: 'nominal', label: 'Nominal' },
+  { key: 'tanggal', label: 'TANGGAL' },
+  { key: 'namaProgram', label: 'NAMA PROGRAM' },
+  { key: 'keputusan', label: 'KEPUTUSAN' },
+  { key: 'nominal', label: 'NOMINAL' },
+  { key: 'aksi', label: 'AKSI' },
 ];
 
 export default function VerificationHistoryPage() {
+  const navigate = useNavigate();
   const [historyData, setHistoryData] = useState<HistoryData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -59,6 +62,16 @@ export default function VerificationHistoryPage() {
     if (columnKey === 'keputusan') {
       const variant: BadgeVariant = row.keputusan === 'Disetujui' ? 'success' : 'danger';
       return <Badge label={row.keputusan} variant={variant} />;
+    }
+    if (columnKey === 'aksi') {
+      return (
+        <button
+          onClick={() => navigate(`/sekdes/verifikasi/${row.id}`)}
+          className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+        >
+          Lihat Berkas
+        </button>
+      );
     }
     return undefined;
   };

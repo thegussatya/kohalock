@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '../../components/PageHeader';
 import RoleLayout from '../../components/RoleLayout';
-import { Search, FileSearch, Workflow, LockKeyhole, X, CheckCircle, Clock } from 'lucide-react';
+import { Search, LockKeyhole, FileSearch, CheckCircle, Clock, Workflow, X } from 'lucide-react';
+import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import { AUDITOR_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
@@ -26,6 +27,9 @@ type TimelineStage = {
 
 type DisbursementDetail = LedgerData & {
   timeline: TimelineStage[];
+  beritaAcaraUrl?: string;
+  fotoUrl?: string;
+  lpjUrl?: string;
 };
 
 const COLUMNS: TableColumn[] = [
@@ -252,6 +256,14 @@ export default function LedgerExplorerPage() {
                         </span>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <DocumentPreviewViewer 
+                      beritaAcaraUrl={detailData.beritaAcaraUrl}
+                      fotoUrl={detailData.fotoUrl}
+                      lpjUrl={detailData.lpjUrl}
+                    />
                   </div>
 
                   <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">

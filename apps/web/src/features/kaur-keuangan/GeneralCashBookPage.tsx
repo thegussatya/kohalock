@@ -52,7 +52,10 @@ export default function GeneralCashBookPage() {
         let totalPenerimaan = 0;
         let totalPengeluaran = 0;
         
-        const formatted = res.data.map((item: any) => {
+        const rawEntries = res.data.entries || [];
+        const rawSaldoAwal = Number(res.data.saldoAwal || 0);
+
+        const formatted = rawEntries.map((item: any) => {
           const penerimaan = Number(item.penerimaan);
           const pengeluaran = Number(item.pengeluaran);
           
@@ -71,7 +74,7 @@ export default function GeneralCashBookPage() {
         
         setData(formatted);
         setSummary({
-          saldoAwal: 0,
+          saldoAwal: rawSaldoAwal,
           totalPenerimaan,
           totalPengeluaran
         });

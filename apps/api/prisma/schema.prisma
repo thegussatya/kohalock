@@ -72,6 +72,7 @@ model Disbursement {
   verifiedAt       DateTime?
   authorizedAt     DateTime?
   disbursedAt      DateTime?
+  lpjUrl           String?
 
   rejectionLogs    RejectionLog[]
   interventionLogs InterventionLog[]

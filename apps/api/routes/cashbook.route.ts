@@ -33,7 +33,26 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
       orderBy: { tanggal: 'asc' }
     });
 
-    res.json(serialize(entries));
+    let saldoAwal = BigInt(0);
+    if (bulan && tahun) {
+      const b = parseInt(bulan as string, 10);
+      const t = parseInt(tahun as string, 10);
+      
+      const lastEntry = await prisma.cashBookEntry.findFirst({
+        where: {
+          OR: [
+            { tahun: { lt: t } },
+            { tahun: t, bulan: { lt: b } }
+          ]
+        },
+        orderBy: { tanggal: 'desc' }
+      });
+      if (lastEntry) {
+        saldoAwal = lastEntry.saldoBerjalan;
+      }
+    }
+
+    res.json(serialize({ entries, saldoAwal }));
   } catch (error: any) {
     console.error('Error fetching cash book entries:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });

@@ -12,11 +12,14 @@ export default function SubmitDisbursementPage() {
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
   const [sisaPagu, setSisaPagu] = useState<number>(0);
   const [keterangan, setKeterangan] = useState('');
-  const [nominal, setNominal] = useState<number | ''>('');
+  const [nominal, setNominal] = useState<string>('');
   const [geotagCoords, setGeotagCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [geotagPhoto, setGeotagPhoto] = useState<string | null>(null);
+  const [beritaAcaraFile, setBeritaAcaraFile] = useState<File | null>(null);
   
   const [editId, setEditId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     // Check for edit mode
@@ -30,7 +33,7 @@ export default function SubmitDisbursementPage() {
         const d = res.data;
         setSelectedProgramId(d.proposalId);
         setKeterangan(d.keterangan);
-        setNominal(Number(d.nominal));
+        setNominal(d.nominal ? new Intl.NumberFormat('id-ID').format(Number(d.nominal)) : '');
         if (d.geotagLat && d.geotagLng) {
           setGeotagCoords({ lat: d.geotagLat, lng: d.geotagLng });
         }
@@ -64,7 +67,8 @@ export default function SubmitDisbursementPage() {
   const selectedProgram = programList.find(p => p.id === selectedProgramId);
   
   // Validasi sederhana: Cek apakah nominal melebihi sisa pagu anggaran
-  const isNominalExceeds = typeof nominal === 'number' && nominal > sisaPagu;
+  const parsedNominal = Number(nominal.replace(/\./g, ''));
+  const isNominalExceeds = parsedNominal > sisaPagu;
 
   return (
     <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
@@ -81,37 +85,62 @@ export default function SubmitDisbursementPage() {
             toast.error("Pilih program terlebih dahulu");
             return;
           }
-          if (!nominal) {
-            toast.error("Masukkan nominal pencairan");
+          setIsSubmitting(true);
+            
+          const rawNominal = Number(nominal.replace(/\./g, ''));
+          const isNominalExceeds = rawNominal > sisaPagu;
+
+          if (!nominal || rawNominal <= 0) {
+            toast.error('Nominal tidak valid');
+            setIsSubmitting(false);
             return;
           }
           if (isNominalExceeds) {
-            toast.error("Nominal melebihi sisa pagu anggaran");
+            toast.error('Nominal melebihi sisa pagu!');
+            setIsSubmitting(false);
+            return;
+          }
+          if (!keterangan) {
+            toast.error('Keterangan wajib diisi');
+            setIsSubmitting(false);
             return;
           }
           if (!geotagCoords) {
             toast.error("Silakan ambil foto bukti lapangan beserta geotagging terlebih dahulu");
+            setIsSubmitting(false);
             return;
           }
 
           try {
-            const cleanNominal = Number(nominal.toString().replace(/[^0-9]/g, ''));
+            const formData = new FormData();
+            formData.append('proposalId', selectedProgramId);
+            formData.append('keterangan', keterangan);
+            formData.append('nominal', rawNominal.toString());
+            formData.append('geotagLat', geotagCoords.lat.toString());
+            formData.append('geotagLng', geotagCoords.lng.toString());
             
+            if (beritaAcaraFile) {
+              formData.append('beritaAcara', beritaAcaraFile);
+            }
+            
+            if (geotagPhoto) {
+              // Convert dataURL to Blob
+              const res = await fetch(geotagPhoto);
+              const blob = await res.blob();
+              formData.append('foto', blob, 'geotag.jpg');
+            }
+
             let response;
             if (isEditing && editId) {
               response = await apiClient.put(`/disbursements/${editId}`, {
                 keterangan,
-                nominal: cleanNominal,
+                nominal: rawNominal,
                 geotagLat: geotagCoords.lat,
                 geotagLng: geotagCoords.lng
               });
             } else {
-              response = await apiClient.post('/disbursements', {
-                proposalId: selectedProgramId,
-                keterangan,
-                nominal: cleanNominal,
-                geotagLat: geotagCoords.lat,
-                geotagLng: geotagCoords.lng
+              response = await apiClient.post('/disbursements', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
               });
             }
 
@@ -176,11 +205,13 @@ export default function SubmitDisbursementPage() {
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">Rp</span>
               <input 
-                type="number" 
-                min="0"
-                onWheel={(e) => e.currentTarget.blur()}
+                type="text" 
                 value={nominal}
-                onChange={(e) => setNominal(e.target.value ? Number(e.target.value) : '')}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  const formatted = val ? new Intl.NumberFormat('id-ID').format(parseInt(val, 10)) : '';
+                  setNominal(formatted);
+                }}
                 disabled={!selectedProgramId}
                 className={`w-full pl-12 p-3.5 border rounded-lg focus:ring-2 outline-none text-base font-bold transition-all ${
                   !selectedProgramId 
@@ -219,6 +250,7 @@ export default function SubmitDisbursementPage() {
               <input 
                 type="file" 
                 accept=".pdf"
+                onChange={(e) => setBeritaAcaraFile(e.target.files?.[0] || null)}
                 className="w-full text-sm text-slate-600 file:mr-4 file:py-3 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-300 rounded-lg cursor-pointer bg-white transition-colors"
               />
               <p className="text-xs text-slate-500 mt-2 font-medium">Hanya mendukung format .pdf dengan ukuran maksimal 5MB.</p>
@@ -227,7 +259,10 @@ export default function SubmitDisbursementPage() {
             {/* Bukti Lapangan / Kamera Geotagging */}
             <div className="flex flex-col">
               <label className="block text-sm font-bold text-slate-700 mb-2">Bukti Lapangan (Geotagging)</label>
-              <GeotagCameraCapture onCapture={setGeotagCoords} />
+              <GeotagCameraCapture onCapture={(coords, photoUrl) => {
+                setGeotagCoords(coords);
+                setGeotagPhoto(photoUrl);
+              }} />
             </div>
           </div>
 
@@ -235,9 +270,10 @@ export default function SubmitDisbursementPage() {
           <div className="pt-6 border-t border-slate-200 flex justify-end">
             <button
               type="submit"
-              className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors uppercase tracking-wide text-sm"
+              disabled={isSubmitting}
+              className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors uppercase tracking-wide text-sm disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isEditing ? "Tanda Tangani & Kirim Revisi" : "Tanda Tangani & Ajukan"}
+              {isSubmitting ? "Memproses..." : (isEditing ? "Tanda Tangani & Kirim Revisi" : "Tanda Tangani & Ajukan")}
             </button>
           </div>
         </form>

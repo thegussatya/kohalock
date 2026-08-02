@@ -89,6 +89,14 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
 - Database: Supabase Postgres, koneksi via Connection Pooler.
 - **Row Level Security (RLS)**: Sudah AKTIF di seluruh (16) tabel Supabase. Backend tidak terdampak karena menggunakan bypass service-role (postgres).
 
+### Update & Bugfix Sesi Terakhir (Evaluasi Antigravity)
+- **Supabase Database (Fix):** Memandu user untuk me-*resume* database yang Paused (Error PrismaClientKnownRequestError teratasi).
+- **Aritmetika Pajak (Fix):** Memperbaiki bug parsing kalkulasi total pajak (menambahkan regex hapus non-digit sebelum `Number()`) di `ExecutionQueuePage.tsx`.
+- **Transparansi Dokumen Publik (Fitur):** Menambahkan URL Formulir Musrenbang dan RAB dari `fileUrls` JSON backend ke `ProjectDetailPage.tsx` untuk diunduh publik (dengan penanganan aman via TypeScript `as any`).
+- **File Upload Kaur Teknis (Fitur):** Merombak API `POST /proposals` menggunakan modul `multer` (diskStorage). Mengubah frontend `MusrembangFormPage.tsx` menjadi `FormData` agar input file PDF Daftar Hadir & RAB benar-benar tersimpan di server, bukan hanya pajangan/dummy.
+- **Evaluasi Kriptografi Auditor (Evaluasi):** Menganalisis penyebab error 500 pada fitur *Integrity Checker* (`crypto.createHash`). Disimpulkan bahwa buffer memori kosong akibat `diskStorage` multer. (Menunggu izin user untuk mengimplementasikan `fs.readFileSync` fisik).
+- **Pembersihan UI Auditor:** Menghapus permanen rute, file, dan navigasi sidebar untuk menu "Template Laporan" yang tidak dipakai, termasuk membersihkan *unused imports*.
+
 ## Yang BELUM Selesai
 
 - Smart contract (Solidity/Hardhat) - BELUM DIMULAI SAMA SEKALI,
