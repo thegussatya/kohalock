@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { PrismaClient } from '../generated/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { createNotification } from '../lib/notify';
+import { recalculateCashBookBalances, recalculateBankBookBalances } from '../src/utils/ledger.util';
 import multer from 'multer';
 import crypto from 'crypto';
 
@@ -109,7 +110,12 @@ router.post('/', authenticate, upload.fields([{ name: 'beritaAcara', maxCount: 1
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     const beritaAcaraUrl = files?.['beritaAcara']?.[0] ? `/uploads/${files['beritaAcara'][0].filename}` : '';
     const fotoUrl = files?.['foto']?.[0] ? `/uploads/${files['foto'][0].filename}` : '';
-    const beritaAcaraHash = beritaAcaraUrl ? '0x' + crypto.randomBytes(32).toString('hex') : ''; // Generate dummy hash if file exists
+    let beritaAcaraHash = '';
+    if (files?.['beritaAcara']?.[0]) {
+      const fs = require('fs');
+      const fileBuffer = fs.readFileSync(files['beritaAcara'][0].path);
+      beritaAcaraHash = '0x' + crypto.createHash('sha256').update(fileBuffer).digest('hex');
+    }
 
     const disbursement = await prisma.disbursement.create({
       data: {
@@ -779,6 +785,12 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
       return { disbursement: updatedDisbursement, cashBookEntry: newEntry, bankBookEntry: newBankEntry, taxEntries };
     });
 
+    // Recalculate ledger balances asynchronously
+    Promise.all([
+      recalculateCashBookBalances(prisma as any),
+      recalculateBankBookBalances(prisma as any)
+    ]).catch(err => console.error('Failed to recalculate ledgers:', err));
+
     try {
       if (disbursement.proposal?.kaurTeknisId) {
         await createNotification(
@@ -802,16 +814,17 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
 
 // POST /disbursements/verify-hash
 router.post('/verify-hash', authenticate, upload.single('file'), async (req: AuthRequest, res: Response): Promise<void> => {
+  const fs = require('fs');
   try {
     const { disbursementId } = req.body;
     
     if (!req.file) {
-      res.status(400).json({ error: 'File tidak ditemukan' });
+      res.status(400).json({ success: false, error: 'File tidak ditemukan' });
       return;
     }
 
     if (!disbursementId) {
-      res.status(400).json({ error: 'disbursementId wajib diisi' });
+      res.status(400).json({ success: false, error: 'disbursementId wajib diisi' });
       return;
     }
 
@@ -820,22 +833,34 @@ router.post('/verify-hash', authenticate, upload.single('file'), async (req: Aut
     });
 
     if (!disbursement) {
-      res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+      res.status(404).json({ success: false, error: 'Disbursement tidak ditemukan' });
       return;
     }
 
-    const hashUpload = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const hashUpload = '0x' + crypto.createHash('sha256').update(fileBuffer).digest('hex');
     const hashTersimpan = disbursement.beritaAcaraHash;
-    const cocok = hashUpload === hashTersimpan;
+    const isAuthentic = hashUpload === hashTersimpan;
 
     res.json({
-      cocok,
-      hashUpload,
-      hashTersimpan
+      success: true,
+      isAuthentic,
+      calculatedHash: hashUpload,
+      onChainHash: hashTersimpan,
+      message: isAuthentic ? 'Dokumen otentik dan belum mengalami perubahan' : 'Peringatan: Dokumen ini telah dimodifikasi atau tidak otentik!'
     });
   } catch (error: any) {
-    console.error('Error verifying hash:', error);
-    res.status(500).json({ message: 'Internal server error', error: error.message });
+    console.error('Error in verify-hash:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  } finally {
+    // PENTING: Selalu hapus file temporary dari disk
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {
+        console.error('Gagal menghapus file temp:', e);
+      }
+    }
   }
 });
 

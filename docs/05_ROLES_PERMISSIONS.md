@@ -7,6 +7,7 @@
 | `KAUR_TEKNIS` | Kaur Teknis / Operator Desa | Write (proposal & disbursement) |
 | `SEKDES` | Sekretaris Desa | Write (verifikasi tahap 1) |
 | `KADES` | Kepala Desa | Write (otorisasi final, panic button) |
+| `KAUR_KEUANGAN` | Kaur Keuangan / Bendahara | Write (eksekusi pencairan, BKU, rekonsiliasi bulanan) |
 | `PUBLIK` | Masyarakat | Read-only + submit klarifikasi/laporan (public-facing, tanpa login wajib atau login ringan) |
 | `AUDITOR` | Inspektorat/APH | Read-only + akses time-bound + dekripsi whistleblower |
 | `BPD` | Badan Permusyawaratan Desa | Read-only + catatan pengawasan (non-blocking) |
@@ -16,20 +17,23 @@
 
 ## 2. Matriks Permission per Endpoint/Fitur
 
-| Fitur / Endpoint | KAUR_TEKNIS | SEKDES | KADES | PUBLIK | AUDITOR | BPD | TOKOH_ADAT |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Buat proposal Musrembang | ✅ create | — | — | 👁 read | 👁 read | 👁 read | — |
-| Ajukan pencairan | ✅ create | 👁 read | 👁 read | — | 👁 read | 👁 read | — |
-| Verifikasi tahap 1 (approve/revisi) | — | ✅ write | — | — | 👁 read | — | — |
-| Otorisasi final (disburse) | — | — | ✅ write | — | 👁 read | — | — |
-| Panic button (tolak intervensi) | — | — | ✅ write | — | 👁 read (flagged) | 👁 read (flagged) | — |
-| Ledger Explorer (kronologi blok) | — | — | — | 👁 read (progress publik saja) | ✅ full detail | 👁 read | — |
-| Integrity/Hash Checker | — | 👁 (built-in di reviewer) | — | — | ✅ full tool | — | — |
-| Whistleblower inbox | — | ❌ no access | ❌ no access | ✅ submit only | ✅ decrypt & read | ❌ no access | ❌ no access |
-| Klarifikasi warga | — | ✅ balas | 👁 read | ✅ submit | — | — | — |
-| Catatan pengawasan | — | 👁 notif | 👁 notif | — | 👁 read | ✅ write | — |
-| Resolusi adat | — | — | — | — | — | — | ✅ write |
-| Ekspor laporan hukum | — | — | — | — | ✅ | — | — |
+| Fitur / Endpoint | KAUR_TEKNIS | SEKDES | KADES | KAUR_KEUANGAN | PUBLIK | AUDITOR | BPD | TOKOH_ADAT |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Buat proposal Musrembang | ✅ create | — | — | — | 👁 read | 👁 read | 👁 read | — |
+| Ajukan pencairan | ✅ create | 👁 read | 👁 read | 👁 read | — | 👁 read | 👁 read | — |
+| Verifikasi tahap 1 (approve/revisi) | — | ✅ write | — | — | — | 👁 read | — | — |
+| Otorisasi final (kades) | — | — | ✅ write | 👁 read | — | 👁 read | — | — |
+| Eksekusi pencairan (cair) | — | — | — | ✅ write | — | 👁 read | — | — |
+| BKU & Buku Bank | — | 👁 read | 👁 read | ✅ write | — | 👁 read | — | — |
+| Tutup Buku Bulanan | — | — | — | ✅ write | — | 👁 read | — | — |
+| Panic button (tolak intervensi) | — | — | ✅ write | — | — | 👁 read (flagged) | 👁 read (flagged) | — |
+| Ledger Explorer (kronologi blok) | — | — | — | — | 👁 read (progress publik saja) | ✅ full detail | 👁 read | — |
+| Integrity/Hash Checker | — | 👁 (built-in di reviewer) | — | — | — | ✅ full tool | — | — |
+| Whistleblower inbox | — | ❌ no access | ❌ no access | ❌ no access | ✅ submit only | ✅ decrypt & read | ❌ no access | ❌ no access |
+| Klarifikasi warga | — | ✅ balas | 👁 read | — | ✅ submit | — | — | — |
+| Catatan pengawasan | — | 👁 notif | 👁 notif | — | — | 👁 read | ✅ write | — |
+| Resolusi adat | — | — | — | — | — | — | — | ✅ write |
+| Ekspor laporan hukum | — | — | — | — | — | ✅ | — | — |
 
 Legenda: ✅ = write/execute, 👁 = read-only, ❌ = eksplisit diblokir walau secara teknis bisa akses server.
 

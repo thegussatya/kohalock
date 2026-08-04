@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { PrismaClient, Prisma } from '../generated/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
-
+import { recalculateCashBookBalances, recalculateBankBookBalances } from '../src/utils/ledger.util';
 const router = Router();
 const prisma = new PrismaClient();
 
@@ -48,6 +48,16 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
       return;
     }
 
+    // Set time to current time if the date is today
+    const now = new Date();
+    if (
+      inputDate.getFullYear() === now.getFullYear() &&
+      inputDate.getMonth() === now.getMonth() &&
+      inputDate.getDate() === now.getDate()
+    ) {
+      inputDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+    }
+
     const inputBulan = inputDate.getMonth() + 1;
     const inputTahun = inputDate.getFullYear();
 
@@ -77,7 +87,7 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
         }
       });
 
-      // Calculate CashBook balance
+      // Calculate CashBook balance (temporary, will be recalculated later if needed)
       const lastEntry = await tx.cashBookEntry.findFirst({
         orderBy: { tanggal: 'desc' }
       });
@@ -126,6 +136,13 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response): Promise<
 
       return { incomeEntry: updatedIncomeEntry, cashBookEntry: newCashBookEntry, bankBookEntry: newBankEntry };
     });
+
+    // Recalculate ledger balances asynchronously to ensure running balances are correct
+    Promise.all([
+      recalculateCashBookBalances(prisma as any),
+      recalculateBankBookBalances(prisma as any)
+    ]).catch(err => console.error('Failed to recalculate ledgers:', err));
+
     res.status(201).json(serialize(result));
   } catch (error: any) {
     console.error('Error creating village income:', error);

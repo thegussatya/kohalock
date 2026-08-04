@@ -32,9 +32,9 @@ export default function BankBookPage() {
         
         setData(bankRes.data);
         
-        const cashData = cashRes.data;
-        if (cashData && cashData.length > 0) {
-          setSystemBalance(Number(cashData[cashData.length - 1].saldoBerjalan));
+        const cashEntries = cashRes.data.entries || [];
+        if (cashEntries && cashEntries.length > 0) {
+          setSystemBalance(Number(cashEntries[cashEntries.length - 1].saldoBerjalan));
         }
       } catch (err) {
         console.error('Error fetching bank book:', err);

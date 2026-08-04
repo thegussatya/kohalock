@@ -132,43 +132,21 @@ Sistem tata kelola desa KohaLock saat ini telah memfasilitasi alur transaksi dar
 ## 6. Yang Sudah Tersambung ke Backend
 Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data langsung dari API asli (bukan data statis):
 
-*   **Formulir Musrembang** (`SubmitDisbursementPage.tsx`)
-*   **Ajukan Pencairan** (`SubmitDisbursementPage.tsx`) - *Termasuk mode Edit / Revisi!*
-*   **Riwayat Penolakan** (`RejectionHistoryPage.tsx`) - *Baru disambungkan!*
-*   **Verifikasi Pengajuan & Antrean Sekdes** (`VerificationQueuePage.tsx`)
-*   **Split-View Reviewer (Sekdes)** (`ReviewSubmissionPage.tsx`)
-*   **Persetujuan Pencairan (Kades)** (`DisbursementApprovalPage.tsx`)
-*   **Detail Otorisasi (Kades)** (`DisbursementDetailPage.tsx`)
-*   **Antrean Eksekusi (Kaur Keuangan)** (`ExecutionQueuePage.tsx`)
-*   **Buku Kas Umum** (`GeneralCashBookPage.tsx`)
-*   **Buku Bank** (`BankBookPage.tsx`)
-*   **Buku Pajak** (`TaxBookPage.tsx`) - *Baru disambungkan!*
-*   **Tutup Buku Bulanan** (`MonthlyClosingPage.tsx`)
-*   **Transaksi Koreksi** (`CorrectionTransactionPage.tsx`) - *Baru disambungkan!*
-*   **Laporan Realisasi** (`RealizationReportPage.tsx`) - *Baru disambungkan!*
-*   **Arsip Buku Terkunci** (`LockedArchivePage.tsx`) - *Baru disambungkan!*
-*   **Dashboard (Semua Role: Kaur Teknis, Sekdes, Kades, Auditor, BPD/Adat, Kaur Keuangan, Publik)** (`DashboardPage.tsx`) - *Semua dashboard telah tersambung penuh ke API.*
-*   **Kronologi Transaksi (Auditor)** (`LedgerExplorerPage.tsx`) - *Baru disambungkan!*
-*   **Pantauan Transaksi (BPD/Adat)** (`TransactionMonitoringPage.tsx`) - *Baru disambungkan!*
-*   **Dashboard Publik** (`DashboardPage.tsx`) - *Baru disambungkan!*
-*   **Daftar Proyek Publik** (`ProjectListPage.tsx`) - *Baru disambungkan!*
-*   **Detail Proyek Publik** (`ProjectDetailPage.tsx`) - *Baru disambungkan!*
-*   **Klarifikasi Warga** (`ClarificationPage.tsx`) - *Baru disambungkan!*
-*   **Whistleblower Report** (`WhistleblowerReportPage.tsx`) - *Baru disambungkan!*
-*   **Perisai Integritas (Panic Button)** (`IntegrityShieldPage.tsx` & `DisbursementDetailPage.tsx`) - *Baru disambungkan!*
-*   **Pendapatan Desa** (`VillageIncomePage.tsx`) - *Baru disambungkan! Full-stack: POST/GET/summary terintegrasi, otomatis buat CashBookEntry.*
+*   **Semua Modul & Dashboard (100% Tersambung)**
+    Berdasarkan update terakhir, seluruh modul untuk 7 role (Kaur Teknis, Sekdes, Kades, Kaur Keuangan, BPD/Adat, Auditor, dan Publik) telah berhasil diintegrasikan dengan *endpoint* backend. Ini mencakup seluruh fitur yang sebelumnya masih berstatus *dummy*, termasuk namun tidak terbatas pada:
+    *   **Kaur Teknis**: My Programs, Program Detail, Formulir Musrembang, Ajukan Pencairan, Riwayat Penolakan.
+    *   **Sekdes**: Verification Queue, Budget Monitoring, Clarification Inbox, Verification History.
+    *   **Kades**: Disbursement Approval, Disbursement Detail, Authorization History, Clarification Analytics, Public Clarification Center, Integrity Shield (Panic Button).
+    *   **Kaur Keuangan**: Execution Queue, General Cash Book, Bank Book, Tax Book, Monthly Closing, Correction Transaction, Village Income.
+    *   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Supervision Archive, Transaction Monitoring, Catatan Pengawasan.
+    *   **Auditor**: Case Management, Integrity Checker, Legal Export, Report Templates, Whistleblower Inbox, Ledger Explorer.
+    *   **Publik**: Dashboard Publik, Project List, Project Detail, Clarification, Whistleblower Report.
 *   **Notifikasi (semua 7 role)** - *Menggunakan komponen `shared/NotificationsPage.tsx` yang tersambung penuh ke API.*
 
 ## 7. Yang MASIH Dummy
-Fitur/halaman frontend yang **MASIH** menggunakan data *dummy* statis dan belum terhubung (maupun belum ada) ke *endpoint* API asli:
+*(Kosong)*
 
-*   **BPD/Adat**: Adat Calendar, Adat Resolution Board, Annual Report, Supervision Archive, Catatan Pengawasan (Komentar di dalam Pantauan Transaksi).
-*   **Auditor**: Case Management, Integrity Checker, Legal Export, Report Templates, Whistleblower Inbox.
-*   **Publik**: (Tidak ada halaman statis yang tercatat).
-*   **Kaur Keuangan**: (Semua sudah tersambung).
-*   **Kades**: Authorization History, Clarification Analytics, Public Clarification Center.
-*   **Kaur Teknis**: My Programs, Program Detail.
-*   **Sekdes**: Budget Monitoring, Clarification Inbox, Verification History.
+**Semua fitur/halaman frontend tanpa terkecuali saat ini sudah terhubung ke *endpoint* API asli.** Tidak ada lagi data *dummy* statis yang digunakan untuk modul inti.
 
 ## 8. Konfigurasi & Environment
 Variabel *environment* (`.env`) yang saat ini digunakan di backend (tanpa _value_ asli):

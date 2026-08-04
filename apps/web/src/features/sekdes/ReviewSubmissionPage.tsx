@@ -78,15 +78,6 @@ export default function ReviewSubmissionPage() {
             </div>
           </div>
 
-          <div className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
-              Status Otentikasi Dokumen
-            </h3>
-            <HashCheckerBadge isValid={true} />
-            <p className="text-xs text-slate-500 mt-3">
-              Hash dokumen telah diverifikasi dan cocok dengan metadata di blockchain.
-            </p>
-          </div>
 
           <div className="p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">

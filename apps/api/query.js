@@ -1,0 +1,1 @@
+const { PrismaClient } = require('./generated/prisma/index.js'); const prisma = new PrismaClient(); prisma.cashBookEntry.findMany().then(e => console.log(e.map(x => ({id: x.id, tanggal: x.tanggal, p: x.penerimaan, k: x.pengeluaran, s: x.saldoBerjalan})))).catch(console.error).finally(()=>prisma.$disconnect());

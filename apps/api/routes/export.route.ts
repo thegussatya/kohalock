@@ -88,43 +88,73 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
     });
 
     // Create PDF
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
     
     // Pipe to response
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename="legal_report.pdf"');
     doc.pipe(res);
 
-    // Header
-    doc.fontSize(20).text('Laporan Pencairan Dana Desa (Legal Report)', { align: 'center' });
-    doc.moveDown();
+    // Header Title
+    doc.fontSize(22).font('Helvetica-Bold').fillColor('#1e3a8a').text('LAPORAN HASIL AUDIT TERPADU', { align: 'center' });
+    doc.fontSize(12).font('Helvetica').fillColor('#475569').text('Sistem Transparansi Dana Desa (KohaLock)', { align: 'center' });
+    doc.moveDown(2);
     
-    // Simulated Seal
+    // Simulated Seal (Absolute positioning top-right)
     doc.save();
-    doc.circle(500, 70, 30).lineWidth(3).strokeColor('red').stroke();
-    doc.fontSize(12).fillColor('red').text('SEALED\nVALIDATED', 475, 60, { align: 'center' });
+    doc.circle(500, 70, 35).lineWidth(3).strokeColor('#dc2626').stroke();
+    doc.fontSize(10).font('Helvetica-Bold').fillColor('#dc2626').text('SEALED\nVALIDATED', 465, 62, { align: 'center', width: 70 });
     doc.restore();
 
-    doc.moveDown(2);
+    // Explicitly reset cursor coordinates after drawing the absolute seal
+    // This fixes the bug where all subsequent text is squeezed to the right side
+    doc.y = 130;
+    doc.x = 50;
 
     data.forEach((item, index) => {
-      doc.fontSize(14).fillColor('black').text(`Pencairan #${index + 1}: ${item.proposal.judulUsulan}`);
-      doc.fontSize(12).text(`ID Transaksi (On-Chain): ${item.onChainId}`);
-      doc.text(`Keterangan: ${item.keterangan}`);
-      doc.text(`Nominal: Rp ${item.nominal.toString()}`);
-      doc.text(`Status: ${item.status}`);
-      doc.text(`Dusun: ${item.proposal.dusun}`);
-      doc.text(`Kategori: ${item.proposal.kategori}`);
-      doc.moveDown();
+      // Check if we need a new page before drawing the box (assume box height is ~230)
+      if (doc.y + 230 > 750) {
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      const startY = doc.y;
       
-      doc.text(`Kaur Teknis: ${item.proposal.kaurTeknis?.nama || '-'}`);
-      doc.text(`Diverifikasi oleh Sekdes: ${item.sekdesVerifier?.nama || '-'} (Pada: ${item.verifiedAt ? item.verifiedAt.toISOString() : '-'})`);
-      doc.text(`Diotorisasi oleh Kades: ${item.kadesApprover?.nama || '-'} (Pada: ${item.authorizedAt ? item.authorizedAt.toISOString() : '-'})`);
-      doc.text(`Dicairkan pada: ${item.disbursedAt ? item.disbursedAt.toISOString() : '-'}`);
-      doc.moveDown();
+      // Draw background box for this transaction
+      doc.rect(50, startY, 495, 220).fillAndStroke('#f8fafc', '#cbd5e1');
       
-      doc.text('--------------------------------------------------');
-      doc.moveDown();
+      // Box Title
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#0f172a')
+         .text(`Transaksi #${index + 1}: ${item.proposal.judulUsulan}`, 65, startY + 15);
+      
+      // Metadata
+      doc.fontSize(10).font('Helvetica').fillColor('#475569');
+      doc.text(`ID Transaksi On-Chain: ${item.onChainId}   |   Status: ${item.status}`, 65, startY + 35);
+      
+      // Divider
+      doc.moveTo(65, startY + 55).lineTo(530, startY + 55).lineWidth(1).strokeColor('#e2e8f0').stroke();
+      
+      // Details
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Detail Pencairan:', 65, startY + 65);
+      doc.font('Helvetica').fontSize(10);
+      doc.text(`Nominal      : Rp ${Number(item.nominal).toLocaleString('id-ID')}`, 65, startY + 85);
+      doc.text(`Keterangan : ${item.keterangan}`, 65, startY + 100, { width: 450 });
+      doc.text(`Kategori     : ${item.proposal.kategori} - Dusun ${item.proposal.dusun}`, 65, startY + 115);
+
+      // Divider
+      doc.moveTo(65, startY + 135).lineTo(530, startY + 135).lineWidth(1).strokeColor('#e2e8f0').stroke();
+
+      // Signatures
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Jejak Otorisasi (Tanda Tangan Digital):', 65, startY + 145);
+      doc.font('Helvetica').fontSize(10);
+      doc.text(`[Pemohon] Kaur Teknis : ${item.proposal.kaurTeknis?.nama || '-'}`, 65, startY + 165);
+      doc.text(`[Verifikator] Sekdes  : ${item.sekdesVerifier?.nama || '-'} (Timestamp: ${item.verifiedAt ? new Date(item.verifiedAt).toLocaleString('id-ID') : '-'})`, 65, startY + 180);
+      doc.text(`[Otorisator] Kades    : ${item.kadesApprover?.nama || '-'} (Timestamp: ${item.authorizedAt ? new Date(item.authorizedAt).toLocaleString('id-ID') : '-'})`, 65, startY + 195);
+      doc.text(`[Eksekutor] Keuangan  : Dieksekusi pada ${item.disbursedAt ? new Date(item.disbursedAt).toLocaleString('id-ID') : '-'}`, 65, startY + 210);
+
+      // Move cursor down for next item
+      doc.x = 50;
+      doc.y = startY + 240;
     });
 
     // Finalize PDF file

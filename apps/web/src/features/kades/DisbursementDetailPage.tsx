@@ -161,17 +161,7 @@ export default function DisbursementDetailPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
-              <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
-                Status Otentikasi
-              </h3>
-              <HashCheckerBadge isValid={true} />
-              <p className="text-xs text-slate-500 mt-3">
-                Hash dokumen cocok dengan metadata di blockchain.
-              </p>
-            </div>
-
+          <div className="grid grid-cols-1 gap-6">
             <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">
                 Lokasi Geo-Tagging
@@ -198,13 +188,6 @@ export default function DisbursementDetailPage() {
               beritaAcaraUrl={data.beritaAcaraUrl} 
               lpjUrl={data.lpjUrl} 
             />
-
-            <div className="mt-6 p-5 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-blue-500 uppercase tracking-widest block mb-1">Total Pencairan Diajukan</span>
-                <span className="text-2xl font-black text-blue-900">Rp {nominalStr}</span>
-              </div>
-            </div>
           </div>
 
         </div>

@@ -3,129 +3,167 @@
 > Prinsip: DB ini adalah *cache* dari on-chain state (untuk query cepat & UI) + penyimpanan hal-hal yang memang tidak layak/tidak boleh on-chain (chat, file metadata, resolusi adat, laporan whistleblower terenkripsi).
 
 ```prisma
-enum Role {
-  KAUR_TEKNIS
-  SEKDES
-  KADES
-  PUBLIK
-  AUDITOR
-  BPD
-  TOKOH_ADAT
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id                String   @id @default(cuid())
-  nama              String
-  role              Role
-  email             String?  @unique
-  passwordHash      String
-  walletAddress     String   @unique   // address custodial wallet on-chain
-  encryptedPrivKey  String             // AES-GCM encrypted, key turunan dari PIN
-  jabatan           String?            // mis. "Ketua BPD", "Ketua Lembaga Adat"
-  nomorSK           String?            // khusus Kades
-  createdAt         DateTime @default(now())
+  id           String   @id @default(cuid())
+  nama         String
+  role         String
+  email        String?  @unique
+  passwordHash String?
+  jabatan      String?
+  createdAt    DateTime @default(now())
+
+  proposals            Proposal[]
+  sekdesVerifications  Disbursement[]          @relation("SekdesVerification")
+  kadesApprovals       Disbursement[]          @relation("KadesApproval")
+  kadesInterventions   InterventionLog[]       @relation("KadesInterventions")
+  clarificationAnswers ClarificationTicket[]
+  adatCases            AdatCase[]
+  supervisionNotes     SupervisionNote[]
+  auditorTokens        AuditorAccessToken[]
+  monthlyClosings      MonthlyClosing[]
+  corrections          CorrectionTransaction[]
+  villageIncomes       VillageIncomeEntry[]
 }
 
 model Proposal {
-  id              String   @id @default(cuid())
-  onChainId        Int      @unique     // id di smart contract
-  dusun            String
-  judulUsulan      String
-  kategori         String
-  volume           Float
-  satuan           String
-  paguMaksimal      BigInt
-  dokumenHash       String              // SHA-256 gabungan daftar hadir + notulensi
-  fileUrls          Json                // { daftarHadir: url, notulensi: url }
-  kaurTeknisId      String
-  kaurTeknis        User     @relation(fields: [kaurTeknisId], references: [id])
-  createdAt         DateTime @default(now())
+  id           String   @id @default(cuid())
+  onChainId    Int      @unique
+  dusun        String
+  judulUsulan  String
+  kategori     String
+  volume       Float
+  satuan       String
+  paguMaksimal BigInt
+  dokumenHash  String
+  fileUrls     Json
+  kaurTeknisId String
+  kaurTeknis   User     @relation(fields: [kaurTeknisId], references: [id])
+  createdAt    DateTime @default(now())
+
+  disbursements Disbursement[]
 }
 
 model Disbursement {
-  id                String   @id @default(cuid())
-  onChainId          Int      @unique
-  proposalId         String
-  proposal           Proposal @relation(fields: [proposalId], references: [id])
-  keterangan         String
-  nominal            BigInt
-  beritaAcaraUrl     String
-  beritaAcaraHash    String
-  fotoUrl            String
-  geotagLat          Float
-  geotagLng          Float
-  geotagTimestamp    DateTime
-  status             String   // mirror dari enum on-chain: PENDING_SEKDES | RETURNED_FOR_REVISION | PENDING_KADES | DISBURSED | REJECTED_SYSTEM
-  catatanRevisi      String?
-  sekdesVerifierId   String?
-  kadesApproverId    String?
-  submittedAt        DateTime @default(now())
-  verifiedAt         DateTime?
-  disbursedAt        DateTime?
+  id               String   @id @default(cuid())
+  onChainId        Int      @unique
+  proposalId       String
+  proposal         Proposal @relation(fields: [proposalId], references: [id])
+  keterangan       String
+  nominal          BigInt
+  beritaAcaraUrl   String
+  beritaAcaraHash  String
+  fotoUrl          String
+  geotagLat        Float
+  geotagLng        Float
+  geotagTimestamp  DateTime
+  status           String
+  catatanRevisi    String?
+  sekdesVerifierId String?
+  sekdesVerifier   User?    @relation("SekdesVerification", fields: [sekdesVerifierId], references: [id])
+  kadesApproverId  String?
+  kadesApprover    User?    @relation("KadesApproval", fields: [kadesApproverId], references: [id])
+  submittedAt      DateTime @default(now())
+  verifiedAt       DateTime?
+  authorizedAt     DateTime?
+  disbursedAt      DateTime?
+  lpjUrl           String?
+
+  rejectionLogs    RejectionLog[]
+  interventionLogs InterventionLog[]
+  supervisionNotes SupervisionNote[]
+  taxEntries       TaxBookEntry[]
 }
 
 model RejectionLog {
-  id              String   @id @default(cuid())
-  disbursementId   String
-  jenisPenolakan   String   // "SISTEM_BLOCKCHAIN" | "SEKDES_REVISI"
-  pesanError       String
-  sudahDiperbaiki  Boolean  @default(false)
-  createdAt        DateTime @default(now())
+  id              String       @id @default(cuid())
+  disbursementId  String
+  disbursement    Disbursement @relation(fields: [disbursementId], references: [id])
+  jenisPenolakan  String
+  pesanError      String
+  sudahDiperbaiki Boolean      @default(false)
+  createdAt       DateTime     @default(now())
 }
 
 model InterventionLog {
-  id              String   @id @default(cuid())
-  disbursementId   String
-  kadesId          String
-  txHash           String
-  createdAt        DateTime @default(now())
+  id             String       @id @default(cuid())
+  disbursementId String
+  disbursement   Disbursement @relation(fields: [disbursementId], references: [id])
+  kadesId        String
+  kades          User         @relation("KadesInterventions", fields: [kadesId], references: [id])
+  txHash         String
+  createdAt      DateTime     @default(now())
 }
 
 model ClarificationTicket {
-  id            String   @id @default(cuid())
-  namaWarga     String?             // null jika anonim
+  id            String    @id @default(cuid())
+  namaWarga     String?
   programId     String?
   pertanyaan    String
-  status        String   @default("MENUNGGU_JAWABAN") // MENUNGGU_JAWABAN | SELESAI
+  status        String    @default("MENUNGGU_JAWABAN")
   jawaban       String?
   dijawabOlehId String?
-  createdAt     DateTime @default(now())
+  dijawabOleh   User?     @relation(fields: [dijawabOlehId], references: [id])
+  createdAt     DateTime  @default(now())
   answeredAt    DateTime?
 }
 
 model WhistleblowerReport {
-  id                String   @id @default(cuid())
-  ticketCode        String   @unique   // dikasih ke pelapor untuk tracking
-  encryptedPayload  String              // ciphertext hasil E2EE client-side (box dengan public key Inspektorat)
-  attachmentUrls    Json                // array url file terenkripsi
-  status            String   @default("DITERIMA") // DITERIMA | SEDANG_VERIFIKASI | SELESAI
-  createdAt         DateTime @default(now())
+  id               String   @id @default(cuid())
+  ticketCode       String   @unique
+  encryptedPayload String
+  attachmentUrls   Json
+  status           String   @default("DITERIMA")
+  createdAt        DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  judul     String
+  pesan     String
+  dibaca    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model AdatCase {
-  id              String   @id @default(cuid())
-  pihakTerlibat    Json     // array nama
-  kategori         String   // "Pelanggaran Integritas Aparat" | "Sengketa Batas Tanah" | dst
-  status           String   @default("MUSYAWARAH") // MUSYAWARAH | SELESAI
+  id                String   @id @default(cuid())
+  pihakTerlibat     Json
+  kategori          String
+  status            String   @default("MUSYAWARAH")
   keputusanResolusi String?
   dicatatOlehId     String
+  dicatatOleh       User     @relation(fields: [dicatatOlehId], references: [id])
   createdAt         DateTime @default(now())
 }
 
 model SupervisionNote {
-  id              String   @id @default(cuid())
-  disbursementId   String
-  bpdUserId        String
-  catatan          String
-  createdAt        DateTime @default(now())
+  id             String       @id @default(cuid())
+  disbursementId String
+  disbursement   Disbursement @relation(fields: [disbursementId], references: [id])
+  bpdUserId      String
+  bpdUser        User         @relation(fields: [bpdUserId], references: [id])
+  catatan        String
+  createdAt      DateTime     @default(now())
 }
 
 model AuditorAccessToken {
-  id          String   @id @default(cuid())
-  auditorId   String
-  expiresAt   DateTime
-  revoked     Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  auditorId String
+  auditor   User     @relation(fields: [auditorId], references: [id])
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 // Model-model Kaur Keuangan / Bendahara
@@ -140,6 +178,7 @@ model CashBookEntry {
   bulan          Int
   tahun          Int
   statusTerkunci Boolean  @default(false)
+  
   incomeEntries  VillageIncomeEntry[]
 }
 
@@ -172,6 +211,7 @@ model MonthlyClosing {
   tahun         Int
   hashKunci     String
   ditutupOlehId String
+  ditutupOleh   User     @relation(fields: [ditutupOlehId], references: [id])
   ditutupPada   DateTime
 }
 
@@ -181,6 +221,7 @@ model CorrectionTransaction {
   alasan          String
   nilaiKoreksi    BigInt
   dibuatOlehId    String
+  dibuatOleh      User     @relation(fields: [dibuatOlehId], references: [id])
   createdAt       DateTime @default(now())
 }
 
@@ -194,14 +235,13 @@ model VillageIncomeEntry {
   sumberReferensi String?
   bulan           Int
   tahun           Int
+  
   dicatatOlehId   String
+  dicatatOleh     User           @relation(fields: [dicatatOlehId], references: [id])
+  
   cashBookEntryId String?
+  cashBookEntry   CashBookEntry? @relation(fields: [cashBookEntryId], references: [id])
+  
   createdAt       DateTime       @default(now())
 }
 ```
-
-## Catatan Implementasi
-
-- `onChainId` di `Proposal`/`Disbursement` adalah kunci untuk mencocokkan row Postgres dengan struct on-chain — di-populate oleh `chain-indexer` service setelah event `ProposalRegistered`/`DisbursementSubmitted` masuk.
-- `status` di `Disbursement` **selalu** ditulis ulang dari event on-chain (lewat indexer), jangan pernah di-update langsung dari request user tanpa konfirmasi tx — supaya Postgres tidak pernah "lebih maju" dari kebenaran on-chain.
-- `AuditorAccessToken` mendukung fitur "Indikator Sesi Akses (Time-Bound Token)" — middleware auth cek `expiresAt` tiap request Auditor.

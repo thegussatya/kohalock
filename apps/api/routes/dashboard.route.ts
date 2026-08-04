@@ -227,7 +227,10 @@ router.get('/kades', authenticate, async (req: AuthRequest, res: Response): Prom
     const percentage = (Number(totalDisbursedYear) / totalTarget) * 100;
     const absorptionRate = `${percentage.toFixed(1)}%`;
     
-    const currentKas = BigInt(350000000) - totalDisbursedYear;
+    const latestCashEntry = await prisma.cashBookEntry.findFirst({
+      orderBy: { tanggal: 'desc' }
+    });
+    const currentKas = latestCashEntry ? latestCashEntry.saldoBerjalan : BigInt(0);
     const kasBalance = `Rp ${Number(currentKas).toLocaleString('id-ID')}`; 
 
     const donutData = [
@@ -516,6 +519,18 @@ router.get('/bpd-adat', authenticate, async (req: AuthRequest, res: Response): P
   }
 });
 
+import { recalculateCashBookBalances, recalculateBankBookBalances } from '../src/utils/ledger.util';
+
+router.get('/recalculate-ledger', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    await recalculateCashBookBalances(prisma as any);
+    await recalculateBankBookBalances(prisma as any);
+    res.json({ message: 'Ledger recalculated successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 6. Kaur Keuangan
 router.get('/kaur-keuangan', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -529,7 +544,10 @@ router.get('/kaur-keuangan', authenticate, async (req: AuthRequest, res: Respons
 
     const lastCashEntry = await prisma.cashBookEntry.findFirst({
       where: { bulan: currentBulan, tahun: currentTahun },
-      orderBy: { tanggal: 'desc' }
+      orderBy: [
+        { tanggal: 'desc' },
+        { id: 'desc' }
+      ]
     });
     
     const saldoKas = lastCashEntry ? lastCashEntry.saldoBerjalan : BigInt(0);

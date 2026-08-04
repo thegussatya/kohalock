@@ -2,63 +2,74 @@
 
 Base URL: `/api/v1` (atau Kustom di server.ts: `/api`). Auth: `Authorization: Bearer <JWT>`. Semua endpoint (kecuali yang ditandai *public*) dilindungi RBAC middleware sesuai `05_ROLES_PERMISSIONS.md`.
 
-## Auth
-- `POST /auth/login` *(public)* — email/nama + password → JWT
-- `POST /auth/refresh` *(Belum diimplementasi)*
+## 1. Auth & Users
+- `POST /auth/login` *(public)* — email/nama + password -> JWT
+- `GET /notifications` — Mengambil daftar notifikasi terbaru milik user yang login.
+- `GET /notifications/unread-count` — Mengambil jumlah notifikasi yang belum dibaca.
+- `POST /notifications/:id/read` — Menandai notifikasi spesifik menjadi sudah dibaca.
 
-## Public & Open Access (`/api/public`)
-- `GET /public/summary` *(public)* — total dana, realisasi %, jumlah proyek
-- `GET /public/projects?search=&dusun=&status=` *(public)* — daftar proyek & progress
-- `GET /public/projects/:id` *(public)* — detail proyek, progress pencairan, & geotag photo
-- `POST /public/clarifications` *(public, optional auth)* — submit pertanyaan warga
-- `GET /public/clarifications` *(public)* — list pertanyaan & jawaban
-- `POST /public/whistleblower` *(public)* — submit laporan rahasia (encrypted)
-- `GET /public/whistleblower/:ticketCode/status` *(public)* — cek status laporan tanpa membocorkan konten
+## 2. Public & Open Access (`/api/public`)
+- `GET /public/summary` *(public)* — agregasi metrik ringkasan dana, realisasi, dan jumlah proyek.
+- `GET /public/projects` *(public)* — daftar seluruh proyek dengan filter judul (`?search=`), dusun (`?dusun=`), dan status (`?status=`).
+- `GET /public/projects/:id` *(public)* — detail publik 1 proyek lengkap dengan informasi termin pencairan dan galeri geotagging.
+- `POST /public/clarifications` *(public)* — mengirim pertanyaan publik.
+- `GET /public/clarifications` *(public)* — mengambil seluruh daftar tiket diskusi terbuka.
+- `POST /public/whistleblower` *(public)* — menerima payload whistleblower (encrypted-only) dari masyarakat tanpa logging backend.
 
-## Proposal (Musrembang)
-- `POST /proposals` — `KAUR_TEKNIS`. Body: dusun, judul, kategori, volume, satuan, pagu, files (multipart).
-- `GET /proposals` — List proposal berdasarkan filter.
+## 3. Proposal (Musrembang)
+- `POST /proposals/` — `KAUR_TEKNIS`. Membuat proposal / usulan program baru dari Kaur Teknis.
+- `GET /proposals/` — Mengambil daftar semua proposal (termasuk relasi pembuatnya).
 
-## Disbursement (Pencairan)
-- `GET /disbursements/sisa-pagu/:proposalId` — real-time sisa pagu anggaran per proposal
-- `POST /disbursements` — `KAUR_TEKNIS`. Ajukan pencairan baru (nominal, berita acara, geotagging).
-- `GET /disbursements` — List pencairan sesuai role/dusun.
-- `GET /disbursements/rejections` — Riwayat pencairan yang ditolak atau direvisi.
-- `GET /disbursements/execution-queue` — Daftar antrean eksekusi pencairan (Kaur Keuangan).
-- `GET /disbursements/verifications` — Daftar pencairan yang sudah diverifikasi (Sekdes).
-- `GET /disbursements/authorizations` — Daftar pencairan yang sudah diotorisasi (Kades).
-- `GET /disbursements/:id` — Detail lengkap pencairan.
-- `POST /disbursements/:id/verify` — `SEKDES`. Verifikasi tahap 1 (sign tx).
-- `POST /disbursements/:id/return-revision` — `SEKDES`. Kembalikan pencairan untuk direvisi.
-- `POST /disbursements/:id/authorize` — `KADES`. Persetujuan final sebelum pencairan dieksekusi.
-- `POST /disbursements/:id/execute` — `KAUR_KEUANGAN`. Eksekusi pencairan on-chain & transfer dana aktual.
-- `POST /disbursements/verify-hash` — Upload file dan verifikasi hash on-chain vs dokumen (Auditor/Sekdes).
+## 4. Disbursement (Pencairan)
+- `GET /disbursements/sisa-pagu/:proposalId` — Mengambil sisa pagu anggaran dari suatu proposal.
+- `POST /disbursements/` — `KAUR_TEKNIS`. Membuat pengajuan pencairan (disbursement) baru dengan status awal `PENDING_SEKDES`.
+- `GET /disbursements/` — Mengambil daftar pengajuan, mendukung *query parameter* `?status=`.
+- `GET /disbursements/execution-queue` — `KAUR_KEUANGAN`. Mengambil antrean pengajuan dengan status `PENDING_EKSEKUSI`.
+- `GET /disbursements/authorizations` — `KADES`. Mengambil riwayat otorisasi pencairan oleh Kades.
+- `GET /disbursements/:id` — Mengambil detail spesifik pengajuan pencairan.
+- `PUT /disbursements/:id` — `KAUR_TEKNIS`. Menyimpan revisi pengajuan pencairan yang dikembalikan (update nominal/geotag).
+- `POST /disbursements/:id/verify` — `SEKDES`. Memverifikasi pengajuan. Mengubah status ke `PENDING_KADES`.
+- `POST /disbursements/:id/return-revision` — `SEKDES`/`KADES`. Menolak dengan catatan revisi, status ke `RETURNED_FOR_REVISION`.
+- `POST /disbursements/:id/authorize` — `KADES`. Mengotorisasi pencairan. Mengubah status ke `PENDING_EKSEKUSI`.
+- `POST /disbursements/:id/execute` — `KAUR_KEUANGAN`. Mengeksekusi pencairan. Mengubah status ke `DISBURSED`, otomatis mencatat ke Buku Kas, Bank, & Pajak.
 
-## Panic Button / Intervention
-- `POST /disbursements/:id/reject-intervention` — `KADES`. Mengintervensi/membatalkan pencairan darurat (Panic Button).
-- `GET /interventions` — read (`KADES`, `AUDITOR`, `BPD`).
-- `GET /interventions/:id/certificate` — generate PDF "Sertifikat Penolakan".
+## 5. Panic Button & Interventions
+- `POST /interventions/:id/reject` — `KADES`. Menolak intervensi/pencairan mencurigakan (Panic Button), mengubah status ke `REJECTED_SYSTEM`.
+- `GET /interventions/:id/certificate` — `KADES`/`AUDITOR`. Mengunduh sertifikat PDF penolakan intervensi non-prosedural.
 
-## Modul Bendahara & Kaur Keuangan
-- `GET /monthly-closing/status` — Cek status penutupan buku kas.
-- `GET /monthly-closing/archive` — Arsip bulanan.
-- `POST /monthly-closing/close` — Menutup buku bulanan (mengunci CashBook & BankBook).
-- `GET /monthly-closing/:id/verify` — Verifikasi tutup buku.
-- `GET /cash-book` — Buku kas umum.
-- `GET /bank-book` — Buku pembantu bank.
-- `POST /bank-book/reconcile` — Rekonsiliasi bank.
-- `GET /tax-book` — Buku pembantu pajak.
-- `POST /tax-book/:id/setor` — Penyetoran pajak.
-- `GET /corrections` — Riwayat koreksi transaksi.
-- `POST /corrections` — Koreksi nilai nominal pencairan.
-- `GET /reports/realization` — Rekapitulasi realisasi anggaran.
+## 6. Modul Kaur Keuangan (Buku Kas, Bank, Pajak, Pendapatan)
+- `GET /cash-book/` — Mengambil seluruh entri Buku Kas Umum, mendukung filter query `?bulan=` dan `?tahun=`.
+- `GET /bank-book/` — Mengambil seluruh entri Buku Bank.
+- `GET /tax-book/` — Mengambil seluruh entri Buku Pajak.
+- `POST /tax-book/:id/setor` — `KAUR_KEUANGAN`. Mengubah status setor pajak menjadi `SUDAH_SETOR`.
+- `POST /village-income/` — `KAUR_KEUANGAN`. Mencatat pendapatan desa baru (PADes, Transfer, dll). Otomatis buat `CashBookEntry`.
+- `GET /village-income/` — Mengambil daftar pendapatan desa dengan filter.
+- `GET /village-income/summary` — Mengembalikan agregat total nominal per kelompok pendapatan.
+- `GET /monthly-closing/archive` — List seluruh penutupan buku bulanan beserta status verifikasi hash.
+- `GET /monthly-closing/status` — Cek status penutupan bulan dan validasi rekonsiliasi.
+- `POST /monthly-closing/close` — `KAUR_KEUANGAN`. Mengunci buku bulanan secara permanen dengan PIN dan generate SHA-256 hash.
+- `GET /monthly-closing/:id/verify` — Memverifikasi kecocokan hash kriptografis dari ledger bulanan.
+- `POST /corrections/` — `KAUR_KEUANGAN`. Membuat transaksi koreksi (jurnal pembalik) untuk entri buku yang sudah closing.
+- `GET /corrections/` — List transaksi koreksi, filter `?bulan=` & `?tahun=`.
+- `GET /reports/realization` — Agregasi realisasi anggaran per periode (pagu, realisasi, sisa pagu, breakdown).
 
-## Notifikasi (Universal)
-- `GET /notifications` — Daftar notifikasi user.
-- `GET /notifications/unread-count` — Jumlah notifikasi belum dibaca.
-- `POST /notifications/:id/read` — Menandai notifikasi dibaca.
+## 7. Ledger Explorer & Auditor Tools
+- `GET /ledger/timeline` — `AUDITOR`/`BPD`/`PUBLIK`. Mengambil daftar pencairan untuk ditampilkan di eksplorer. Mendukung filter `?search=`.
+- `GET /ledger/timeline/:id` — Mengambil detail 1 pencairan yang dipetakan sebagai rentetan tahapan timeline berdasarkan timestamp.
+- `POST /disbursements/verify-hash` — `AUDITOR`. Mengecek kecocokan dokumen (hash PDF) dengan data blockchain/DB.
+- `POST /export/legal-report` — `AUDITOR`. Generate Laporan Hukum PDF.
+- `POST /export/raw-data` — `AUDITOR`. Download Export Data CSV/JSON.
+- `GET /whistleblower/reports` — `AUDITOR`. List laporan whistleblower yang masuk.
+- `POST /whistleblower/reports/:ticketCode/decrypt` — `AUDITOR`. Mendekripsi payload whistleblower.
 
-## Dashboard Role-Based (`/api/dashboard`)
+## 8. BPD & Tokoh Adat
+- `POST /supervision-notes` — `BPD`. Membuat catatan pengawasan atas pencairan tertentu.
+- `GET /supervision-notes/history` — `BPD`. Mengambil riwayat pengawasan.
+- `POST /adat-cases` — `TOKOH_ADAT`. Membuat kasus resolusi adat baru.
+- `PATCH /adat-cases/:id` — `TOKOH_ADAT`. Memperbarui status resolusi adat.
+- `GET /adat-cases` — `TOKOH_ADAT`/`BPD`. Mengambil daftar seluruh resolusi adat.
+
+## 9. Dashboard Analytics (`/api/dashboard/*`)
 - `GET /dashboard/kaur-teknis` — Ringkasan usulan dan pencairan Kaur Teknis.
 - `GET /dashboard/sekdes` — Dashboard metrik kinerja Sekdes.
 - `GET /dashboard/sekdes/budget` — Monitoring anggaran & sisa kas Sekdes.
@@ -66,35 +77,11 @@ Base URL: `/api/v1` (atau Kustom di server.ts: `/api`). Auth: `Authorization: Be
 - `GET /dashboard/kades/clarifications` — Analytics respon klarifikasi warga.
 - `GET /dashboard/auditor` — Metrik anomali dan red-flags (Auditor).
 - `GET /dashboard/auditor/cases` — Manajemen kasus whistleblower & intervensi (Auditor).
-- `GET /dashboard/auditor/templates` — Template BAP & Surat Laporan (Auditor).
 - `GET /dashboard/bpd-adat` — Ringkasan pengawasan, kasus adat, & timeline (BPD/Adat).
 - `GET /dashboard/bpd-adat/annual-report` — Laporan kuartalan & tahunan (BPD/Adat).
 - `GET /dashboard/bpd-adat/calendar` — Kalender jadwal sidang adat (BPD/Adat).
 - `GET /dashboard/kaur-keuangan` — Ringkasan kas, tugas pending eksekusi & pelaporan pajak.
 
-## Ledger Explorer (Auditor)
-- `GET /ledger/timeline` — Timeline transaksi blok on-chain.
-- `GET /ledger/timeline/:id` — Timeline history transaksi untuk pencairan spesifik.
-- `GET /ledger/blocks/:blockId/metadata` *(Belum diimplementasi)* — timestamp presisi, signature, geolocation.
-
-## Whistleblower
-- `GET /whistleblower/reports` — `AUDITOR`. List laporan whistleblower.
-- `POST /whistleblower/reports/:id/decrypt` — `AUDITOR`. Dekripsi ciphertext (private key tidak disimpan).
-
-## Clarification (Publik ↔ Sekdes)
-- `GET /clarifications` — Daftar klarifikasi yang masuk ke dashboard perangkat desa.
-- `POST /clarifications/:id/reply` — `SEKDES`. Membalas pertanyaan/klarifikasi dari warga.
-
-## Supervision (BPD) & Adat
-- `POST /supervision-notes` — `BPD`. Membuat catatan pengawasan.
-- `GET /supervision-notes/history` — Riwayat pengawasan BPD.
-- `POST /adat-cases` — `TOKOH_ADAT`. Mencatat hasil resolusi adat.
-- `GET /adat-cases` — List kasus adat.
-
-## Legal Export (Auditor)
-- `POST /export/legal-report` — `AUDITOR`. Generate PDF bersegel digital untuk kebutuhan BAP.
-- `POST /export/raw-data` — `AUDITOR`. Export raw JSON/CSV.
-
 ## Konvensi Umum
-- Semua endpoint yang men-trigger transaksi blockchain **return segera** dengan status `pending_confirmation` + `txHash`, lalu frontend polling `GET /tx/:txHash/status` atau dengar websocket event dari `chain-indexer`. Jangan bikin request HTTP menunggu block confirmation (lambat, UX buruk).
-- Semua file upload: validasi tipe (PDF/JPEG only sesuai spec), hash dihitung di backend segera setelah upload selesai, bukan dipercaya dari klien.
+- Endpoint POST dan PUT mengirim JSON dan mengembalikan object tersimpan.
+- Jika error, gunakan format HTTP Status Code sesuai. `400` untuk invalid request, `401` Unauthorized, `403` Forbidden (Role tidak pas).
