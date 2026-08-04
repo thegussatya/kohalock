@@ -62,6 +62,25 @@ export default function RealizationReportPage() {
   const totalPagu = reportData ? Number(reportData.totalPagu) : 0;
   const persentase = totalPagu > 0 ? Math.round((totalRealisasi / totalPagu) * 100) : 0;
 
+  const handleDownload = (type: 'realization' | 'lpj') => {
+    toast.loading(`Menyiapkan dokumen ${type === 'realization' ? 'Laporan Realisasi' : 'LPJ'}...`, { id: 'download' });
+    apiClient.get(`/export/${type}`, { responseType: 'blob' })
+      .then(res => {
+        const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${type === 'realization' ? 'Laporan_Realisasi' : 'LPJ'}_Kohalock.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+        toast.success('Dokumen berhasil diunduh!', { id: 'download' });
+      })
+      .catch(err => {
+        toast.error('Gagal mengunduh dokumen', { id: 'download' });
+        console.error(err);
+      });
+  };
+
   return (
     <RoleLayout
       menuItems={KAUR_KEUANGAN_MENU}
@@ -72,13 +91,13 @@ export default function RealizationReportPage() {
       <div className="relative">
         <div className="absolute top-0 right-0 z-10 flex flex-col sm:flex-row gap-3">
           <button 
-            onClick={() => toast.success("Laporan PDF sedang di-generate...", { icon: '📄' })} 
+            onClick={() => handleDownload('realization')} 
             className="px-4 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg shadow-sm font-bold flex items-center justify-center gap-2 text-sm transition-colors"
           >
             <Download className="w-4 h-4" /> Generate Laporan Realisasi
           </button>
           <button 
-            onClick={() => toast.success("LPJ sedang disiapkan...", { icon: '📊' })} 
+            onClick={() => handleDownload('lpj')} 
             className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm font-bold flex items-center justify-center gap-2 text-sm transition-colors"
           >
             <Download className="w-4 h-4" /> Generate LPJ

@@ -9,7 +9,6 @@ export const KAUR_KEUANGAN_MENU = [
   { label: "Buku Pajak", path: "/kaur-keuangan/buku-pajak", icon: Receipt },
   { label: "Penutupan Buku Bulanan", path: "/kaur-keuangan/penutupan-buku", icon: Lock },
   { label: "Laporan Realisasi & LPJ", path: "/kaur-keuangan/laporan", icon: FileBarChart },
-  { label: "Transaksi Koreksi", path: "/kaur-keuangan/koreksi", icon: Undo2 },
   { label: "Arsip Buku Terkunci", path: "/kaur-keuangan/arsip", icon: Archive },
   { label: "Pengaturan & Kredensial", path: "/kaur-keuangan/pengaturan", icon: Settings },
   { label: "Bantuan", path: "/kaur-keuangan/bantuan", icon: HelpCircle },
