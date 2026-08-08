@@ -38,6 +38,7 @@ export interface DanaDesaLedgerInterface extends Interface {
       | "getSisaPagu"
       | "grantRole"
       | "hasRole"
+      | "lpjDesaHashes"
       | "proposals"
       | "registerProposal"
       | "rejectIntervention"
@@ -45,6 +46,9 @@ export interface DanaDesaLedgerInterface extends Interface {
       | "returnForRevision"
       | "revokeRole"
       | "submitDisbursement"
+      | "submitLpjDesa"
+      | "submitLpjKeuangan"
+      | "submitLpjTeknis"
       | "supportsInterface"
       | "totalDisbursedPerProposal"
       | "verifyBySekdes"
@@ -57,6 +61,9 @@ export interface DanaDesaLedgerInterface extends Interface {
       | "Disbursed"
       | "DisbursementSubmitted"
       | "InterventionRejected"
+      | "LpjDesaSubmitted"
+      | "LpjKeuanganSubmitted"
+      | "LpjTeknisSubmitted"
       | "ProposalRegistered"
       | "ReturnedForRevision"
       | "RoleAdminChanged"
@@ -111,6 +118,10 @@ export interface DanaDesaLedgerInterface extends Interface {
     values: [BytesLike, AddressLike]
   ): string;
   encodeFunctionData(
+    functionFragment: "lpjDesaHashes",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "proposals",
     values: [BigNumberish]
   ): string;
@@ -137,6 +148,18 @@ export interface DanaDesaLedgerInterface extends Interface {
   encodeFunctionData(
     functionFragment: "submitDisbursement",
     values: [BigNumberish, BigNumberish, BytesLike, string]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "submitLpjDesa",
+    values: [BigNumberish, BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "submitLpjKeuangan",
+    values: [BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "submitLpjTeknis",
+    values: [BigNumberish, BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "supportsInterface",
@@ -191,6 +214,10 @@ export interface DanaDesaLedgerInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "hasRole", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "lpjDesaHashes",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "proposals", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "registerProposal",
@@ -211,6 +238,18 @@ export interface DanaDesaLedgerInterface extends Interface {
   decodeFunctionResult(functionFragment: "revokeRole", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "submitDisbursement",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "submitLpjDesa",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "submitLpjKeuangan",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "submitLpjTeknis",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -314,6 +353,87 @@ export namespace InterventionRejectedEvent {
     disbursementId: bigint;
     kades: string;
     reasonHash: string;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace LpjDesaSubmittedEvent {
+  export type InputTuple = [
+    tahun: BigNumberish,
+    semester: BigNumberish,
+    kades: AddressLike,
+    lpjHash: BytesLike,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    tahun: bigint,
+    semester: bigint,
+    kades: string,
+    lpjHash: string,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    tahun: bigint;
+    semester: bigint;
+    kades: string;
+    lpjHash: string;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace LpjKeuanganSubmittedEvent {
+  export type InputTuple = [
+    proposalId: BigNumberish,
+    kaurKeuangan: AddressLike,
+    lpjHash: BytesLike,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    proposalId: bigint,
+    kaurKeuangan: string,
+    lpjHash: string,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    proposalId: bigint;
+    kaurKeuangan: string;
+    lpjHash: string;
+    timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace LpjTeknisSubmittedEvent {
+  export type InputTuple = [
+    disbursementId: BigNumberish,
+    kaurTeknis: AddressLike,
+    totalAmount: BigNumberish,
+    lpjHash: BytesLike,
+    timestamp: BigNumberish
+  ];
+  export type OutputTuple = [
+    disbursementId: bigint,
+    kaurTeknis: string,
+    totalAmount: bigint,
+    lpjHash: string,
+    timestamp: bigint
+  ];
+  export interface OutputObject {
+    disbursementId: bigint;
+    kaurTeknis: string;
+    totalAmount: bigint;
+    lpjHash: string;
     timestamp: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
@@ -524,6 +644,8 @@ export interface DanaDesaLedger extends BaseContract {
         string,
         bigint,
         bigint,
+        bigint,
+        string,
         bigint
       ] & {
         id: bigint;
@@ -539,6 +661,8 @@ export interface DanaDesaLedger extends BaseContract {
         submittedAt: bigint;
         verifiedAt: bigint;
         disbursedAt: bigint;
+        lpjHash: string;
+        lpjAmount: bigint;
       }
     ],
     "view"
@@ -570,10 +694,16 @@ export interface DanaDesaLedger extends BaseContract {
     "view"
   >;
 
+  lpjDesaHashes: TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
+
   proposals: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [bigint, string, string, bigint, string, string, bigint] & {
+      [bigint, string, string, bigint, string, string, bigint, string] & {
         id: bigint;
         dusun: string;
         kategori: string;
@@ -581,6 +711,7 @@ export interface DanaDesaLedger extends BaseContract {
         kaurTeknis: string;
         dokumenHash: string;
         createdAt: bigint;
+        lpjKeuanganHash: string;
       }
     ],
     "view"
@@ -627,6 +758,28 @@ export interface DanaDesaLedger extends BaseContract {
       nominal: BigNumberish,
       beritaAcaraHash: BytesLike,
       geotag: string
+    ],
+    [void],
+    "nonpayable"
+  >;
+
+  submitLpjDesa: TypedContractMethod<
+    [tahun: BigNumberish, semester: BigNumberish, lpjHash: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
+  submitLpjKeuangan: TypedContractMethod<
+    [proposalId: BigNumberish, lpjHash: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
+  submitLpjTeknis: TypedContractMethod<
+    [
+      disbursementId: BigNumberish,
+      totalAmount: BigNumberish,
+      lpjHash: BytesLike
     ],
     [void],
     "nonpayable"
@@ -696,6 +849,8 @@ export interface DanaDesaLedger extends BaseContract {
         string,
         bigint,
         bigint,
+        bigint,
+        string,
         bigint
       ] & {
         id: bigint;
@@ -711,6 +866,8 @@ export interface DanaDesaLedger extends BaseContract {
         submittedAt: bigint;
         verifiedAt: bigint;
         disbursedAt: bigint;
+        lpjHash: string;
+        lpjAmount: bigint;
       }
     ],
     "view"
@@ -739,11 +896,18 @@ export interface DanaDesaLedger extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "lpjDesaHashes"
+  ): TypedContractMethod<
+    [arg0: BigNumberish, arg1: BigNumberish],
+    [string],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "proposals"
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [bigint, string, string, bigint, string, string, bigint] & {
+      [bigint, string, string, bigint, string, string, bigint, string] & {
         id: bigint;
         dusun: string;
         kategori: string;
@@ -751,6 +915,7 @@ export interface DanaDesaLedger extends BaseContract {
         kaurTeknis: string;
         dokumenHash: string;
         createdAt: bigint;
+        lpjKeuanganHash: string;
       }
     ],
     "view"
@@ -808,6 +973,31 @@ export interface DanaDesaLedger extends BaseContract {
     "nonpayable"
   >;
   getFunction(
+    nameOrSignature: "submitLpjDesa"
+  ): TypedContractMethod<
+    [tahun: BigNumberish, semester: BigNumberish, lpjHash: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "submitLpjKeuangan"
+  ): TypedContractMethod<
+    [proposalId: BigNumberish, lpjHash: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
+    nameOrSignature: "submitLpjTeknis"
+  ): TypedContractMethod<
+    [
+      disbursementId: BigNumberish,
+      totalAmount: BigNumberish,
+      lpjHash: BytesLike
+    ],
+    [void],
+    "nonpayable"
+  >;
+  getFunction(
     nameOrSignature: "supportsInterface"
   ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
   getFunction(
@@ -851,6 +1041,27 @@ export interface DanaDesaLedger extends BaseContract {
     InterventionRejectedEvent.InputTuple,
     InterventionRejectedEvent.OutputTuple,
     InterventionRejectedEvent.OutputObject
+  >;
+  getEvent(
+    key: "LpjDesaSubmitted"
+  ): TypedContractEvent<
+    LpjDesaSubmittedEvent.InputTuple,
+    LpjDesaSubmittedEvent.OutputTuple,
+    LpjDesaSubmittedEvent.OutputObject
+  >;
+  getEvent(
+    key: "LpjKeuanganSubmitted"
+  ): TypedContractEvent<
+    LpjKeuanganSubmittedEvent.InputTuple,
+    LpjKeuanganSubmittedEvent.OutputTuple,
+    LpjKeuanganSubmittedEvent.OutputObject
+  >;
+  getEvent(
+    key: "LpjTeknisSubmitted"
+  ): TypedContractEvent<
+    LpjTeknisSubmittedEvent.InputTuple,
+    LpjTeknisSubmittedEvent.OutputTuple,
+    LpjTeknisSubmittedEvent.OutputObject
   >;
   getEvent(
     key: "ProposalRegistered"
@@ -938,6 +1149,39 @@ export interface DanaDesaLedger extends BaseContract {
       InterventionRejectedEvent.InputTuple,
       InterventionRejectedEvent.OutputTuple,
       InterventionRejectedEvent.OutputObject
+    >;
+
+    "LpjDesaSubmitted(uint256,uint8,address,bytes32,uint256)": TypedContractEvent<
+      LpjDesaSubmittedEvent.InputTuple,
+      LpjDesaSubmittedEvent.OutputTuple,
+      LpjDesaSubmittedEvent.OutputObject
+    >;
+    LpjDesaSubmitted: TypedContractEvent<
+      LpjDesaSubmittedEvent.InputTuple,
+      LpjDesaSubmittedEvent.OutputTuple,
+      LpjDesaSubmittedEvent.OutputObject
+    >;
+
+    "LpjKeuanganSubmitted(uint256,address,bytes32,uint256)": TypedContractEvent<
+      LpjKeuanganSubmittedEvent.InputTuple,
+      LpjKeuanganSubmittedEvent.OutputTuple,
+      LpjKeuanganSubmittedEvent.OutputObject
+    >;
+    LpjKeuanganSubmitted: TypedContractEvent<
+      LpjKeuanganSubmittedEvent.InputTuple,
+      LpjKeuanganSubmittedEvent.OutputTuple,
+      LpjKeuanganSubmittedEvent.OutputObject
+    >;
+
+    "LpjTeknisSubmitted(uint256,address,uint256,bytes32,uint256)": TypedContractEvent<
+      LpjTeknisSubmittedEvent.InputTuple,
+      LpjTeknisSubmittedEvent.OutputTuple,
+      LpjTeknisSubmittedEvent.OutputObject
+    >;
+    LpjTeknisSubmitted: TypedContractEvent<
+      LpjTeknisSubmittedEvent.InputTuple,
+      LpjTeknisSubmittedEvent.OutputTuple,
+      LpjTeknisSubmittedEvent.OutputObject
     >;
 
     "ProposalRegistered(uint256,address,bytes32,uint256)": TypedContractEvent<

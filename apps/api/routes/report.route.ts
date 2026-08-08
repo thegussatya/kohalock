@@ -124,4 +124,147 @@ router.get('/realization', authenticate, async (req: AuthRequest, res: Response)
   }
 });
 
+// GET /api/reports/apbdes
+router.get('/apbdes', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { tahun } = req.query;
+    const t = tahun ? parseInt(tahun as string, 10) : new Date().getFullYear();
+
+    // 1. Pendapatan
+    const incomes = await prisma.villageIncomeEntry.findMany({
+      where: { tahun: t }
+    });
+    
+    // Group pendapatan
+    const pendapatan: any = {};
+    let totalPendapatan = 0n;
+    incomes.forEach(inc => {
+       if (!pendapatan[inc.kelompok]) pendapatan[inc.kelompok] = {};
+       if (!pendapatan[inc.kelompok][inc.jenis]) pendapatan[inc.kelompok][inc.jenis] = 0n;
+       pendapatan[inc.kelompok][inc.jenis] += inc.nominal;
+       totalPendapatan += inc.nominal;
+    });
+
+    // 2. Belanja (Realisasi dari LpjItem)
+    const lpjItems = await prisma.lpjItem.findMany({
+      where: {
+         disbursement: {
+            disbursedAt: {
+               gte: new Date(t, 0, 1),
+               lte: new Date(t, 11, 31, 23, 59, 59, 999)
+            }
+         }
+      },
+      include: {
+         disbursement: {
+            include: { proposal: true }
+         }
+      }
+    });
+
+    const belanja: any = {
+      "Bidang Penyelenggaraan Pemerintahan Desa": { anggaran: 0n, realisasi: 0n, rincian: {} },
+      "Bidang Pelaksanaan Pembangunan Desa": { anggaran: 0n, realisasi: 0n, rincian: {} },
+      "Bidang Pembinaan Kemasyarakatan": { anggaran: 0n, realisasi: 0n, rincian: {} },
+      "Bidang Pemberdayaan Masyarakat": { anggaran: 0n, realisasi: 0n, rincian: {} },
+      "Bidang Tak Terduga": { anggaran: 0n, realisasi: 0n, rincian: {} }
+    };
+    
+    let totalBelanjaAnggaran = 0n;
+    let totalBelanjaRealisasi = 0n;
+
+    // First loop Proposals to get Anggaran
+    const proposals = await prisma.proposal.findMany({
+      where: {
+        createdAt: {
+          gte: new Date(t, 0, 1),
+          lte: new Date(t, 11, 31, 23, 59, 59, 999)
+        }
+      }
+    });
+
+    proposals.forEach(p => {
+       // Mapping simplified
+       let bidangName = "Bidang Pelaksanaan Pembangunan Desa";
+       if (p.kategori.toLowerCase().includes("pemerintahan") || p.kategori.toLowerCase().includes("atk")) bidangName = "Bidang Penyelenggaraan Pemerintahan Desa";
+       if (p.kategori.toLowerCase().includes("pembinaan")) bidangName = "Bidang Pembinaan Kemasyarakatan";
+       if (p.kategori.toLowerCase().includes("pemberdayaan")) bidangName = "Bidang Pemberdayaan Masyarakat";
+       if (p.kategori.toLowerCase().includes("darurat") || p.kategori.toLowerCase().includes("bencana")) bidangName = "Bidang Tak Terduga";
+
+       if (!belanja[bidangName].rincian[p.judulUsulan]) {
+         belanja[bidangName].rincian[p.judulUsulan] = { anggaran: p.paguMaksimal, realisasi: 0n };
+       } else {
+         belanja[bidangName].rincian[p.judulUsulan].anggaran += p.paguMaksimal;
+       }
+       belanja[bidangName].anggaran += p.paguMaksimal;
+       totalBelanjaAnggaran += p.paguMaksimal;
+    });
+
+    lpjItems.forEach(item => {
+       const p = item.disbursement.proposal;
+       let bidangName = "Bidang Pelaksanaan Pembangunan Desa";
+       if (p.kategori.toLowerCase().includes("pemerintahan") || p.kategori.toLowerCase().includes("atk")) bidangName = "Bidang Penyelenggaraan Pemerintahan Desa";
+       if (p.kategori.toLowerCase().includes("pembinaan")) bidangName = "Bidang Pembinaan Kemasyarakatan";
+       if (p.kategori.toLowerCase().includes("pemberdayaan")) bidangName = "Bidang Pemberdayaan Masyarakat";
+       if (p.kategori.toLowerCase().includes("darurat") || p.kategori.toLowerCase().includes("bencana")) bidangName = "Bidang Tak Terduga";
+
+       if (!belanja[bidangName].rincian[p.judulUsulan]) {
+         belanja[bidangName].rincian[p.judulUsulan] = { anggaran: p.paguMaksimal, realisasi: 0n };
+         belanja[bidangName].anggaran += p.paguMaksimal;
+         totalBelanjaAnggaran += p.paguMaksimal;
+       }
+       
+       belanja[bidangName].realisasi += item.totalHarga;
+       belanja[bidangName].rincian[p.judulUsulan].realisasi += item.totalHarga;
+       totalBelanjaRealisasi += item.totalHarga;
+    });
+
+    res.json(serialize({
+      tahun: t,
+      totalPendapatanAnggaran: totalPendapatan, // Assuming anggaran = realisasi for pendapatan in this mock
+      totalPendapatanRealisasi: totalPendapatan,
+      pendapatan,
+      totalBelanjaAnggaran,
+      totalBelanjaRealisasi,
+      belanja,
+      surplusDefisitAnggaran: totalPendapatan - totalBelanjaAnggaran,
+      surplusDefisitRealisasi: totalPendapatan - totalBelanjaRealisasi
+    }));
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/reports/lpj-details
+router.get('/lpj-details', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { tahun } = req.query;
+    const t = tahun ? parseInt(tahun as string, 10) : new Date().getFullYear();
+
+    const lpjItems = await prisma.lpjItem.findMany({
+      where: {
+        disbursement: {
+           disbursedAt: {
+             gte: new Date(t, 0, 1),
+             lte: new Date(t, 11, 31, 23, 59, 59, 999)
+           }
+        }
+      },
+      include: {
+        disbursement: {
+          include: { proposal: true }
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    });
+
+    res.json(serialize(lpjItems));
+  } catch (error: any) {
+    console.error('Error fetching LPJ details:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

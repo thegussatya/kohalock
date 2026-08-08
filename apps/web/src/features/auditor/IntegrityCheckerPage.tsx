@@ -1,31 +1,53 @@
 import PageHeader from '../../components/PageHeader';
 import { useState, useRef, useEffect } from 'react';
-import { Search, FileSearch, Workflow, LockKeyhole, Download, HelpCircle } from 'lucide-react';
+import { Search, FileSearch, Workflow, LockKeyhole, Download, HelpCircle, FileText } from 'lucide-react';
 import RoleLayout from '../../components/RoleLayout';
 import HashCheckerBadge from '../../components/HashCheckerBadge';
 import { AUDITOR_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
+import { toast } from 'react-hot-toast';
+
+type DocType = 'berita_acara' | 'lpj_teknis' | 'lpj_keuangan' | 'lpj_desa';
 
 export default function IntegrityCheckerPage() {
-  const [selectedTrxId, setSelectedTrxId] = useState('');
+  const [docType, setDocType] = useState<DocType>('berita_acara');
+  const [items, setItems] = useState<any[]>([]);
+  const [selectedId, setSelectedId] = useState('');
+  
   const [fileHash, setFileHash] = useState<string | null>(null);
   const [onChainHash, setOnChainHash] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isMatch, setIsMatch] = useState<boolean>(false);
-  const [disbursements, setDisbursements] = useState<any[]>([]);
+  const [catatan, setCatatan] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [savedNotes, setSavedNotes] = useState<any[]>([]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    apiClient.get('/disbursements')
-      .then(res => setDisbursements(res.data))
-      .catch(console.error);
-  }, []);
+    // reset selection
+    setSelectedId('');
+    setFileHash(null);
+    setOnChainHash(null);
+    setIsMatch(false);
+    setFileName(null);
+    setCatatan('');
+    setSavedNotes([]);
+    
+    // fetch items based on docType
+    if (docType === 'berita_acara' || docType === 'lpj_teknis') {
+      apiClient.get('/disbursements').then(res => setItems(res.data)).catch(console.error);
+    } else if (docType === 'lpj_keuangan') {
+      apiClient.get('/public/projects').then(res => setItems(res.data)).catch(console.error);
+    } else if (docType === 'lpj_desa') {
+      apiClient.get('/public/reports/desa').then(res => setItems(res.data)).catch(console.error);
+    }
+  }, [docType]);
 
   const verifyFile = async (file: File) => {
-    if (!selectedTrxId) {
-      alert("Pilih transaksi terlebih dahulu!");
+    if (!selectedId) {
+      alert("Pilih dokumen dari daftar terlebih dahulu!");
       return;
     }
     
@@ -33,18 +55,21 @@ export default function IntegrityCheckerPage() {
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('disbursementId', selectedTrxId);
+    formData.append('docType', docType);
+    formData.append('docId', selectedId);
 
     try {
-      const res = await apiClient.post('/disbursements/verify-hash', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      const res = await apiClient.post('/public/verify-hash', formData);
       const data = res.data;
-      setFileHash(data.hashUpload);
-      setOnChainHash(data.hashTersimpan);
-      setIsMatch(data.cocok);
+      setFileHash(data.calculatedHash);
+      setOnChainHash(data.onChainHash);
+      setIsMatch(data.isAuthentic);
+      
+      // Load existing notes for this document
+      try {
+        const notesRes = await apiClient.get(`/audit-notes?docType=${docType}&docId=${selectedId}`);
+        setSavedNotes(notesRes.data);
+      } catch (e) { /* ignore */ }
     } catch (error) {
       console.error('Error verifying hash:', error);
       alert("Terjadi kesalahan saat memverifikasi file.");
@@ -82,46 +107,80 @@ export default function IntegrityCheckerPage() {
   };
 
   return (
-    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH">
+    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH" settingsPath="/auditor/profil">
       <div className="mb-8">
         <PageHeader title="Uji Alat Bukti (Integrity Checker)" description="Integrity Checker: Verifikasi keaslian dokumen digital atau foto lapangan dengan mencocokkan *Hash Cryptography* lokal melawan data yang tercatat permanen di Ledger Blockchain." />
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8 max-w-5xl">
         <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
-          1. Identifikasi Transaksi
+          <FileText className="w-5 h-5 text-blue-600" />
+          1. Identifikasi Dokumen
         </h2>
         
-        <div className="mb-6">
-          <label className="block text-sm font-bold text-slate-700 mb-2">Pilih ID Transaksi Ledger</label>
-          <select 
-            value={selectedTrxId}
-            onChange={(e) => {
-              setSelectedTrxId(e.target.value);
-              setFileHash(null);
-              setOnChainHash(null);
-              setFileName(null);
-              setIsMatch(false);
-            }}
-            className="w-full md:w-1/2 p-3.5 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm bg-slate-50 transition-colors"
-          >
-            <option value="" disabled>-- Pilih Transaksi --</option>
-            {disbursements.map(trx => (
-              <option key={trx.id} value={trx.id}>
-                {trx.status !== 'DISBURSED' ? `[${trx.status.replace('_', ' ')}] ` : ''}
-                {trx.proposal?.judulUsulan} (Rp {Number(trx.nominal).toLocaleString('id-ID')})
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Jenis Dokumen (4 Role Utama)</label>
+            <select 
+              value={docType}
+              onChange={(e) => setDocType(e.target.value as DocType)}
+              className="w-full p-3.5 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm bg-slate-50 transition-colors font-semibold"
+            >
+              <option value="berita_acara">Berita Acara Pencairan (Sekdes/Kades)</option>
+              <option value="lpj_teknis">LPJ Fisik (Kaur Teknis)</option>
+              <option value="lpj_keuangan">LPJ Keuangan (Bendahara)</option>
+              <option value="lpj_desa">Laporan Realisasi Desa (Kades)</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Pilih Data Ledger</label>
+            <select 
+              value={selectedId}
+              onChange={(e) => {
+                setSelectedId(e.target.value);
+                setFileHash(null);
+                setOnChainHash(null);
+                setFileName(null);
+                setIsMatch(false);
+              }}
+              className="w-full p-3.5 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm bg-slate-50 transition-colors"
+            >
+              <option value="" disabled>-- Pilih Berkas/Transaksi --</option>
+              {items.map(item => {
+                let hasLpj = false;
+                if (docType === 'berita_acara') hasLpj = !!item.beritaAcaraHash;
+                else if (docType === 'lpj_teknis') hasLpj = !!item.lpjTeknisHash;
+                else if (docType === 'lpj_keuangan') hasLpj = !!item.lpjKeuanganHash;
+                else if (docType === 'lpj_desa') hasLpj = !!item.dokumenHash;
+
+                const statusLabel = hasLpj ? '✅ ADA' : '❌ BLUM';
+                
+                let label = '';
+                if (docType === 'berita_acara' || docType === 'lpj_teknis') {
+                  label = `[${statusLabel}] [${item.status}] ${item.proposal?.judulUsulan} (Rp ${Number(item.nominal).toLocaleString('id-ID')})`;
+                } else if (docType === 'lpj_keuangan') {
+                  label = `[${statusLabel}] ${item.judulUsulan} (Dusun: ${item.dusun})`;
+                } else {
+                  label = `[${statusLabel}] Laporan Desa Thn ${item.tahun} Sem ${item.semester}`;
+                }
+
+                return (
+                  <option key={item.id} value={item.id} disabled={!hasLpj}>
+                    {label}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className={`transition-opacity duration-300 ${selectedTrxId ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+      <div className={`transition-opacity duration-300 ${selectedId ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 max-w-5xl mb-8">
           <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-            2. Pindai Dokumen / Berkas Fisik
+            <LockKeyhole className="w-5 h-5 text-blue-600" />
+            2. Pindai Dokumen Fisik / PDF
           </h2>
           
           <div 
@@ -135,14 +194,15 @@ export default function IntegrityCheckerPage() {
                 : 'border-slate-300 bg-slate-50 hover:bg-slate-100 hover:border-slate-400'
             }`}
           >
-            <svg className={`w-10 h-10 mb-3 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>
+            <FileSearch className={`w-10 h-10 mb-3 transition-colors ${isDragging ? 'text-blue-500' : 'text-slate-400'}`} />
             <p className="text-sm font-bold text-slate-700 mb-1">
-              Tarik & Lepas File Berita Acara (PDF) / Foto di Sini untuk Uji Hash
+              Tarik & Lepas File (PDF) / Foto di Sini untuk Uji Hash
             </p>
             <p className="text-xs text-slate-500 font-medium">Atau klik area ini untuk mencari file secara manual dari perangkat Anda.</p>
             
             <input 
               type="file" 
+              accept=".pdf"
               ref={fileInputRef} 
               onChange={onFileChange} 
               className="hidden" 
@@ -152,7 +212,7 @@ export default function IntegrityCheckerPage() {
           {fileName && (
             <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between text-sm font-bold text-blue-800 animate-in fade-in">
               <span className="flex items-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <Workflow className="w-5 h-5" />
                 {fileName}
               </span>
               <span className="text-xs bg-white px-2 py-1 rounded text-blue-600 border border-blue-100">Dipindai</span>
@@ -182,7 +242,7 @@ export default function IntegrityCheckerPage() {
               {/* Kolom Kiri: Dokumen Lokal */}
               <div className="p-5 bg-slate-800/50 border border-slate-700 rounded-xl">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  <Download className="w-4 h-4" />
                   Dokumen Unggahan
                 </h3>
                 <div className="space-y-1">
@@ -208,6 +268,71 @@ export default function IntegrityCheckerPage() {
               </div>
 
             </div>
+
+            {/* Section 4: Catatan Auditor */}
+            <div className="mt-6 pt-6 border-t border-slate-700">
+              <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                4. Catatan Auditor (Sertakan ke Laporan)
+              </h3>
+              <p className="text-xs text-slate-500 mb-3">
+                Tulis catatan Anda tentang hasil uji bukti ini. Misalnya: "Salah drop file", "Dokumen otentik", atau "Temuan perbedaan hash — perlu investigasi lanjut." Catatan ini akan disertakan di dalam laporan hukum PDF.
+              </p>
+              <textarea
+                value={catatan}
+                onChange={e => setCatatan(e.target.value)}
+                rows={3}
+                placeholder="Tulis catatan verifikasi di sini..."
+                className="w-full p-3 rounded-lg bg-slate-800 border border-slate-600 text-white text-sm placeholder-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 outline-none resize-none"
+              />
+              <button
+                onClick={async () => {
+                  if (!catatan.trim()) return toast.error('Catatan tidak boleh kosong');
+                  setSavingNote(true);
+                  try {
+                    await apiClient.post('/audit-notes', {
+                      docType,
+                      docId: selectedId,
+                      catatan: catatan.trim(),
+                      hasil: isMatch ? 'OTENTIK' : 'BERBEDA',
+                      hashUpload: fileHash,
+                      hashOnChain: onChainHash
+                    });
+                    toast.success('Catatan berhasil disimpan!');
+                    const notesRes = await apiClient.get(`/audit-notes?docType=${docType}&docId=${selectedId}`);
+                    setSavedNotes(notesRes.data);
+                    setCatatan('');
+                  } catch (err) {
+                    console.error(err);
+                    toast.error('Gagal menyimpan catatan');
+                  } finally {
+                    setSavingNote(false);
+                  }
+                }}
+                disabled={savingNote || !catatan.trim()}
+                className="mt-3 px-5 py-2.5 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-bold text-sm rounded-lg transition-colors flex items-center gap-2"
+              >
+                {savingNote ? 'Menyimpan...' : 'Simpan Catatan ke Laporan'}
+              </button>
+
+              {savedNotes.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-slate-400 font-bold">Catatan yang sudah tersimpan:</p>
+                  {savedNotes.map((note: any) => (
+                    <div key={note.id} className="p-3 bg-slate-800 border border-slate-700 rounded-lg text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded ${note.hasil === 'OTENTIK' ? 'bg-emerald-900 text-emerald-300' : 'bg-red-900 text-red-300'}`}>
+                          {note.hasil}
+                        </span>
+                        <span className="text-xs text-slate-500">{new Date(note.createdAt).toLocaleString('id-ID')}</span>
+                      </div>
+                      <p className="text-slate-300">{note.catatan}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </div>

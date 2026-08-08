@@ -33,7 +33,7 @@ export default function DashboardPage() {
   const timeBoundAccess = data?.timeBoundAccess || "-";
 
   return (
-    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH">
+    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH" settingsPath="/auditor/profil">
       <PageHeader title="Dashboard Auditor" description="Selamat datang di dashboard panel untuk Inspektorat / Auditor." />
 
 

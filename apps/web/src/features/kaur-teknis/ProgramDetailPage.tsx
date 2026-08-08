@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import RoleLayout from '../../components/RoleLayout';
 import PageHeader from '../../components/PageHeader';
 import Badge from '../../components/Badge';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Clock, XCircle, Upload, FileText } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, Clock, XCircle, FileText, Edit } from 'lucide-react';
 import { KAUR_TEKNIS_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 
@@ -13,11 +13,8 @@ export default function ProgramDetailPage() {
   const { id } = useParams();
   const [program, setProgram] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [selectedDisbursementId, setSelectedDisbursementId] = useState<string | null>(null);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (id) {
@@ -33,27 +30,6 @@ export default function ProgramDetailPage() {
     }
   }, [id, refreshKey]);
 
-  const handleUploadLPJ = async () => {
-    if (!selectedDisbursementId || !uploadFile) return;
-    setIsUploading(true);
-    const formData = new FormData();
-    formData.append('file', uploadFile);
-
-    try {
-      await apiClient.post(`/disbursements/${selectedDisbursementId}/lpj`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setShowUploadModal(false);
-      setUploadFile(null);
-      setSelectedDisbursementId(null);
-      setRefreshKey(prev => prev + 1); // refresh data
-    } catch (err: any) {
-      console.error(err);
-      alert('Gagal mengupload LPJ');
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   return (
     <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
@@ -105,10 +81,10 @@ export default function ProgramDetailPage() {
                         variant={event.status === 'DISBURSED' ? 'success' : (['REJECTED_SYSTEM', 'RETURNED_FOR_REVISION'].includes(event.status) ? 'danger' : 'warning')} 
                       />
                       {event.status === 'DISBURSED' && (
-                        <div className="mt-2">
-                          {event.lpjUrl ? (
+                        <div className="mt-2 flex gap-2">
+                          {event.lpjTeknisUrl && event.lpjStatus === 'LOCKED_ONCHAIN' ? (
                             <a 
-                              href={event.lpjUrl}
+                              href={event.lpjTeknisUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors"
@@ -119,13 +95,12 @@ export default function ProgramDetailPage() {
                           ) : (
                             <button
                               onClick={() => {
-                                setSelectedDisbursementId(event.id);
-                                setShowUploadModal(true);
+                                navigate(`/kaur-teknis/lengkapi-lpj/${event.id}`);
                               }}
-                              className="inline-flex items-center text-xs font-bold text-white bg-brand-600 px-3 py-1.5 rounded-lg hover:bg-brand-700 transition-colors"
+                              className="inline-flex items-center text-xs font-bold text-brand-700 bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg hover:bg-brand-100 transition-colors"
                             >
-                              <Upload className="w-4 h-4 mr-1" />
-                              Upload Dokumen Termin
+                              <Edit className="w-4 h-4 mr-1" />
+                              {event.lpjStatus === 'DRAFT' ? 'Lanjutkan LPJ (Draft)' : 'Lengkapi LPJ (Rincian)'}
                             </button>
                           )}
                         </div>
@@ -143,50 +118,6 @@ export default function ProgramDetailPage() {
       </>
       )}
 
-      {/* Upload LPJ Modal */}
-      {showUploadModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
-            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <Upload className="w-5 h-5 text-brand-600" />
-              Upload Dokumen Termin
-            </h3>
-            <p className="text-sm text-slate-600 mb-4">
-              Silakan unggah dokumen pendukung (PDF/Gambar) untuk pencairan dana ini.
-            </p>
-            <div className="mb-6">
-              <input 
-                type="file" 
-                className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files[0]) {
-                    setUploadFile(e.target.files[0]);
-                  }
-                }}
-              />
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowUploadModal(false);
-                  setUploadFile(null);
-                  setSelectedDisbursementId(null);
-                }}
-                className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold text-sm"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleUploadLPJ}
-                disabled={!uploadFile || isUploading}
-                className="px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center gap-2"
-              >
-                {isUploading ? 'Mengunggah...' : 'Unggah LPJ'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </RoleLayout>
   );
 }

@@ -14,18 +14,36 @@ const INTEGRATED_AUDIT_PACKAGE = [
 ];
 
 export default function LegalExportPage() {
-  const [disbursementIds, setDisbursementIds] = useState<string[]>([]);
+  const [allDisbursements, setAllDisbursements] = useState<any[]>([]);
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [selectedProposalId, setSelectedProposalId] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiClient.get('/disbursements')
       .then(res => {
-        const ids = res.data.map((d: any) => d.id);
-        setDisbursementIds(ids);
+        setAllDisbursements(res.data);
+        const uniqueProposalsMap = new Map();
+        res.data.forEach((d: any) => {
+          if (d.proposal && d.proposalId) {
+             uniqueProposalsMap.set(d.proposalId, {
+               id: d.proposalId,
+               judulUsulan: d.proposal.judulUsulan
+             });
+          }
+        });
+        const props = Array.from(uniqueProposalsMap.values());
+        setProposals(props);
+        if (props.length > 0) {
+          setSelectedProposalId(props[0].id);
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const filteredDisbursements = allDisbursements.filter(d => d.proposalId === selectedProposalId);
+  const disbursementIds = filteredDisbursements.map(d => d.id);
 
   const handleExportRawData = async () => {
     if (disbursementIds.length === 0) return alert('Tidak ada data transaksi untuk diekspor');
@@ -50,12 +68,14 @@ export default function LegalExportPage() {
   const handleExportLegalReport = async () => {
     if (disbursementIds.length === 0) return alert('Tidak ada data transaksi untuk diekspor');
     try {
-      const res = await apiClient.post('/export/legal-report', { disbursementIds }, { responseType: 'blob' });
+      const res = await apiClient.post('/export/legal-report', { proposalId: selectedProposalId }, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = 'legal_report.pdf';
+      const selectedProposal = proposals.find(p => p.id === selectedProposalId);
+      const safeName = (selectedProposal?.judulUsulan || 'program').replace(/\s+/g, '_');
+      a.download = `legal_report_${safeName}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -67,7 +87,7 @@ export default function LegalExportPage() {
   };
 
   return (
-    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH">
+    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH" settingsPath="/auditor/profil">
       <div className="mb-8">
         <PageHeader 
           title="Paket Bukti Audit Terpadu" 
@@ -104,6 +124,29 @@ export default function LegalExportPage() {
                 </span>
               </div>
             ))}
+          </div>
+
+          <div className="mb-6 p-5 border border-slate-200 rounded-xl bg-slate-50">
+            <label className="block text-sm font-bold text-slate-700 mb-2">Pilih Program / Kegiatan:</label>
+            <select
+              value={selectedProposalId}
+              onChange={e => setSelectedProposalId(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 bg-white mb-4"
+            >
+              {proposals.map(p => (
+                <option key={p.id} value={p.id}>{p.judulUsulan}</option>
+              ))}
+            </select>
+            
+            <div className="text-sm text-slate-600">
+              <p className="font-semibold mb-2">Dokumen yang akan diuji secara otomatis dalam laporan ini:</p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>1. Berita Acara & Foto Fisik (dari Sekdes) untuk tiap tahap pencairan.</li>
+                <li>2. LPJ Fisik (dari Kaur Teknis) untuk tiap tahap pencairan.</li>
+                <li>3. LPJ Keuangan (dari Kaur Keuangan) untuk keseluruhan program ini.</li>
+                <li>4. Laporan Realisasi Desa (dari Kades) untuk semester berjalan.</li>
+              </ul>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 border-t border-slate-200 pt-6">

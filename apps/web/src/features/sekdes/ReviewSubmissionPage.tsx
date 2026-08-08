@@ -2,14 +2,11 @@ import PageHeader from '../../components/PageHeader';
 import BackLink from '../../components/BackLink';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, FileCheck, PieChart, MessageCircle, HelpCircle, History } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Download, ShieldAlert } from 'lucide-react';
 import RoleLayout from '../../components/RoleLayout';
 import MapWidget from '../../components/MapWidget';
-import HashCheckerBadge from '../../components/HashCheckerBadge';
-import Badge from '../../components/Badge';
 import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
-import { getMediaUrl } from '../../lib/getMediaUrl';
 import { SEKDES_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 
@@ -25,6 +22,7 @@ export default function ReviewSubmissionPage() {
   const [data, setData] = useState<any>(null);
   const [sisaPagu, setSisaPagu] = useState<number>(0);
   const [catatanRevisi, setCatatanRevisi] = useState('');
+  const [isPanicking, setIsPanicking] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -53,6 +51,25 @@ export default function ReviewSubmissionPage() {
         <div>
           <BackLink to="/sekdes/verifikasi" label="Kembali ke Antrean Verifikasi" />
           <PageHeader title={`Pemeriksaan Berkas #${id}`} />
+        </div>
+      </div>
+
+      {/* Template Download Section */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h4 className="font-bold text-blue-900 text-sm">Butuh Template Pengembalian Berkas?</h4>
+          <p className="text-xs text-blue-700 mt-1">Unduh template pengembalian jika berkas yang diajukan perlu direvisi.</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <a 
+            href="/templates/Template Pengembalian Berkas Pencairan Dana yang Diajukan.docx" 
+            download 
+            className="flex items-center gap-2 px-3 py-2 bg-white text-blue-700 border border-blue-300 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Template Pengembalian Berkas
+          </a>
         </div>
       </div>
 
@@ -104,7 +121,7 @@ export default function ReviewSubmissionPage() {
               <DocumentPreviewViewer 
                 fotoUrl={data.fotoUrl} 
                 beritaAcaraUrl={data.beritaAcaraUrl} 
-                lpjUrl={data.lpjUrl} 
+                lpjTeknisUrl={data.lpjTeknisUrl} 
               />
             </div>
           </div>
@@ -179,6 +196,27 @@ export default function ReviewSubmissionPage() {
               >
                 Konfirmasi
               </button>
+              <button 
+                onClick={async () => {
+                  if (confirm("BAHAYA: Fitur ini akan membekukan transaksi secara permanen karena adanya intervensi. Lanjutkan?")) {
+                    setIsPanicking(true);
+                    try {
+                      await apiClient.post(`/disbursements/${id}/reject-intervention`, { alasan: "Intervensi saat verifikasi berkas (Sekdes)" });
+                      toast.success('Transaksi BERHASIL DIBEKUKAN secara permanen!');
+                      navigate("/sekdes/verifikasi");
+                    } catch (error) {
+                      toast.error('Gagal membekukan transaksi');
+                    } finally {
+                      setIsPanicking(false);
+                    }
+                  }
+                }}
+                disabled={isPanicking}
+                className="w-full md:w-auto px-6 py-3.5 bg-red-600 text-white font-bold rounded-lg shadow-sm hover:bg-red-700 flex items-center justify-center gap-2"
+              >
+                <ShieldAlert className="w-5 h-5" />
+                {isPanicking ? "Membekukan..." : "Bekukan (Panic Button)"}
+              </button>
             </div>
           </div>
         </div>
@@ -230,6 +268,11 @@ export default function ReviewSubmissionPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Panic Button */}
+      {showPinModal && pin === 'PANIC' && ( // just reusing showPinModal or we can add a new state, let's just do it directly on click with confirmation
+        <></> 
       )}
     </RoleLayout>
   );

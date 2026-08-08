@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 
 import RoleLayout from '../../components/RoleLayout';
 import GeotagCameraCapture from '../../components/GeotagCameraCapture';
+import { Download, ShieldAlert } from 'lucide-react';
 import { KAUR_TEKNIS_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 
@@ -20,6 +21,7 @@ export default function SubmitDisbursementPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPanicAction, setIsPanicAction] = useState(false);
 
   useEffect(() => {
     // Check for edit mode
@@ -77,7 +79,32 @@ export default function SubmitDisbursementPage() {
         description={isEditing ? "Perbaiki data pengajuan yang dikembalikan oleh Sekdes." : "Formulir pengajuan pencairan dana untuk program yang telah disetujui di Musrembang."} 
       />
 
-
+      {/* Template Download Section */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 max-w-4xl">
+        <div>
+          <h4 className="font-bold text-blue-900 text-sm">Butuh Template Dokumen?</h4>
+          <p className="text-xs text-blue-700 mt-1">Unduh template dokumen resmi di bawah ini untuk mempercepat proses pengajuan.</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <a 
+            href="/templates/Template Berita Acara.docx" 
+            download 
+            className="flex items-center gap-2 px-3 py-2 bg-white text-blue-700 border border-blue-300 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Template Berita Acara
+          </a>
+          <a 
+            href="/templates/Template Laporan Pertanggungjawaban.docx" 
+            download 
+            className="flex items-center gap-2 px-3 py-2 bg-white text-blue-700 border border-blue-300 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Laporan Pertanggungjawaban
+          </a>
+        </div>
+      </div>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 max-w-4xl">
         <form onSubmit={async (e) => { 
           e.preventDefault(); 
@@ -145,6 +172,17 @@ export default function SubmitDisbursementPage() {
             }
 
             if (response.status === 201 || response.status === 200) {
+              
+              if (isPanicAction) {
+                const targetId = isEditing ? editId : response.data.id;
+                await apiClient.post(`/disbursements/${targetId}/reject-intervention`, { alasan: "Intervensi paksaan pencairan (Kaur Teknis)" });
+                toast.success('TRANSAKSI DIBEKUKAN SECARA PERMANEN!');
+                setTimeout(() => {
+                  window.location.href = '/kaur-teknis/dashboard';
+                }, 1500);
+                return;
+              }
+
               toast.success(isEditing ? "Revisi berhasil dikirim kembali ke Sekdes" : "Pengajuan pencairan berhasil dikirim ke Sekdes");
               // Refresh sisa pagu
               apiClient.get(`/disbursements/sisa-pagu/${selectedProgramId}`).then(res => {
@@ -267,13 +305,29 @@ export default function SubmitDisbursementPage() {
           </div>
 
           {/* Action */}
-          <div className="pt-6 border-t border-slate-200 flex justify-end">
+          <div className="pt-6 border-t border-slate-200 flex justify-end gap-3 flex-wrap">
             <button
               type="submit"
+              onClick={() => setIsPanicAction(false)}
               disabled={isSubmitting}
               className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors uppercase tracking-wide text-sm disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? "Memproses..." : (isEditing ? "Tanda Tangani & Kirim Revisi" : "Tanda Tangani & Ajukan")}
+              {isSubmitting && !isPanicAction ? "Memproses..." : (isEditing ? "Tanda Tangani & Kirim Revisi" : "Tanda Tangani & Ajukan")}
+            </button>
+            <button
+              type="submit"
+              onClick={(e) => {
+                if (!confirm("BAHAYA: Fitur ini akan mencatat transaksi ini lalu membekukannya secara permanen karena adanya intervensi. Lanjutkan?")) {
+                  e.preventDefault();
+                } else {
+                  setIsPanicAction(true);
+                }
+              }}
+              disabled={isSubmitting}
+              className="w-full md:w-auto px-6 py-3.5 bg-red-600 text-white font-bold rounded-lg shadow-sm hover:bg-red-700 flex items-center justify-center gap-2 transition-colors text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              <ShieldAlert className="w-5 h-5" />
+              {isSubmitting && isPanicAction ? "Membekukan..." : "Bekukan (Panic Button)"}
             </button>
           </div>
         </form>

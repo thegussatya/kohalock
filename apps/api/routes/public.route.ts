@@ -1,5 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '../generated/prisma';
+import multer from 'multer';
+import crypto from 'crypto';
+
+const upload = multer({ dest: 'uploads/' });
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -106,7 +110,9 @@ router.get('/projects', async (req: Request, res: Response) => {
         paguMaksimal: p.paguMaksimal,
         totalRealisasi: projectRealisasi,
         progress: progress > 100 ? 100 : progress,
-        status: calcStatus
+        status: calcStatus,
+        lpjKeuanganUrl: p.lpjKeuanganUrl,
+        lpjKeuanganHash: p.lpjKeuanganHash
       };
     });
 
@@ -174,7 +180,8 @@ router.get('/projects/:id', async (req: Request, res: Response) => {
         tanggal: d.submittedAt,
         beritaAcaraHash: d.beritaAcaraHash,
         beritaAcaraUrl: d.beritaAcaraUrl,
-        lpjUrl: d.lpjUrl
+        lpjTeknisUrl: d.lpjTeknisUrl,
+        lpjStatus: d.lpjStatus
       };
     });
 
@@ -296,6 +303,71 @@ router.get('/whistleblower/:ticketCode/status', async (req: Request, res: Respon
   } catch (error: any) {
     console.error('Public Whistleblower Status Error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/public/reports/desa
+router.get('/reports/desa', async (req: Request, res: Response) => {
+  try {
+    const reports = await prisma.laporanRealisasiDesa.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(serialize(reports));
+  } catch (error: any) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /api/public/verify-hash
+router.post('/verify-hash', upload.single('file'), async (req: Request, res: Response): Promise<void> => {
+  const fs = require('fs');
+  try {
+    const { docType, docId } = req.body;
+    
+    if (!req.file) {
+      res.status(400).json({ success: false, error: 'File tidak ditemukan' });
+      return;
+    }
+
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const hashUpload = '0x' + crypto.createHash('sha256').update(fileBuffer).digest('hex');
+    let hashTersimpan: string | null = null;
+
+    if (docType === 'berita_acara' || docType === 'lpj_teknis') {
+      const disbursement = await prisma.disbursement.findUnique({ where: { id: docId } });
+      if (disbursement) {
+        hashTersimpan = docType === 'berita_acara' ? disbursement.beritaAcaraHash : disbursement.lpjTeknisHash;
+      }
+    } else if (docType === 'lpj_keuangan') {
+      const proposal = await prisma.proposal.findUnique({ where: { id: docId } });
+      if (proposal) {
+        hashTersimpan = proposal.lpjKeuanganHash;
+      }
+    } else if (docType === 'lpj_desa') {
+      const report = await prisma.laporanRealisasiDesa.findUnique({ where: { id: docId } });
+      if (report) {
+        hashTersimpan = report.dokumenHash;
+      }
+    }
+
+    const isAuthentic = hashTersimpan ? (hashUpload === hashTersimpan) : false;
+
+    res.json({
+      success: true,
+      isAuthentic,
+      calculatedHash: hashUpload,
+      onChainHash: hashTersimpan,
+      message: isAuthentic ? 'Dokumen otentik dan belum mengalami perubahan' : 'Peringatan: Dokumen ini telah dimodifikasi atau tidak otentik!'
+    });
+  } catch (error: any) {
+    console.error('Error in verify-hash:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  } finally {
+    if (req.file && req.file.path) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (e) {}
+    }
   }
 });
 

@@ -29,7 +29,8 @@ type DisbursementDetail = LedgerData & {
   timeline: TimelineStage[];
   beritaAcaraUrl?: string;
   fotoUrl?: string;
-  lpjUrl?: string;
+  lpjTeknisUrl?: string;
+  interventionLogs?: any[];
 };
 
 const COLUMNS: TableColumn[] = [
@@ -48,6 +49,7 @@ export default function LedgerExplorerPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detailData, setDetailData] = useState<DisbursementDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const [aktor, setAktor] = useState('');
   const [nominalMin, setNominalMin] = useState('');
@@ -95,6 +97,25 @@ export default function LedgerExplorerPage() {
     }
   };
 
+  const handleUpdateInterventionStatus = async (interventionId: string, newStatus: string) => {
+    setIsUpdatingStatus(true);
+    try {
+      await apiClient.put(`/interventions/${interventionId}/status`, { status: newStatus });
+      
+      // Update UI optimistically
+      if (detailData && detailData.interventionLogs) {
+        const updatedLogs = detailData.interventionLogs.map(log => 
+          log.id === interventionId ? { ...log, status: newStatus } : log
+        );
+        setDetailData({ ...detailData, interventionLogs: updatedLogs });
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const renderCell = (row: LedgerData, columnKey: string) => {
     if (columnKey === 'onChainId') {
       return (
@@ -131,7 +152,7 @@ export default function LedgerExplorerPage() {
   };
 
   return (
-    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH">
+    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH" settingsPath="/auditor/profil">
       <PageHeader title="Kronologi Transaksi" description="Ledger Explorer untuk menelusuri jejak rekam transaksi secara transparan dan tidak dapat diubah (immutable)." />
 
       {/* Filter Section */}
@@ -261,10 +282,55 @@ export default function LedgerExplorerPage() {
                   <div className="mb-6">
                     <DocumentPreviewViewer 
                       beritaAcaraUrl={detailData.beritaAcaraUrl}
-                      fotoUrl={detailData.fotoUrl}
-                      lpjUrl={detailData.lpjUrl}
+                      lpjTeknisUrl={detailData.lpjTeknisUrl}
                     />
                   </div>
+
+                  {detailData.interventionLogs && detailData.interventionLogs.length > 0 && (
+                    <div className="mt-8 border-t border-slate-200 pt-6">
+                      <h4 className="font-bold text-red-600 mb-4 flex items-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        Manajemen Kasus (Anomali Transaksi)
+                      </h4>
+                      {detailData.interventionLogs.map((log: any) => (
+                        <div key={log.id} className="bg-red-50 border border-red-200 rounded-xl p-4 mb-3">
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <span className="text-xs font-bold text-red-700 block mb-1">ID Intervensi</span>
+                              <span className="text-sm font-mono font-medium text-slate-800">{log.id}</span>
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-red-700 block mb-1 text-right">Status Saat Ini</span>
+                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                                log.status === 'PROSES' ? 'bg-blue-100 text-blue-700' :
+                                log.status === 'SELESAI' ? 'bg-emerald-100 text-emerald-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {log.status}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 mt-4">
+                            <button
+                              onClick={() => handleUpdateInterventionStatus(log.id, 'PROSES')}
+                              disabled={isUpdatingStatus || log.status === 'PROSES'}
+                              className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors"
+                            >
+                              Tandai "In Progress"
+                            </button>
+                            <button
+                              onClick={() => handleUpdateInterventionStatus(log.id, 'SELESAI')}
+                              disabled={isUpdatingStatus || log.status === 'SELESAI'}
+                              className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors"
+                            >
+                              Tandai "Closed"
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
                     <FileSearch size={18} /> Timeline Proses

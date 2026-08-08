@@ -9,6 +9,11 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+enum LpjStatus {
+  DRAFT
+  LOCKED_ONCHAIN
+}
+
 model User {
   id           String   @id @default(cuid())
   nama         String
@@ -29,6 +34,8 @@ model User {
   monthlyClosings      MonthlyClosing[]
   corrections          CorrectionTransaction[]
   villageIncomes       VillageIncomeEntry[]
+  laporanDesa          LaporanRealisasiDesa[]
+  auditNotes           AuditNote[]             @relation("AuditorNotes")
 }
 
 model Proposal {
@@ -45,6 +52,10 @@ model Proposal {
   kaurTeknisId String
   kaurTeknis   User     @relation(fields: [kaurTeknisId], references: [id])
   createdAt    DateTime @default(now())
+  
+  lpjKeuanganUrl     String?
+  lpjKeuanganHash    String?
+  tanggalLpjKeuangan DateTime?
 
   disbursements Disbursement[]
 }
@@ -72,12 +83,28 @@ model Disbursement {
   verifiedAt       DateTime?
   authorizedAt     DateTime?
   disbursedAt      DateTime?
-  lpjUrl           String?
+  lpjTeknisUrl     String?
+  lpjTeknisHash    String?
+  lpjStatus        LpjStatus @default(DRAFT)
+  lpjTxHash        String?
 
   rejectionLogs    RejectionLog[]
   interventionLogs InterventionLog[]
   supervisionNotes SupervisionNote[]
   taxEntries       TaxBookEntry[]
+  lpjItems         LpjItem[]
+}
+
+model LpjItem {
+  id             String       @id @default(cuid())
+  disbursementId String
+  disbursement   Disbursement @relation(fields: [disbursementId], references: [id])
+  uraian         String
+  volume         Float
+  satuan         String
+  hargaSatuan    BigInt
+  totalHarga     BigInt
+  createdAt      DateTime     @default(now())
 }
 
 model RejectionLog {
@@ -97,6 +124,7 @@ model InterventionLog {
   kadesId        String
   kades          User         @relation("KadesInterventions", fields: [kadesId], references: [id])
   txHash         String
+  status         String       @default("PENDING")
   createdAt      DateTime     @default(now())
 }
 
@@ -238,4 +266,28 @@ model VillageIncomeEntry {
   cashBookEntry   CashBookEntry? @relation(fields: [cashBookEntryId], references: [id])
   
   createdAt       DateTime       @default(now())
+}
+
+model LaporanRealisasiDesa {
+  id            String   @id @default(cuid())
+  tahun         Int
+  semester      Int      // 1, 2, atau 0 untuk tahunan
+  dokumenUrl    String
+  dokumenHash   String
+  kadesId       String
+  kades         User     @relation(fields: [kadesId], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+model AuditNote {
+  id          String   @id @default(cuid())
+  docType     String   // berita_acara, lpj_teknis, lpj_keuangan, lpj_desa
+  docId       String
+  catatan     String
+  hasil       String   // OTENTIK, BERBEDA, BELUM_ADA
+  hashUpload  String?
+  hashOnChain String?
+  auditorId   String
+  auditor     User     @relation("AuditorNotes", fields: [auditorId], references: [id])
+  createdAt   DateTime @default(now())
 }

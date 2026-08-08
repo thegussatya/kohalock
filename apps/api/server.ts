@@ -22,13 +22,27 @@ import adatRouter from './routes/adat.route';
 import supervisionRouter from './routes/supervision.route';
 import interventionRouter from './routes/intervention.route';
 import villageIncomeRouter from './routes/village-income.route';
-
+import lpjRouter from './routes/lpj.route';
+import auditNoteRouter from './routes/audit-note.route';
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 import path from 'path';
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', (req, res) => {
+  res.status(404).send(`
+    <html>
+      <body style="display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;background:#f8fafc;color:#64748b;">
+        <div style="text-align:center;">
+          <svg style="width:48px;height:48px;margin:0 auto 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <h2 style="margin:0 0 8px;font-size:18px;color:#334155;">Dokumen Tidak Ditemukan (404)</h2>
+          <p style="margin:0;font-size:14px;">File fisik tidak tersedia di server development.</p>
+        </div>
+      </body>
+    </html>
+  `);
+});
 
 app.use('/api/public', publicRouter);
 app.use('/api/auth', authRouter);
@@ -50,9 +64,10 @@ app.use('/api/adat-cases', adatRouter);
 app.use('/api/supervision-notes', supervisionRouter);
 app.use('/api/interventions', interventionRouter);
 app.use('/api/village-income', villageIncomeRouter);
-
+app.use('/api/lpj', lpjRouter);
+app.use('/api/audit-notes', auditNoteRouter);
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'KohaLock API jalan' });
+  res.json({ status: 'ok', message: 'KOHALOCK API jalan' });
 });
 
 const PORT = process.env.PORT || 3000;

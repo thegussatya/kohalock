@@ -60,11 +60,34 @@ router.get('/:id/certificate', authenticate, async (req: AuthRequest, res: Respo
         proposal: log.disbursement.proposal.judulUsulan,
         nominal: log.disbursement.nominal.toString()
       },
-      // Simulasi URL PDF
+    // Simulasi URL PDF
       pdfUrl: `https://dummyimage.com/600x800/fecaca/991b1b.png&text=Sertifikat+Penolakan+${log.txHash}`
     });
   } catch (error: any) {
     console.error('Error generating certificate:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/interventions/:id/status
+router.put('/:id/status', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const { status } = req.body;
+
+    if (!status) {
+      res.status(400).json({ error: 'Status wajib diisi' });
+      return;
+    }
+
+    const updated = await prisma.interventionLog.update({
+      where: { id },
+      data: { status }
+    });
+
+    res.json(serialize(updated));
+  } catch (error: any) {
+    console.error('Error updating intervention status:', error);
     res.status(500).json({ error: error.message });
   }
 });

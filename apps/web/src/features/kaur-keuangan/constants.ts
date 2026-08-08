@@ -1,19 +1,19 @@
 export const INCOME_CATEGORIES = {
   Transfer: [
-    'Dana Desa (DD)',
+    'Dana Desa',
+    'Bagian dari hasil pajak & retribusi daerah kabupaten/kota',
     'Alokasi Dana Desa (ADD)',
-    'Bagi Hasil Pajak & Retribusi (BHR)',
-    'Bantuan Keuangan Provinsi/Kabupaten'
+    'Bantuan Keuangan Provinsi',
+    'Bantuan Keuangan Kabupaten/Kota'
   ],
   PADes: [
-    'Hasil BUMDes',
-    'Hasil Aset Desa (Sewa Pasar/Tanah Kas Desa)',
-    'Swadaya Masyarakat'
+    'Hasil Usaha',
+    'Swadaya, Partisipasi dan Gotong Royong',
+    'Lain-Lain Pendapatan Asli Desa yang Sah'
   ],
   'Pendapatan Lain-lain': [
-    'Hibah',
-    'Sumbangan Pihak Ketiga',
-    'Bunga Bank Desa'
+    'Hibah dan Sumbangan dari pihak ke-3 yang tidak mengikat',
+    'Lain-Lain Pendapatan Desa yang Sah'
   ]
 };
 

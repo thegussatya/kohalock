@@ -107,7 +107,8 @@ router.get('/timeline/:id', authenticate, async (req: AuthRequest, res: Response
         },
         kadesApprover: {
           select: { nama: true }
-        }
+        },
+        interventionLogs: true
       }
     });
 

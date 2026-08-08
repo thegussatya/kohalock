@@ -1,4 +1,4 @@
-# Snapshot Backend State (KohaLock)
+# Snapshot Backend State (KOHALOCK)
 *Dokumen ini merupakan snapshot kondisi aktual dari kode backend saat ini, bukan rencana.*
 
 ## 1. Schema Database (Prisma)
@@ -120,7 +120,7 @@ Rute (*route*) didaftarkan pada Express *app* dengan urutan berikut:
 18. `app.get('/health', ...)` (Health check inline route)
 
 ## 5. Alur Inti yang Sudah Terhubung End-to-End
-Sistem tata kelola desa KohaLock saat ini telah memfasilitasi alur transaksi dari hulu ke hilir:
+Sistem tata kelola desa KOHALOCK saat ini telah memfasilitasi alur transaksi dari hulu ke hilir:
 
 1.  **Musrembang**: Kaur Teknis membuat program kerja / proposal baru di `/api/proposals`.
 2.  **Ajukan Pencairan**: Kaur Teknis mengajukan dana untuk proposal tersebut di `/api/disbursements`. Status: **`PENDING_SEKDES`** (mencatat `submittedAt`).

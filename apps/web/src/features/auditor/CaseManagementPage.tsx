@@ -4,6 +4,8 @@ import Badge from '../../components/Badge';
 import { AUDITOR_MENU } from './menu';
 import { useState, useEffect } from 'react';
 import apiClient from '../../lib/apiClient';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 
 export default function CaseManagementPage() {
   const [cases, setCases] = useState({
@@ -17,8 +19,22 @@ export default function CaseManagementPage() {
       .then(res => setCases(res.data))
       .catch(console.error);
   }, []);
+  const navigate = useNavigate();
+
   const renderCard = (item: any) => (
-    <div key={item.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-3 hover:shadow-md transition-shadow cursor-pointer">
+    <div 
+      key={item.id} 
+      onClick={() => {
+        if (item.category === 'Laporan Whistleblower') {
+          navigate('/auditor/kotak-rahasia');
+        } else if (item.category === 'Anomali Transaksi') {
+          navigate('/auditor/ledger');
+        } else {
+          toast('Detail kasus belum tersedia', { icon: '🚧' });
+        }
+      }}
+      className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-3 hover:shadow-md transition-shadow cursor-pointer hover:border-brand-300"
+    >
       <div className="flex justify-between items-start mb-2">
         <span className="text-xs font-bold text-slate-400">{item.id}</span>
         <Badge label={item.category} variant="warning" />
@@ -29,7 +45,7 @@ export default function CaseManagementPage() {
   );
 
   return (
-    <RoleLayout menuItems={AUDITOR_MENU} userName="Tim Auditor" userRole="Auditor Independen">
+    <RoleLayout menuItems={AUDITOR_MENU} userName="Tim Auditor" userRole="Auditor Independen" settingsPath="/auditor/profil">
       <PageHeader 
         title="Manajemen Kasus Investigasi" 
         description="Kelola dan pantau status kasus audit dan laporan whistleblower."

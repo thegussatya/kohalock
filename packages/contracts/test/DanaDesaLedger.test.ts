@@ -162,4 +162,41 @@ describe("DanaDesaLedger", function () {
       expect(isValid).to.be.false;
     });
   });
+
+  describe("LPJ Submission", function () {
+    const LPJ_HASH = ethers.keccak256(ethers.toUtf8Bytes("LPJ Hash"));
+
+    beforeEach(async function () {
+      await contract.connect(kaur).registerProposal("D1", "K1", ethers.parseEther("1000"), DOKUMEN_HASH);
+      await contract.connect(kaur).submitDisbursement(1, ethers.parseEther("400"), BERITA_ACARA_HASH, "");
+      await contract.connect(sekdes).verifyBySekdes(1);
+      await contract.connect(kades).authorizeByKades(1);
+      await contract.connect(kaurKeuangan).executeDisbursement(1);
+    });
+
+    it("Should allow KAUR to submit LPJ Teknis", async function () {
+      const tx = await contract.connect(kaur).submitLpjTeknis(1, ethers.parseEther("400"), LPJ_HASH);
+      await expect(tx).to.emit(contract, "LpjTeknisSubmitted");
+
+      const disb = await contract.disbursements(1);
+      expect(disb.lpjHash).to.equal(LPJ_HASH);
+      expect(disb.lpjAmount).to.equal(ethers.parseEther("400"));
+    });
+
+    it("Should allow KAUR KEUANGAN to submit LPJ Keuangan", async function () {
+      const tx = await contract.connect(kaurKeuangan).submitLpjKeuangan(1, LPJ_HASH);
+      await expect(tx).to.emit(contract, "LpjKeuanganSubmitted");
+
+      const prop = await contract.proposals(1);
+      expect(prop.lpjKeuanganHash).to.equal(LPJ_HASH);
+    });
+
+    it("Should allow KADES to submit LPJ Desa", async function () {
+      const tx = await contract.connect(kades).submitLpjDesa(2026, 1, LPJ_HASH);
+      await expect(tx).to.emit(contract, "LpjDesaSubmitted");
+
+      const hash = await contract.lpjDesaHashes(2026, 1);
+      expect(hash).to.equal(LPJ_HASH);
+    });
+  });
 });

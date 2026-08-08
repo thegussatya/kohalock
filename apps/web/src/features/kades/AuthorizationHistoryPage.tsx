@@ -16,7 +16,7 @@ type AuthHistoryData = {
   nominal: number;
   fotoUrl?: string;
   beritaAcaraUrl?: string;
-  lpjUrl?: string;
+  lpjTeknisUrl?: string;
 };
 
 const COLUMNS: TableColumn[] = [
@@ -171,7 +171,7 @@ export default function AuthorizationHistoryPage() {
             <DocumentPreviewViewer
               fotoUrl={selectedDoc.fotoUrl}
               beritaAcaraUrl={selectedDoc.beritaAcaraUrl}
-              lpjUrl={selectedDoc.lpjUrl}
+              lpjTeknisUrl={selectedDoc.lpjTeknisUrl}
             />
 
             <div className="mt-8 flex justify-end">

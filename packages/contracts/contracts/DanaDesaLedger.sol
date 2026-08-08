@@ -26,6 +26,7 @@ contract DanaDesaLedger is AccessControl {
         address kaurTeknis;
         bytes32 dokumenHash;
         uint256 createdAt;
+        bytes32 lpjKeuanganHash;
     }
 
     struct Disbursement {
@@ -42,6 +43,8 @@ contract DanaDesaLedger is AccessControl {
         uint256 submittedAt;
         uint256 verifiedAt;
         uint256 disbursedAt;
+        bytes32 lpjHash;
+        uint256 lpjAmount;
     }
 
     uint256 private _proposalCounter;
@@ -51,6 +54,8 @@ contract DanaDesaLedger is AccessControl {
     mapping(uint256 => Disbursement) public disbursements;
     // proposalId => total disbursed amount
     mapping(uint256 => uint256) public totalDisbursedPerProposal;
+    // tahun => semester => hash (semester 0 = tahunan)
+    mapping(uint256 => mapping(uint8 => bytes32)) public lpjDesaHashes;
 
     event ProposalRegistered(uint256 indexed proposalId, address indexed kaurTeknis, bytes32 dokumenHash, uint256 timestamp);
     event DisbursementSubmitted(uint256 indexed disbursementId, uint256 indexed proposalId, uint256 nominal, uint256 timestamp);
@@ -59,6 +64,9 @@ contract DanaDesaLedger is AccessControl {
     event AuthorizedByKades(uint256 indexed disbursementId, address indexed kades, uint256 timestamp);
     event Disbursed(uint256 indexed disbursementId, address indexed kaurKeuangan, uint256 timestamp);
     event InterventionRejected(uint256 indexed disbursementId, address indexed kades, bytes32 reasonHash, uint256 timestamp);
+    event LpjTeknisSubmitted(uint256 indexed disbursementId, address indexed kaurTeknis, uint256 totalAmount, bytes32 lpjHash, uint256 timestamp);
+    event LpjKeuanganSubmitted(uint256 indexed proposalId, address indexed kaurKeuangan, bytes32 lpjHash, uint256 timestamp);
+    event LpjDesaSubmitted(uint256 indexed tahun, uint8 semester, address indexed kades, bytes32 lpjHash, uint256 timestamp);
 
     error ExceedsPagu();
 
@@ -82,7 +90,8 @@ contract DanaDesaLedger is AccessControl {
             paguMaksimal: paguMaksimal,
             kaurTeknis: msg.sender,
             dokumenHash: dokumenHash,
-            createdAt: block.timestamp
+            createdAt: block.timestamp,
+            lpjKeuanganHash: bytes32(0)
         });
 
         emit ProposalRegistered(newId, msg.sender, dokumenHash, block.timestamp);
@@ -115,7 +124,9 @@ contract DanaDesaLedger is AccessControl {
             catatanRevisi: "",
             submittedAt: block.timestamp,
             verifiedAt: 0,
-            disbursedAt: 0
+            disbursedAt: 0,
+            lpjHash: bytes32(0),
+            lpjAmount: 0
         });
 
         emit DisbursementSubmitted(newId, proposalId, nominal, block.timestamp);
@@ -190,6 +201,38 @@ contract DanaDesaLedger is AccessControl {
         disb.status = DisbursementStatus.REJECTED_SYSTEM;
 
         emit InterventionRejected(disbursementId, msg.sender, reasonHash, block.timestamp);
+    }
+
+    function submitLpjTeknis(uint256 disbursementId, uint256 totalAmount, bytes32 lpjHash) external onlyRole(KAUR_ROLE) {
+        Disbursement storage disb = disbursements[disbursementId];
+        require(disb.id != 0, "Invalid disbursement ID");
+        require(disb.status == DisbursementStatus.DISBURSED, "Must be disbursed to record LPJ");
+        require(disb.lpjAmount == 0, "LPJ already recorded"); // Assuming 1-time record
+        require(totalAmount <= disb.nominal, "LPJ amount exceeds disbursed nominal");
+
+        disb.lpjHash = lpjHash;
+        disb.lpjAmount = totalAmount;
+
+        emit LpjTeknisSubmitted(disbursementId, msg.sender, totalAmount, lpjHash, block.timestamp);
+    }
+
+    function submitLpjKeuangan(uint256 proposalId, bytes32 lpjHash) external onlyRole(KAUR_KEUANGAN_ROLE) {
+        Proposal storage prop = proposals[proposalId];
+        require(prop.id != 0, "Invalid proposal ID");
+        require(prop.lpjKeuanganHash == bytes32(0), "LPJ Keuangan already recorded");
+
+        prop.lpjKeuanganHash = lpjHash;
+
+        emit LpjKeuanganSubmitted(proposalId, msg.sender, lpjHash, block.timestamp);
+    }
+
+    function submitLpjDesa(uint256 tahun, uint8 semester, bytes32 lpjHash) external onlyRole(KADES_ROLE) {
+        require(semester <= 2, "Invalid semester, use 0 for annual, 1 or 2 for semester");
+        require(lpjDesaHashes[tahun][semester] == bytes32(0), "LPJ Desa already recorded for this period");
+
+        lpjDesaHashes[tahun][semester] = lpjHash;
+
+        emit LpjDesaSubmitted(tahun, semester, msg.sender, lpjHash, block.timestamp);
     }
 
     function verifyHash(uint256 disbursementId, bytes32 uploadedHash) public view returns (bool) {

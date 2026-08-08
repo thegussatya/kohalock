@@ -26,6 +26,8 @@
 | Eksekusi pencairan (cair) | — | — | — | ✅ write | — | 👁 read | — | — |
 | BKU & Buku Bank | — | 👁 read | 👁 read | ✅ write | — | 👁 read | — | — |
 | Tutup Buku Bulanan | — | — | — | ✅ write | — | 👁 read | — | — |
+| Lengkapi Rincian LPJ | ✅ write | 👁 read | 👁 read | 👁 read | — | 👁 read | — | — |
+| Laporan APBDes / Laporan Keuangan | — | 👁 read | 👁 read | ✅ write | 👁 read | 👁 read | 👁 read | — |
 | Panic button (tolak intervensi) | — | — | ✅ write | — | — | 👁 read (flagged) | 👁 read (flagged) | — |
 | Ledger Explorer (kronologi blok) | — | — | — | — | 👁 read (progress publik saja) | ✅ full detail | 👁 read | — |
 | Integrity/Hash Checker | — | 👁 (built-in di reviewer) | — | — | — | ✅ full tool | — | — |

@@ -58,4 +58,65 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Middleware for authenticating token
+const authenticateToken = (req: any, res: any, next: any) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) return res.status(401).json({ error: "Token otentikasi tidak ditemukan" });
+  
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) return res.status(403).json({ error: "Token tidak valid atau kadaluarsa" });
+    req.user = user;
+    next();
+  });
+};
+
+router.get('/me', authenticateToken, async (req: any, res: any) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, nama: true, role: true, email: true, jabatan: true }
+    });
+    if (!user) return res.status(404).json({ error: "User tidak ditemukan" });
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Terjadi kesalahan internal" });
+  }
+});
+
+router.put('/change-pin', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { oldPin, newPin } = req.body;
+    
+    if (!oldPin || !newPin || newPin.length < 6) {
+      return res.status(400).json({ error: "PIN baru minimal 6 karakter" });
+    }
+    
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId }
+    });
+    
+    if (!user || !user.passwordHash) {
+      return res.status(404).json({ error: "User tidak ditemukan" });
+    }
+    
+    const isMatch = await bcrypt.compare(oldPin, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ error: "PIN lama tidak sesuai" });
+    }
+    
+    const newPasswordHash = await bcrypt.hash(newPin, 10);
+    
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: newPasswordHash }
+    });
+    
+    res.json({ message: "PIN berhasil diperbarui" });
+  } catch (error) {
+    res.status(500).json({ error: "Terjadi kesalahan saat mengubah PIN" });
+  }
+});
+
 export default router;

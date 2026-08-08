@@ -186,7 +186,7 @@ export default function DisbursementDetailPage() {
             <DocumentPreviewViewer 
               fotoUrl={data.fotoUrl} 
               beritaAcaraUrl={data.beritaAcaraUrl} 
-              lpjUrl={data.lpjUrl} 
+              lpjTeknisUrl={data.lpjTeknisUrl} 
             />
           </div>
 

@@ -119,4 +119,27 @@ router.post('/reports/:id/decrypt', authenticate, async (req: AuthRequest, res: 
   }
 });
 
+// PUT /reports/:ticketCode/status (Protected - Auditor)
+router.put('/reports/:ticketCode/status', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const ticketCode = req.params.ticketCode as string;
+    const { status } = req.body;
+
+    if (!status) {
+      res.status(400).json({ error: 'Status wajib diisi' });
+      return;
+    }
+
+    const updated = await prisma.whistleblowerReport.update({
+      where: { ticketCode },
+      data: { status }
+    });
+
+    res.json(serialize(updated));
+  } catch (error: any) {
+    console.error('Error updating report status:', error);
+    res.status(500).json({ message: 'Internal server error', error: error.message });
+  }
+});
+
 export default router;

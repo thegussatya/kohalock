@@ -6,7 +6,7 @@
 
 ## Daftar Isi
 
-1. [Apa Itu KohaLock?](#1-apa-itu-kohalock)
+1. [Apa Itu KOHALOCK?](#1-apa-itu-kohalock)
 2. [Masalah yang Ingin Diatasi](#2-masalah-yang-ingin-diatasi)
 3. [Teknologi yang Digunakan](#3-teknologi-yang-digunakan)
 4. [Status Pengembangan Saat Ini](#4-status-pengembangan-saat-ini)
@@ -24,9 +24,9 @@
 
 ---
 
-## 1. Apa Itu KohaLock?
+## 1. Apa Itu KOHALOCK?
 
-KohaLock adalah platform digital untuk mengelola **siklus penuh dana desa** — mulai dari tahap perencanaan di Musrembang, pengajuan pencairan, verifikasi bertingkat, hingga pencairan aktual — dengan **jejak audit yang tidak bisa diubah** menggunakan teknologi blockchain.
+KOHALOCK adalah platform digital untuk mengelola **siklus penuh dana desa** — mulai dari tahap perencanaan di Musrembang, pengajuan pencairan, verifikasi bertingkat, hingga pencairan aktual — dengan **jejak audit yang tidak bisa diubah** menggunakan teknologi blockchain.
 
 Sistem ini dirancang untuk **satu desa** (single-tenant) dan melibatkan **7 peran pengguna** yang masing-masing memiliki dashboard, menu, dan hak akses berbeda, namun semuanya berada dalam **satu aplikasi web yang sama**.
 
@@ -40,7 +40,7 @@ Prinsip utamanya sederhana:
 
 Pengelolaan dana desa di Indonesia seringkali menghadapi masalah:
 
-| Masalah                                                                                    | Bagaimana KohaLock Mengatasi                                                                                                                  |
+| Masalah                                                                                    | Bagaimana KOHALOCK Mengatasi                                                                                                                  |
 | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Pencairan tidak transparan** — masyarakat tidak tahu dana terpakai untuk apa             | Dashboard Publik real-time: siapa pun bisa melihat proyek, anggaran, dan progres pencairan tanpa perlu login                                  |
 | **Dokumen bisa dipalsukan** — berita acara atau foto bukti bisa diedit setelah pencairan   | Setiap dokumen di-hash (SHA-256) saat diunggah, hash-nya dikunci di blockchain. Kalau file diubah 1 bit pun, hash-nya tidak cocok             |

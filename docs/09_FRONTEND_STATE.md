@@ -39,6 +39,7 @@
 | `/kaur-teknis/program-saya` | `MyProgramsPage` | Program Saya | `FolderKanban` |
 | `/kaur-teknis/program-saya/:id` | `ProgramDetailPage` | - | - |
 | `/kaur-teknis/ajukan-pencairan` | `SubmitDisbursementPage` | Ajukan Pencairan | `Wallet` |
+| `/kaur-teknis/lengkapi-lpj/:disbursementId` | `LengkapiLpjPage` | - | - |
 | `/kaur-teknis/riwayat-penolakan` | `RejectionHistoryPage` | Riwayat Penolakan | `History` |
 | `/kaur-teknis/notifikasi` | `NotificationsPage` | - | - |
 | `/kaur-teknis/profil` | `ProfilePage` | - | - |
@@ -123,7 +124,8 @@
 | `/kaur-keuangan/buku-bank` | `BankBookPage` | Buku Bank | `Building2` |
 | `/kaur-keuangan/buku-pajak` | `TaxBookPage` | Buku Pajak | `Receipt` |
 | `/kaur-keuangan/penutupan-buku` | `MonthlyClosingPage` | Penutupan Buku Bulanan | `Lock` |
-| `/kaur-keuangan/laporan` | `RealizationReportPage` | Laporan Realisasi & LPJ | `FileBarChart` |
+| `/kaur-keuangan/laporan-apbdes` | `LaporanKeuanganPage` | Laporan APBDes | `FileText` |
+| `/kaur-keuangan/laporan` | `RealizationReportPage` | Realisasi Anggaran | `FileBarChart` |
 | `/kaur-keuangan/koreksi` | `CorrectionTransactionPage` | Transaksi Koreksi | `Undo2` |
 | `/kaur-keuangan/arsip` | `LockedArchivePage` | Arsip Buku Terkunci | `Archive` |
 | `/kaur-keuangan/pengaturan` | `SettingsPage` | Pengaturan & Kredensial | `Settings` |
@@ -172,3 +174,6 @@ Role ini dirancang untuk mendigitalisasi penatausahaan keuangan setelah pencaira
    - Filter `?status=DISBURSED` telah dilepas. Auditor sekarang dapat melihat dan memindai hash dokumen dari seluruh riwayat pencairan, termasuk yang berstatus ditolak (`REJECTED_SYSTEM`) untuk keperluan investigasi forensik.
 3. **Formulir Musrembang (Kaur Teknis)**:
    - Menambahkan kolom unggahan **RAB & Gambar Desain (PDF)** untuk melengkapi dokumen induk selain Daftar Hadir dan Notulensi.
+4. **LPJ Otomatis & Laporan Keuangan (Kaur Teknis & Kaur Keuangan)**:
+   - Kaur Teknis kini menginput rincian pengeluaran LPJ (baris-demi-baris) dengan kalkulasi sisa dana. Format laporan bisa dicetak atau diekspor ke Excel (CSV).
+   - Menu Laporan APBDes otomatis ditambahkan di Kaur Keuangan yang merekapitulasi seluruh pendapatan & LPJ secara matematis.

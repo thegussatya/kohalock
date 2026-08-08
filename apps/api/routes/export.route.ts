@@ -63,41 +63,80 @@ router.post('/raw-data', authenticate, async (req: AuthRequest, res: Response): 
 // POST /export/legal-report
 router.post('/legal-report', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { disbursementIds } = req.body;
+    const { proposalId } = req.body;
 
-    if (!Array.isArray(disbursementIds) || disbursementIds.length === 0) {
-      res.status(400).json({ error: 'disbursementIds harus berupa array string dan tidak boleh kosong' });
+    if (!proposalId) {
+      res.status(400).json({ error: 'proposalId tidak boleh kosong' });
+      return;
+    }
+
+    const proposal = await prisma.proposal.findUnique({
+      where: { id: proposalId },
+      include: {
+        kaurTeknis: { select: { nama: true, jabatan: true } }
+      }
+    });
+
+    if (!proposal) {
+      res.status(404).json({ error: 'Proposal tidak ditemukan' });
       return;
     }
 
     const data = await prisma.disbursement.findMany({
-      where: {
-        id: {
-          in: disbursementIds
-        }
-      },
+      where: { proposalId },
       include: {
-        proposal: {
-          include: {
-            kaurTeknis: { select: { nama: true, jabatan: true } }
-          }
-        },
         sekdesVerifier: { select: { nama: true, jabatan: true } },
         kadesApprover: { select: { nama: true, jabatan: true } }
-      }
+      },
+      orderBy: { submittedAt: 'asc' }
     });
+
+    // Ambil Laporan Desa terbaru
+    const laporanDesa = await prisma.laporanRealisasiDesa.findFirst({
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Helper Verifikasi File Hash
+    const crypto = require('crypto');
+    const fs = require('fs');
+    const path = require('path');
+
+    const verifyFileHash = (url: string | null, onChainHash: string | null) => {
+      if (!url) return '[⚠️ BELUM ADA BUKTI FISIK]';
+      if (!onChainHash) return '[⚠️ BELUM TERKUNCI DI BLOCKCHAIN]';
+      
+      try {
+        const filename = url.split('/').pop();
+        if (!filename) return '[❌ URL TIDAK VALID]';
+        
+        const filePath = path.join(__dirname, '..', 'uploads', filename);
+        if (!fs.existsSync(filePath)) return '[❌ FILE HILANG DI SERVER]';
+
+        const fileBuffer = fs.readFileSync(filePath);
+        const calcHash = '0x' + crypto.createHash('sha256').update(fileBuffer).digest('hex');
+        
+        if (calcHash === onChainHash) {
+          return '[✅ OTENTIK - Hash Cocok]';
+        } else {
+          return '[❌ BERBEDA - File Termodifikasi]';
+        }
+      } catch (err) {
+        return '[❌ GAGAL MEMBACA FILE]';
+      }
+    };
 
     // Create PDF
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     
     // Pipe to response
+    const safeFilename = proposal.judulUsulan.replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF ]/g, '').replace(/\s+/g, '_');
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename="legal_report.pdf"');
+    res.setHeader('Content-Disposition', `attachment; filename="legal_report_${safeFilename}.pdf"`);
     doc.pipe(res);
 
     // Header Title
     doc.fontSize(22).font('Helvetica-Bold').fillColor('#1e3a8a').text('LAPORAN HASIL AUDIT TERPADU', { align: 'center' });
-    doc.fontSize(12).font('Helvetica').fillColor('#475569').text('Sistem Transparansi Dana Desa (KohaLock)', { align: 'center' });
+    doc.fontSize(12).font('Helvetica').fillColor('#475569').text('Sistem Transparansi Dana Desa (KOHALOCK)', { align: 'center' });
     doc.moveDown(2);
     
     // Simulated Seal (Absolute positioning top-right)
@@ -106,14 +145,27 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
     doc.fontSize(10).font('Helvetica-Bold').fillColor('#dc2626').text('SEALED\nVALIDATED', 465, 62, { align: 'center', width: 70 });
     doc.restore();
 
-    // Explicitly reset cursor coordinates after drawing the absolute seal
-    // This fixes the bug where all subsequent text is squeezed to the right side
     doc.y = 130;
     doc.x = 50;
 
+    // Info Program
+    doc.fontSize(14).font('Helvetica-Bold').fillColor('#0f172a').text(`Program / Kegiatan: ${proposal.judulUsulan}`);
+    doc.fontSize(10).font('Helvetica').fillColor('#475569').text(`Kategori: ${proposal.kategori} | Dusun: ${proposal.dusun}`);
+    
+    // Uji Bukti Program-Level (LPJ Keuangan & LPJ Desa)
+    doc.moveDown(1);
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#1e3a8a').text('Hasil Uji Integritas Dokumen Tingkat Program (Otomatis):');
+    doc.fontSize(10).font('Helvetica').fillColor('#334155');
+    
+    const statusLpjKeuangan = verifyFileHash(proposal.lpjKeuanganUrl, proposal.lpjKeuanganHash);
+    doc.text(`1. LPJ Keuangan (Kaur Keuangan) : ${statusLpjKeuangan}`);
+    
+    const statusLpjDesa = laporanDesa ? verifyFileHash(laporanDesa.dokumenUrl, laporanDesa.dokumenHash) : '[⚠️ BELUM ADA BUKTI FISIK]';
+    doc.text(`2. Laporan Realisasi Desa (Kades): ${statusLpjDesa}`);
+    doc.moveDown(2);
+
     data.forEach((item, index) => {
-      // Check if we need a new page before drawing the box (assume box height is ~230)
-      if (doc.y + 230 > 750) {
+      if (doc.y + 260 > 750) {
         doc.addPage();
         doc.y = 50;
       }
@@ -121,41 +173,81 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
       const startY = doc.y;
       
       // Draw background box for this transaction
-      doc.rect(50, startY, 495, 220).fillAndStroke('#f8fafc', '#cbd5e1');
+      doc.rect(50, startY, 495, 250).fillAndStroke('#f8fafc', '#cbd5e1');
       
       // Box Title
-      doc.fontSize(14).font('Helvetica-Bold').fillColor('#0f172a')
-         .text(`Transaksi #${index + 1}: ${item.proposal.judulUsulan}`, 65, startY + 15);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#0f172a')
+         .text(`Pencairan Tahap ${index + 1}`, 65, startY + 15);
       
       // Metadata
       doc.fontSize(10).font('Helvetica').fillColor('#475569');
-      doc.text(`ID Transaksi On-Chain: ${item.onChainId}   |   Status: ${item.status}`, 65, startY + 35);
+      doc.text(`ID Transaksi On-Chain: ${item.onChainId}   |   Status: ${item.status}`, 65, startY + 30);
       
-      // Divider
-      doc.moveTo(65, startY + 55).lineTo(530, startY + 55).lineWidth(1).strokeColor('#e2e8f0').stroke();
+      doc.moveTo(65, startY + 45).lineTo(530, startY + 45).lineWidth(1).strokeColor('#e2e8f0').stroke();
       
-      // Details
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Detail Pencairan:', 65, startY + 65);
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Detail Pencairan:', 65, startY + 55);
       doc.font('Helvetica').fontSize(10);
-      doc.text(`Nominal      : Rp ${Number(item.nominal).toLocaleString('id-ID')}`, 65, startY + 85);
-      doc.text(`Keterangan : ${item.keterangan}`, 65, startY + 100, { width: 450 });
-      doc.text(`Kategori     : ${item.proposal.kategori} - Dusun ${item.proposal.dusun}`, 65, startY + 115);
+      doc.text(`Nominal      : Rp ${Number(item.nominal).toLocaleString('id-ID')}`, 65, startY + 70);
+      doc.text(`Keterangan : ${item.keterangan}`, 65, startY + 85, { width: 450 });
 
-      // Divider
-      doc.moveTo(65, startY + 135).lineTo(530, startY + 135).lineWidth(1).strokeColor('#e2e8f0').stroke();
+      doc.moveTo(65, startY + 115).lineTo(530, startY + 115).lineWidth(1).strokeColor('#e2e8f0').stroke();
+
+      // Uji Bukti Disbursement-Level
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Hasil Uji Integritas Dokumen Pencairan:', 65, startY + 125);
+      doc.font('Helvetica').fontSize(10);
+      
+      const statusBA = verifyFileHash(item.beritaAcaraUrl, item.beritaAcaraHash);
+      doc.text(`1. Berita Acara & Foto Fisik (Sekdes) : ${statusBA}`, 65, startY + 140);
+      
+      const statusLpjTeknis = verifyFileHash(item.lpjTeknisUrl, item.lpjTeknisHash);
+      doc.text(`2. LPJ Fisik / Teknis (Kaur Teknis) : ${statusLpjTeknis}`, 65, startY + 155);
+
+      doc.moveTo(65, startY + 175).lineTo(530, startY + 175).lineWidth(1).strokeColor('#e2e8f0').stroke();
 
       // Signatures
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Jejak Otorisasi (Tanda Tangan Digital):', 65, startY + 145);
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Jejak Otorisasi (Tanda Tangan Digital):', 65, startY + 185);
       doc.font('Helvetica').fontSize(10);
-      doc.text(`[Pemohon] Kaur Teknis : ${item.proposal.kaurTeknis?.nama || '-'}`, 65, startY + 165);
-      doc.text(`[Verifikator] Sekdes  : ${item.sekdesVerifier?.nama || '-'} (Timestamp: ${item.verifiedAt ? new Date(item.verifiedAt).toLocaleString('id-ID') : '-'})`, 65, startY + 180);
-      doc.text(`[Otorisator] Kades    : ${item.kadesApprover?.nama || '-'} (Timestamp: ${item.authorizedAt ? new Date(item.authorizedAt).toLocaleString('id-ID') : '-'})`, 65, startY + 195);
-      doc.text(`[Eksekutor] Keuangan  : Dieksekusi pada ${item.disbursedAt ? new Date(item.disbursedAt).toLocaleString('id-ID') : '-'}`, 65, startY + 210);
+      doc.text(`[Verifikator] Sekdes  : ${item.sekdesVerifier?.nama || '-'}`, 65, startY + 200);
+      doc.text(`[Otorisator] Kades    : ${item.kadesApprover?.nama || '-'}`, 65, startY + 215);
+      doc.text(`[Eksekutor] Keuangan  : ${item.disbursedAt ? new Date(item.disbursedAt).toLocaleString('id-ID') : '-'}`, 65, startY + 230);
 
-      // Move cursor down for next item
       doc.x = 50;
-      doc.y = startY + 240;
+      doc.y = startY + 270;
     });
+
+    // Fetch Catatan Auditor terkait proposal ini
+    const allDisbursementIds = data.map(d => d.id);
+    const auditNotes = await prisma.auditNote.findMany({
+      where: {
+        OR: [
+          { docId: proposalId },
+          { docId: { in: allDisbursementIds } }
+        ]
+      },
+      include: { auditor: { select: { nama: true } } },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    if (auditNotes.length > 0) {
+      if (doc.y + 100 > 750) { doc.addPage(); doc.y = 50; }
+
+      doc.moveDown(1);
+      doc.fontSize(14).font('Helvetica-Bold').fillColor('#92400e').text('Catatan Auditor (Hasil Verifikasi Manual):');
+      doc.moveDown(0.5);
+
+      auditNotes.forEach((note, idx) => {
+        if (doc.y + 60 > 750) { doc.addPage(); doc.y = 50; }
+
+        const hasilColor = note.hasil === 'OTENTIK' ? '#166534' : '#991b1b';
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(hasilColor)
+           .text(`${idx + 1}. [${note.hasil}] — ${note.docType.toUpperCase()}`);
+        doc.fontSize(9).font('Helvetica').fillColor('#334155')
+           .text(`   "${note.catatan}"`, { indent: 15 });
+        doc.fontSize(8).font('Helvetica').fillColor('#94a3b8')
+           .text(`   Oleh: ${note.auditor.nama} — ${new Date(note.createdAt).toLocaleString('id-ID')}`, { indent: 15 });
+        doc.moveDown(0.5);
+      });
+    }
 
     // Finalize PDF file
     doc.end();

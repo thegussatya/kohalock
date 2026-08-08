@@ -22,6 +22,7 @@ export default function ExecutionQueuePage() {
   const [selectedTx, setSelectedTx] = useState<any>(null);
   const [data, setData] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPanicking, setIsPanicking] = useState(false);
   const [pajakList, setPajakList] = useState<{jenisPajak: string, nominal: string}[]>([]);
 
   const TAX_OPTIONS = ["PPN", "PPh 21", "PPh 22", "PPh 23", "Pajak Daerah", "Lainnya"];
@@ -36,7 +37,7 @@ export default function ExecutionQueuePage() {
         kades: item.kadesApprover?.nama || '-',
         fotoUrl: item.fotoUrl,
         beritaAcaraUrl: item.beritaAcaraUrl,
-        lpjUrl: item.lpjUrl
+        lpjTeknisUrl: item.lpjTeknisUrl
       }));
       setData(formatted);
     }).catch(err => {
@@ -61,16 +62,39 @@ export default function ExecutionQueuePage() {
         return <span className="text-slate-600">{row.kades}</span>;
       case 'aksi':
         return (
-          <button
-            onClick={() => {
-              setSelectedTx(row);
-              setPajakList([]);
-              setShowConfirmModal(true);
-            }}
-            className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Eksekusi & Catat
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setSelectedTx(row);
+                setPajakList([]);
+                setShowConfirmModal(true);
+              }}
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Eksekusi & Catat
+            </button>
+            <button 
+                onClick={async () => {
+                  if (confirm("BAHAYA: Fitur ini akan membekukan transaksi secara permanen karena adanya intervensi. Lanjutkan?")) {
+                    setIsPanicking(true);
+                    try {
+                      await apiClient.post(`/disbursements/${row.id}/reject-intervention`, { alasan: "Intervensi saat pencairan (Kaur Keuangan)" });
+                      toast.success('Transaksi BERHASIL DIBEKUKAN secara permanen!');
+                      fetchData();
+                    } catch (error) {
+                      toast.error('Gagal membekukan transaksi');
+                    } finally {
+                      setIsPanicking(false);
+                    }
+                  }
+                }}
+                disabled={isPanicking}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-md text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                Panic
+              </button>
+          </div>
         );
       default:
         return row[columnKey];
@@ -113,7 +137,7 @@ export default function ExecutionQueuePage() {
               <DocumentPreviewViewer
                 fotoUrl={selectedTx.fotoUrl}
                 beritaAcaraUrl={selectedTx.beritaAcaraUrl}
-                lpjUrl={selectedTx.lpjUrl}
+                lpjTeknisUrl={selectedTx.lpjTeknisUrl}
               />
             </div>
 

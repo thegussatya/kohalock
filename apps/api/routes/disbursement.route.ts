@@ -263,7 +263,7 @@ router.post('/:id/lpj', authenticate, upload.single('file'), async (req: AuthReq
     const updated = await prisma.disbursement.update({
       where: { id },
       data: {
-        lpjUrl: fileUrl
+        lpjTeknisUrl: fileUrl
       }
     });
 
@@ -484,7 +484,7 @@ router.get('/authorizations', authenticate, async (req: AuthRequest, res: Respon
       nominal: Number(a.nominal),
       fotoUrl: a.fotoUrl,
       beritaAcaraUrl: a.beritaAcaraUrl,
-      lpjUrl: a.lpjUrl
+      lpjTeknisUrl: a.lpjTeknisUrl
     }));
 
     res.json(serialize(mapped));

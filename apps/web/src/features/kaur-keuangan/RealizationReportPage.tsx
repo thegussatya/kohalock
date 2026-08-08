@@ -7,8 +7,9 @@ import Badge from '../../components/Badge';
 import MonthlyBarChart from '../../components/MonthlyBarChart';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import { toast } from 'react-hot-toast';
-import { Download, Calendar, BarChart3, PieChart } from 'lucide-react';
+import { Download, Calendar, BarChart3, PieChart, FileText } from 'lucide-react';
 import apiClient from '../../lib/apiClient';
+import { Link } from 'react-router-dom';
 
 const COLUMNS: TableColumn[] = [
   { key: 'bulan', label: 'Bulan' },
@@ -77,12 +78,12 @@ export default function RealizationReportPage() {
           >
             <Download className="w-4 h-4" /> Generate Laporan Realisasi
           </button>
-          <button 
-            onClick={() => toast.success("LPJ sedang disiapkan...", { icon: '📊' })} 
+          <Link 
+            to="/kaur-keuangan/laporan-lpj"
             className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg shadow-sm font-bold flex items-center justify-center gap-2 text-sm transition-colors"
           >
-            <Download className="w-4 h-4" /> Generate LPJ
-          </button>
+            <FileText className="w-4 h-4" /> Buka Laporan Rincian LPJ
+          </Link>
         </div>
         <PageHeader 
           title="Laporan Realisasi & LPJ" 

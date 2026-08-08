@@ -398,12 +398,17 @@ router.get('/auditor/cases', authenticate, async (req: AuthRequest, res: Respons
     });
 
     interventions.forEach(i => {
-      toInvestigate.push({
+      const item = {
         id: `INV-${i.id.substring(i.id.length - 4).toUpperCase()}`,
+        realId: i.id, // For UI if needed
         title: `Intervensi: ${i.disbursement.proposal.judulUsulan}`,
         category: 'Anomali Transaksi',
         date: i.createdAt.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-      });
+      };
+      
+      if (i.status === 'PENDING') toInvestigate.push(item);
+      else if (i.status === 'PROSES') inProgress.push(item);
+      else closed.push(item);
     });
 
     res.json(serialize({ toInvestigate, inProgress, closed }));

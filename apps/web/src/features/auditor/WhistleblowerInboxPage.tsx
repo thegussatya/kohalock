@@ -19,6 +19,7 @@ type ReportData = {
   ticketCode: string;
   encryptedPayload: string;
   createdAt: string;
+  status: string;
 };
 
 export default function WhistleblowerInboxPage() {
@@ -28,6 +29,7 @@ export default function WhistleblowerInboxPage() {
   const [privateKeyInput, setPrivateKeyInput] = useState('');
   const [decryptedText, setDecryptedText] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const fetchReports = async () => {
     try {
@@ -76,6 +78,21 @@ export default function WhistleblowerInboxPage() {
     }
   };
 
+  const handleUpdateStatus = async (newStatus: string) => {
+    if (!selectedReport) return;
+    setIsUpdatingStatus(true);
+    try {
+      await apiClient.put(`/whistleblower/reports/${selectedReport.ticketCode}/status`, { status: newStatus });
+      toast.success(`Status berhasil diubah menjadi ${newStatus}`);
+      setSelectedReport({ ...selectedReport, status: newStatus });
+      fetchReports(); // Refresh the table
+    } catch (error: any) {
+      toast.error('Gagal mengubah status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const renderCell = (row: ReportData, columnKey: string) => {
     if (columnKey === 'createdAt') {
       return (
@@ -114,7 +131,7 @@ export default function WhistleblowerInboxPage() {
   };
 
   return (
-    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH">
+    <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH" settingsPath="/auditor/profil">
       <div className="mb-8">
         <PageHeader title="Kotak Masuk Rahasia" description="Whistleblower Inbox: Fasilitas dekripsi untuk membuka laporan Whistleblower anonim dari publik. Pastikan Anda memiliki Private Key Inspektorat untuk dapat membaca konten aslinya." />
 
@@ -204,6 +221,26 @@ export default function WhistleblowerInboxPage() {
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Isi Kronologi (Plaintext)</span>
                       <div className="p-4 bg-slate-800 border border-slate-700 rounded-xl text-sm leading-relaxed text-slate-200 whitespace-pre-wrap font-medium">
                         {decryptedText}
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 border-t border-slate-700 pt-4">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">Tindak Lanjut Kasus (Status: {selectedReport.status})</span>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleUpdateStatus('PROSES')}
+                          disabled={isUpdatingStatus || selectedReport.status === 'PROSES'}
+                          className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors"
+                        >
+                          Tandai "In Progress"
+                        </button>
+                        <button 
+                          onClick={() => handleUpdateStatus('SELESAI')}
+                          disabled={isUpdatingStatus || selectedReport.status === 'SELESAI'}
+                          className="flex-1 py-2 bg-slate-600 hover:bg-slate-500 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-colors"
+                        >
+                          Tandai "Closed"
+                        </button>
                       </div>
                     </div>
                   </div>
