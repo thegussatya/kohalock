@@ -217,12 +217,18 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
 
     // Fetch Catatan Auditor terkait proposal ini
     const allDisbursementIds = data.map(d => d.id);
+    const orConditions: any[] = [
+      { docId: proposalId },
+      { docId: { in: allDisbursementIds } }
+    ];
+
+    if (laporanDesa) {
+      orConditions.push({ docId: laporanDesa.id });
+    }
+
     const auditNotes = await prisma.auditNote.findMany({
       where: {
-        OR: [
-          { docId: proposalId },
-          { docId: { in: allDisbursementIds } }
-        ]
+        OR: orConditions
       },
       include: { auditor: { select: { nama: true } } },
       orderBy: { createdAt: 'asc' }
