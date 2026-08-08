@@ -13,6 +13,7 @@ export default function LaporanDesaPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,11 +22,7 @@ export default function LaporanDesaPage() {
       return;
     }
 
-    if (!confirm("PERHATIAN!\n\nJika dikunci ke Blockchain, Laporan Realisasi Desa ini TIDAK BISA DIUBAH LAGI selamanya. Anda yakin?")) {
-      return;
-    }
-
-    setShowPinModal(true);
+    setShowConfirmModal(true);
   };
 
   const submitWithPin = async (pin: string) => {
@@ -152,6 +149,39 @@ export default function LaporanDesaPage() {
         onConfirm={submitWithPin} 
         isLoading={uploading}
       />
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Konfirmasi Penguncian</h3>
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+              PERHATIAN! Jika dikunci ke Blockchain, Laporan Realisasi Desa ini TIDAK BISA DIUBAH LAGI selamanya. Anda yakin?
+            </p>
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-3 mt-6">
+              <button 
+                type="button"
+                onClick={() => setShowConfirmModal(false)}
+                className="px-6 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold w-full sm:w-auto"
+              >
+                Batal
+              </button>
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setShowPinModal(true);
+                }}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-bold shadow-sm flex justify-center items-center gap-2 w-full sm:w-auto"
+              >
+                Ya, Kunci Sekarang
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </RoleLayout>
   );
 }
