@@ -177,3 +177,8 @@ Role ini dirancang untuk mendigitalisasi penatausahaan keuangan setelah pencaira
 4. **LPJ Otomatis & Laporan Keuangan (Kaur Teknis & Kaur Keuangan)**:
    - Kaur Teknis kini menginput rincian pengeluaran LPJ (baris-demi-baris) dengan kalkulasi sisa dana. Format laporan bisa dicetak atau diekspor ke Excel (CSV).
    - Menu Laporan APBDes otomatis ditambahkan di Kaur Keuangan yang merekapitulasi seluruh pendapatan & LPJ secara matematis.
+5. **Perbaikan UX & Bug Resolusi (UI/Routing)**:
+   - Halaman yang sengaja dihapus (seperti `CorrectionTransactionPage`) telah dibersihkan dari `router.tsx` dan `menu.ts` untuk menghindari *crash* HMR Vite.
+   - Mengganti seluruh fungsi native `alert()` dan `confirm()` yang mengganggu dengan Modal Pop-up *native* bergaya modern (seperti pada konfirmasi Panic Button Kades dan konfirmasi Penguncian Blockchain Kaur Keuangan).
+   - Komponen kamera *geotagging* untuk Sekdes telah disempurnakan agar tidak terjadi duplikasi foto berulang di pratinjau.
+   - Pembatasan file ekstensi PDF telah dikunci dengan atribut `accept=".pdf"` pada UI unggah dokumen LPJ.

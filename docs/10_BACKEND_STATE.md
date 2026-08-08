@@ -163,3 +163,7 @@ Variabel *environment* (`.env`) yang saat ini digunakan di backend (tanpa _value
 Seluruh **17 tabel** di Supabase saat ini **SUDAH DIBERLAKUKAN (ENABLED)** Row Level Security (RLS) untuk keamanan.
 Tabel-tabel tersebut adalah: `User`, `Proposal`, `Disbursement`, `RejectionLog`, `InterventionLog`, `ClarificationTicket`, `WhistleblowerReport`, `Notification`, `AdatCase`, `SupervisionNote`, `AuditorAccessToken`, `CashBookEntry`, `BankBookEntry`, `TaxBookEntry`, `MonthlyClosing`, `CorrectionTransaction`, dan `VillageIncomeEntry`.
 *Catatan: Backend Prisma secara default melakukan bypass pada RLS karena dikoneksikan dengan service role credentials (postgres) di URL database-nya.*
+
+## 11. Pembaruan Terkini
+*   **Integrity Checker PDF Export**: Endpoint `POST /export/legal-report` telah diperbarui agar memuat verifikasi otomatis yang dilabeli dengan eksplisit sebagai **"(Otomatis Sistem)"** untuk membedakan antara verifikasi sistem dan hasil verifikasi manual Auditor. 
+*   Selain itu, Catatan Auditor untuk dokumen lintas-program seperti `LaporanRealisasiDesa` sekarang ikut dimuat ke dalam `legal-report` secara otomatis jika relevan.
