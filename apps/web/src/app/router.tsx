@@ -7,6 +7,7 @@ import KaurTeknisMyPrograms from '../features/kaur-teknis/MyProgramsPage';
 import KaurTeknisProgramDetail from '../features/kaur-teknis/ProgramDetailPage';
 import KaurTeknisRejectionHistory from '../features/kaur-teknis/RejectionHistoryPage';
 import KaurTeknisSubmitDisbursement from '../features/kaur-teknis/SubmitDisbursementPage';
+import KaurTeknisSubmitLpj from '../features/kaur-teknis/LengkapiLpjPage';
 import SekdesDashboard from '../features/sekdes/DashboardPage';
 import SekdesBudgetMonitoring from '../features/sekdes/BudgetMonitoringPage';
 import SekdesVerificationQueue from '../features/sekdes/VerificationQueuePage';
@@ -21,6 +22,7 @@ import KadesIntegrityShield from '../features/kades/IntegrityShieldPage';
 import KadesPublicClarificationCenter from '../features/kades/PublicClarificationCenterPage';
 import KadesClarificationAnalytics from '../features/kades/ClarificationAnalyticsPage';
 import KadesSettings from '../features/kades/SettingsPage';
+import KadesLaporanDesa from '../features/kades/LaporanDesaPage';
 import PublikDashboard from '../features/publik/DashboardPage';
 import PublikWhistleblower from '../features/publik/WhistleblowerReportPage';
 import PublikClarification from '../features/publik/ClarificationPage';
@@ -68,9 +70,13 @@ import KaurKeuanganBankBook from '../features/kaur-keuangan/BankBookPage';
 import KaurKeuanganTaxBook from '../features/kaur-keuangan/TaxBookPage';
 import KaurKeuanganMonthlyClosing from '../features/kaur-keuangan/MonthlyClosingPage';
 import KaurKeuanganRealizationReport from '../features/kaur-keuangan/RealizationReportPage';
+import KaurKeuanganCorrectionTransaction from '../features/kaur-keuangan/CorrectionTransactionPage';
 import KaurKeuanganLockedArchive from '../features/kaur-keuangan/LockedArchivePage';
 import KaurKeuanganSettings from '../features/kaur-keuangan/SettingsPage';
 import KaurKeuanganHelp from '../features/kaur-keuangan/HelpPage';
+import KaurKeuanganLaporanKeuangan from '../features/kaur-keuangan/LaporanKeuanganPage';
+import KaurKeuanganLaporanLpj from '../features/kaur-keuangan/LaporanLpjPage';
+import KaurKeuanganUploadLpj from '../features/kaur-keuangan/UploadLpjKeuanganPage';
 
 export const router = createBrowserRouter([
   {
@@ -103,6 +109,10 @@ export const router = createBrowserRouter([
       {
         path: '/kaur-teknis/ajukan-pencairan',
         element: <ProtectedRoute allowedRole="kaur-teknis"><KaurTeknisSubmitDisbursement /></ProtectedRoute>,
+      },
+      {
+        path: '/kaur-teknis/lengkapi-lpj/:disbursementId',
+        element: <ProtectedRoute allowedRole="kaur-teknis"><KaurTeknisSubmitLpj /></ProtectedRoute>,
       },
       {
         path: '/kaur-teknis/riwayat-penolakan',
@@ -159,6 +169,10 @@ export const router = createBrowserRouter([
       {
         path: '/kades/analitik-klarifikasi',
         element: <ProtectedRoute allowedRole="kades"><KadesClarificationAnalytics /></ProtectedRoute>,
+      },
+      {
+        path: '/kades/laporan-desa',
+        element: <ProtectedRoute allowedRole="kades"><KadesLaporanDesa /></ProtectedRoute>,
       },
       {
         path: '/kades/pengaturan',
@@ -348,6 +362,22 @@ export const router = createBrowserRouter([
       {
         path: '/kaur-keuangan/laporan',
         element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganRealizationReport /></ProtectedRoute>,
+      },
+      {
+        path: '/kaur-keuangan/laporan-apbdes',
+        element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganLaporanKeuangan /></ProtectedRoute>,
+      },
+      {
+        path: '/kaur-keuangan/laporan-lpj',
+        element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganLaporanLpj /></ProtectedRoute>,
+      },
+      {
+        path: '/kaur-keuangan/kumpul-lpj',
+        element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganUploadLpj /></ProtectedRoute>,
+      },
+      {
+        path: '/kaur-keuangan/koreksi',
+        element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganCorrectionTransaction /></ProtectedRoute>,
       },
       {
         path: '/kaur-keuangan/arsip',

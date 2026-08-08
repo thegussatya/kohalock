@@ -19,6 +19,7 @@ export default function ReviewSubmissionPage() {
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
   const [showRevisiModal, setShowRevisiModal] = useState(false);
+  const [showPanicModal, setShowPanicModal] = useState(false);
   const [data, setData] = useState<any>(null);
   const [sisaPagu, setSisaPagu] = useState<number>(0);
   const [catatanRevisi, setCatatanRevisi] = useState('');
@@ -103,7 +104,6 @@ export default function ReviewSubmissionPage() {
             <MapWidget 
               latitude={data.geotagLat} 
               longitude={data.geotagLng} 
-              photoUrl={data.fotoUrl || "https://images.unsplash.com/photo-1541888086925-9276d418296a?q=80&w=600&auto=format&fit=crop"}
               popupText={data.keterangan || "Lokasi Proyek"}
             />
           </div>
@@ -119,7 +119,7 @@ export default function ReviewSubmissionPage() {
             
             <div className="flex-grow flex flex-col overflow-y-auto">
               <DocumentPreviewViewer 
-                fotoUrl={data.fotoUrl} 
+                fotoUrl={data.fotoUrl}
                 beritaAcaraUrl={data.beritaAcaraUrl} 
                 lpjTeknisUrl={data.lpjTeknisUrl} 
               />
@@ -130,13 +130,15 @@ export default function ReviewSubmissionPage() {
 
       {/* Aksi Bawah */}
       {data.status === 'PENDING_SEKDES' && (
-        <div className="flex flex-col sm:flex-row gap-4 border-t border-slate-200 pt-8 pb-4">
-          <button
+        <div className="flex flex-col sm:flex-row flex-wrap gap-4 border-t border-slate-200 pt-8 pb-4">
+          <button 
             type="button"
-            onClick={() => setShowPinModal(true)}
-            className="px-8 py-3.5 bg-green-600 text-white font-bold rounded-lg shadow-sm hover:bg-green-700 transition-all text-sm uppercase tracking-wide"
+            onClick={() => setShowPanicModal(true)}
+            disabled={isPanicking}
+            className="w-full sm:w-auto px-6 py-3.5 bg-red-600 text-white font-bold rounded-lg shadow-sm hover:bg-red-700 flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
           >
-            Verifikasi & Teruskan ke Kades
+            <ShieldAlert className="w-5 h-5" />
+            {isPanicking ? "Membekukan..." : "Bekukan (Panic Button)"}
           </button>
           <button
             type="button"
@@ -144,6 +146,13 @@ export default function ReviewSubmissionPage() {
             className="px-8 py-3.5 bg-yellow-500 text-white font-bold rounded-lg shadow-sm hover:bg-yellow-600 transition-all text-sm uppercase tracking-wide"
           >
             Kembalikan untuk Revisi
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowPinModal(true)}
+            className="px-8 py-3.5 bg-green-600 text-white font-bold rounded-lg shadow-sm hover:bg-green-700 transition-all text-sm uppercase tracking-wide flex-grow sm:flex-grow-0"
+          >
+            Verifikasi & Teruskan ke Kades
           </button>
         </div>
       )}
@@ -196,26 +205,47 @@ export default function ReviewSubmissionPage() {
               >
                 Konfirmasi
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPanicModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Konfirmasi Panic Button</h3>
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+              BAHAYA: Fitur ini akan mencatat transaksi ini lalu membekukannya secara permanen karena adanya indikasi intervensi. Lanjutkan?
+            </p>
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-3 mt-6">
               <button 
+                type="button"
+                onClick={() => setShowPanicModal(false)}
+                disabled={isPanicking}
+                className="px-6 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold w-full sm:w-auto"
+              >
+                Batal
+              </button>
+              <button 
+                type="button"
                 onClick={async () => {
-                  if (confirm("BAHAYA: Fitur ini akan membekukan transaksi secara permanen karena adanya intervensi. Lanjutkan?")) {
-                    setIsPanicking(true);
-                    try {
-                      await apiClient.post(`/disbursements/${id}/reject-intervention`, { alasan: "Intervensi saat verifikasi berkas (Sekdes)" });
-                      toast.success('Transaksi BERHASIL DIBEKUKAN secara permanen!');
-                      navigate("/sekdes/verifikasi");
-                    } catch (error) {
-                      toast.error('Gagal membekukan transaksi');
-                    } finally {
-                      setIsPanicking(false);
-                    }
+                  setIsPanicking(true);
+                  try {
+                    await apiClient.post(`/disbursements/${id}/reject-intervention`, { alasan: "Intervensi saat verifikasi berkas (Sekdes)" });
+                    toast.success('Transaksi BERHASIL DIBEKUKAN secara permanen!');
+                    navigate("/sekdes/verifikasi");
+                  } catch (error) {
+                    toast.error('Gagal membekukan transaksi');
+                    setIsPanicking(false);
                   }
                 }}
                 disabled={isPanicking}
-                className="w-full md:w-auto px-6 py-3.5 bg-red-600 text-white font-bold rounded-lg shadow-sm hover:bg-red-700 flex items-center justify-center gap-2"
+                className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold shadow-sm flex justify-center items-center gap-2 w-full sm:w-auto"
               >
-                <ShieldAlert className="w-5 h-5" />
-                {isPanicking ? "Membekukan..." : "Bekukan (Panic Button)"}
+                {isPanicking ? "Membekukan..." : "Ya, Bekukan"}
               </button>
             </div>
           </div>

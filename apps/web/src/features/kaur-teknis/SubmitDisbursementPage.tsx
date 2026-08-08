@@ -22,6 +22,7 @@ export default function SubmitDisbursementPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPanicAction, setIsPanicAction] = useState(false);
+  const [showPanicModal, setShowPanicModal] = useState(false);
 
   useEffect(() => {
     // Check for edit mode
@@ -106,7 +107,7 @@ export default function SubmitDisbursementPage() {
         </div>
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 max-w-4xl">
-        <form onSubmit={async (e) => { 
+        <form id="disbursementForm" onSubmit={async (e) => { 
           e.preventDefault(); 
           if (!selectedProgramId) {
             toast.error("Pilih program terlebih dahulu");
@@ -134,6 +135,12 @@ export default function SubmitDisbursementPage() {
           }
           if (!geotagCoords) {
             toast.error("Silakan ambil foto bukti lapangan beserta geotagging terlebih dahulu");
+            setIsSubmitting(false);
+            return;
+          }
+          
+          if (isPanicAction && !showPanicModal) {
+            setShowPanicModal(true);
             setIsSubmitting(false);
             return;
           }
@@ -307,21 +314,10 @@ export default function SubmitDisbursementPage() {
           {/* Action */}
           <div className="pt-6 border-t border-slate-200 flex justify-end gap-3 flex-wrap">
             <button
-              type="submit"
-              onClick={() => setIsPanicAction(false)}
-              disabled={isSubmitting}
-              className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors uppercase tracking-wide text-sm disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isSubmitting && !isPanicAction ? "Memproses..." : (isEditing ? "Tanda Tangani & Kirim Revisi" : "Tanda Tangani & Ajukan")}
-            </button>
-            <button
-              type="submit"
+              type="button"
               onClick={(e) => {
-                if (!confirm("BAHAYA: Fitur ini akan mencatat transaksi ini lalu membekukannya secara permanen karena adanya intervensi. Lanjutkan?")) {
-                  e.preventDefault();
-                } else {
-                  setIsPanicAction(true);
-                }
+                setIsPanicAction(true);
+                setShowPanicModal(true);
               }}
               disabled={isSubmitting}
               className="w-full md:w-auto px-6 py-3.5 bg-red-600 text-white font-bold rounded-lg shadow-sm hover:bg-red-700 flex items-center justify-center gap-2 transition-colors text-sm disabled:opacity-70 disabled:cursor-not-allowed"
@@ -329,9 +325,56 @@ export default function SubmitDisbursementPage() {
               <ShieldAlert className="w-5 h-5" />
               {isSubmitting && isPanicAction ? "Membekukan..." : "Bekukan (Panic Button)"}
             </button>
+            <button
+              type="submit"
+              onClick={() => setIsPanicAction(false)}
+              disabled={isSubmitting}
+              className="w-full md:w-auto px-8 py-3.5 bg-blue-600 text-white font-bold rounded-lg shadow-sm hover:bg-blue-700 transition-colors uppercase tracking-wide text-sm disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isSubmitting && !isPanicAction ? "Memproses..." : (isEditing ? "Tanda Tangani & Kirim Revisi" : "Tanda Tangani & Ajukan")}
+            </button>
           </div>
         </form>
       </div>
+
+      {showPanicModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Konfirmasi Panic Button</h3>
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+              BAHAYA: Fitur ini akan mencatat transaksi ini lalu membekukannya secara permanen karena adanya indikasi intervensi. Lanjutkan?
+            </p>
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-3 mt-6">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowPanicModal(false);
+                  setIsPanicAction(false);
+                }}
+                disabled={isSubmitting}
+                className="px-6 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold w-full sm:w-auto"
+              >
+                Batal
+              </button>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  // Manually trigger form submit 
+                  const form = document.getElementById("disbursementForm") as HTMLFormElement;
+                  if(form) form.requestSubmit();
+                }}
+                disabled={isSubmitting}
+                className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold shadow-sm flex justify-center items-center gap-2 w-full sm:w-auto"
+              >
+                {isSubmitting ? "Membekukan..." : "Ya, Bekukan"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </RoleLayout>
   );
 }

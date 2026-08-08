@@ -170,7 +170,6 @@ export default function DisbursementDetailPage() {
                 <MapWidget 
                   latitude={data.geotagLat} 
                   longitude={data.geotagLng} 
-                  photoUrl={data.fotoUrl || "https://images.unsplash.com/photo-1541888086925-9276d418296a?q=80&w=600&auto=format&fit=crop"}
                   popupText={data.keterangan || "Lokasi Proyek"}
                 />
               </div>

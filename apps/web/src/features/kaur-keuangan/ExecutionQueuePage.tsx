@@ -23,6 +23,8 @@ export default function ExecutionQueuePage() {
   const [data, setData] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPanicking, setIsPanicking] = useState(false);
+  const [showPanicModal, setShowPanicModal] = useState(false);
+  const [panicRowId, setPanicRowId] = useState<string | null>(null);
   const [pajakList, setPajakList] = useState<{jenisPajak: string, nominal: string}[]>([]);
 
   const TAX_OPTIONS = ["PPN", "PPh 21", "PPh 22", "PPh 23", "Pajak Daerah", "Lainnya"];
@@ -74,19 +76,9 @@ export default function ExecutionQueuePage() {
               Eksekusi & Catat
             </button>
             <button 
-                onClick={async () => {
-                  if (confirm("BAHAYA: Fitur ini akan membekukan transaksi secara permanen karena adanya intervensi. Lanjutkan?")) {
-                    setIsPanicking(true);
-                    try {
-                      await apiClient.post(`/disbursements/${row.id}/reject-intervention`, { alasan: "Intervensi saat pencairan (Kaur Keuangan)" });
-                      toast.success('Transaksi BERHASIL DIBEKUKAN secara permanen!');
-                      fetchData();
-                    } catch (error) {
-                      toast.error('Gagal membekukan transaksi');
-                    } finally {
-                      setIsPanicking(false);
-                    }
-                  }
+                onClick={() => {
+                  setPanicRowId(row.id);
+                  setShowPanicModal(true);
                 }}
                 disabled={isPanicking}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-md text-xs font-bold transition-colors shadow-sm disabled:opacity-50"
@@ -270,6 +262,55 @@ export default function ExecutionQueuePage() {
                 className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Memproses...' : 'Konfirmasi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPanicModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <ShieldAlert className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Konfirmasi Panic Button</h3>
+            <p className="text-slate-600 text-sm mb-6 leading-relaxed">
+              BAHAYA: Fitur ini akan mencatat transaksi ini lalu membekukannya secara permanen karena adanya indikasi intervensi. Lanjutkan?
+            </p>
+            <div className="flex flex-col-reverse sm:flex-row justify-center gap-3 mt-6">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowPanicModal(false);
+                  setPanicRowId(null);
+                }}
+                disabled={isPanicking}
+                className="px-6 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold w-full sm:w-auto"
+              >
+                Batal
+              </button>
+              <button 
+                type="button"
+                onClick={async () => {
+                  if (!panicRowId) return;
+                  setIsPanicking(true);
+                  try {
+                    await apiClient.post(`/disbursements/${panicRowId}/reject-intervention`, { alasan: "Intervensi saat pencairan (Kaur Keuangan)" });
+                    toast.success('Transaksi BERHASIL DIBEKUKAN secara permanen!');
+                    fetchData();
+                    setShowPanicModal(false);
+                    setPanicRowId(null);
+                  } catch (error) {
+                    toast.error('Gagal membekukan transaksi');
+                  } finally {
+                    setIsPanicking(false);
+                  }
+                }}
+                disabled={isPanicking}
+                className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-bold shadow-sm flex justify-center items-center gap-2 w-full sm:w-auto"
+              >
+                {isPanicking ? "Membekukan..." : "Ya, Bekukan"}
               </button>
             </div>
           </div>
