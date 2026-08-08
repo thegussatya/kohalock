@@ -154,7 +154,7 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
     
     // Uji Bukti Program-Level (LPJ Keuangan & LPJ Desa)
     doc.moveDown(1);
-    doc.fontSize(12).font('Helvetica-Bold').fillColor('#1e3a8a').text('Hasil Uji Integritas Dokumen Tingkat Program (Otomatis):');
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#1e3a8a').text('Hasil Uji Integritas Dokumen Tingkat Program (Otomatis Sistem):');
     doc.fontSize(10).font('Helvetica').fillColor('#334155');
     
     const statusLpjKeuangan = verifyFileHash(proposal.lpjKeuanganUrl, proposal.lpjKeuanganHash);
@@ -193,7 +193,7 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
       doc.moveTo(65, startY + 115).lineTo(530, startY + 115).lineWidth(1).strokeColor('#e2e8f0').stroke();
 
       // Uji Bukti Disbursement-Level
-      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Hasil Uji Integritas Dokumen Pencairan:', 65, startY + 125);
+      doc.fontSize(11).font('Helvetica-Bold').fillColor('#1e293b').text('Hasil Uji Integritas Dokumen Pencairan (Otomatis Sistem):', 65, startY + 125);
       doc.font('Helvetica').fontSize(10);
       
       const statusBA = verifyFileHash(item.beritaAcaraUrl, item.beritaAcaraHash);
