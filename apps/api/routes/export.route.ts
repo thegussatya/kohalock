@@ -259,4 +259,60 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
   }
 });
 
+// GET /export/realization
+router.get('/realization', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const disbursements = await prisma.disbursement.findMany({
+      where: { status: 'DISBURSED' },
+      include: { proposal: true }
+    });
+    
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="laporan_realisasi.pdf"');
+    doc.pipe(res);
+
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#0f172a').text('LAPORAN REALISASI ANGGARAN', { align: 'center' });
+    doc.moveDown(2);
+    
+    let total = 0n;
+    disbursements.forEach((d, i) => {
+      doc.fontSize(12).font('Helvetica-Bold').text(`${i + 1}. ${d.proposal.judulUsulan}`);
+      doc.fontSize(10).font('Helvetica').text(`Nominal: Rp ${d.nominal.toString()}`);
+      doc.text(`Tanggal Eksekusi: ${d.disbursedAt ? new Date(d.disbursedAt).toLocaleDateString('id-ID') : '-'}`);
+      doc.moveDown(1);
+      total += d.nominal;
+    });
+
+    doc.moveDown(2);
+    doc.fontSize(14).font('Helvetica-Bold').text(`Total Realisasi: Rp ${total.toString()}`, { align: 'right' });
+    
+    doc.end();
+  } catch (error: any) {
+    console.error('Error generating realization report:', error);
+    if (!res.headersSent) res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /export/lpj
+router.get('/lpj', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="dokumen_lpj.pdf"');
+    doc.pipe(res);
+
+    doc.fontSize(20).font('Helvetica-Bold').fillColor('#0f172a').text('LEMBAR PERTANGGUNGJAWABAN (LPJ)', { align: 'center' });
+    doc.fontSize(12).font('Helvetica').text('Dokumen ini digenerate secara otomatis oleh sistem KohaLock.', { align: 'center' });
+    doc.moveDown(3);
+    
+    doc.fontSize(12).font('Helvetica').text('Detail pelaporan akan diisi di sini berdasarkan format LPJ desa yang berlaku. Modul LPJ akan mengambil data seluruh transaksi bulan berjalan beserta bukti upload berita acara masing-masing pencairan.');
+
+    doc.end();
+  } catch (error: any) {
+    console.error('Error generating LPJ:', error);
+    if (!res.headersSent) res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 export default router;
