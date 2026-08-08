@@ -4,7 +4,7 @@ import PageHeader from '../../components/PageHeader';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 import { toast } from 'react-hot-toast';
-import { Upload, CheckCircle2, FileText, Search } from 'lucide-react';
+import { Upload, CheckCircle2, FileText, Search, Lock } from 'lucide-react';
 import PinModal from '../../components/PinModal';
 import Badge from '../../components/Badge';
 
