@@ -19,6 +19,7 @@ export default function ReviewSubmissionPage() {
   
   const [showPinModal, setShowPinModal] = useState(false);
   const [pin, setPin] = useState('');
+  const [pinActionType, setPinActionType] = useState<'VERIFY' | 'RETURN_REVISION' | null>(null);
   const [showRevisiModal, setShowRevisiModal] = useState(false);
   const [showPanicModal, setShowPanicModal] = useState(false);
   const [data, setData] = useState<any>(null);
@@ -150,7 +151,10 @@ export default function ReviewSubmissionPage() {
           </button>
           <button
             type="button"
-            onClick={() => setShowPinModal(true)}
+            onClick={() => {
+              setPinActionType('VERIFY');
+              setShowPinModal(true);
+            }}
             className="px-8 py-3.5 bg-green-600 text-white font-bold rounded-lg shadow-sm hover:bg-green-700 transition-all text-sm uppercase tracking-wide flex-grow sm:flex-grow-0"
           >
             Verifikasi & Teruskan ke Kades
@@ -176,13 +180,19 @@ export default function ReviewSubmissionPage() {
         description="Masukkan 6 digit PIN rahasia Anda untuk memberikan persetujuan (approval) yang akan dicatat permanen ke dalam sistem."
         onConfirm={async (pin) => {
           try {
-            await apiClient.post(`/disbursements/${id}/verify`, { pin });
+            if (pinActionType === 'VERIFY') {
+              await apiClient.post(`/disbursements/${id}/verify`, { pin });
+              toast.success("Berhasil diverifikasi & diteruskan ke Kades");
+            } else if (pinActionType === 'RETURN_REVISION') {
+              await apiClient.post(`/disbursements/${id}/return-revision`, { catatan: catatanRevisi, pin });
+              toast("Pengajuan dikembalikan untuk revisi", {icon: '↩️'});
+            }
             setShowPinModal(false);
             setPin('');
-            toast.success("Berhasil diverifikasi & diteruskan ke Kades");
+            setPinActionType(null);
             navigate("/sekdes/verifikasi");
           } catch (error: any) {
-            toast.error(error.response?.data?.error || "Gagal melakukan verifikasi");
+            toast.error(error.response?.data?.error || "Gagal memproses transaksi");
           }
         }}
       />
@@ -254,19 +264,14 @@ export default function ReviewSubmissionPage() {
               </button>
               <button 
                 type="button"
-                onClick={async () => {
+                onClick={() => {
                   if (!catatanRevisi.trim()) {
                     toast.error("Catatan revisi tidak boleh kosong");
                     return;
                   }
-                  try {
-                    await apiClient.post(`/disbursements/${id}/return-revision`, { catatan: catatanRevisi });
-                    setShowRevisiModal(false);
-                    toast("Pengajuan dikembalikan untuk revisi", {icon: '↩️'});
-                    navigate("/sekdes/verifikasi");
-                  } catch (error: any) {
-                    toast.error(error.response?.data?.error || "Gagal mengembalikan pengajuan");
-                  }
+                  setShowRevisiModal(false);
+                  setPinActionType('RETURN_REVISION');
+                  setShowPinModal(true);
                 }}
                 className="px-5 py-2.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-bold shadow-sm"
               >
