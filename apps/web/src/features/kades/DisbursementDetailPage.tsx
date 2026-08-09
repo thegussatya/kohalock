@@ -7,10 +7,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import RoleLayout from '../../components/RoleLayout';
 import Badge from '../../components/Badge';
 import MapWidget from '../../components/MapWidget';
-import HashCheckerBadge from '../../components/HashCheckerBadge';
 import { KADES_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
+import PinModal from '../../components/PinModal';
 
 export default function DisbursementDetailPage() {
   const { id } = useParams();
@@ -18,6 +18,7 @@ export default function DisbursementDetailPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showRejectPinModal, setShowRejectPinModal] = useState(false);
   const [rejectAlasan, setRejectAlasan] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
@@ -84,12 +85,13 @@ export default function DisbursementDetailPage() {
     }
   };
 
-  const handleLockTransaction = async () => {
+  const handleRejectWithPin = async (pin: string) => {
     if (!id) return;
     setIsRejecting(true);
     try {
       const res = await apiClient.post(`/disbursements/${id}/reject-intervention`, {
         alasan: rejectAlasan || 'Intervensi non-prosedural (darurat)',
+        pin,
       });
 
       if (res.data?.log?.id) {
@@ -97,6 +99,7 @@ export default function DisbursementDetailPage() {
       }
       
       toast.success('Intervensi berhasil ditolak & dicatat permanen di Blockchain');
+      setShowRejectPinModal(false);
       setShowRejectModal(false);
       await fetchDisbursementData();
       await fetchInterventionLog();
@@ -309,56 +312,27 @@ export default function DisbursementDetailPage() {
       )}
 
       {/* PIN Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Otorisasi Eksekutif</h3>
-            <p className="text-slate-600 text-sm mb-6">
-              Masukkan 6 digit PIN untuk menandatangani persetujuan ini dan mencatatnya ke Blockchain.
-            </p>
-            
-            <div className="flex justify-center gap-2 mb-8">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="w-10 h-12 border-2 border-slate-300 rounded-lg flex items-center justify-center text-xl font-bold text-slate-900 bg-slate-50">
-                  •
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-3 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold"
-              >
-                Batal
-              </button>
-              <button
-                disabled={isSubmitting}
-                onClick={async () => {
-                  if (isSubmitting) return;
-                  setIsSubmitting(true);
-                  try {
-                    await apiClient.post(`/disbursements/${id}/authorize`);
-                    setShowModal(false);
-                    toast.success("Berhasil diotorisasi & diteruskan ke Kaur Keuangan untuk eksekusi");
-                    navigate("/kades/persetujuan-pencairan");
-                  } catch (error: any) {
-                    toast.error(error.response?.data?.error || "Gagal melakukan otorisasi");
-                  } finally {
-                    setIsSubmitting(false);
-                  }
-                }}
-                className="flex-1 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Memproses...' : 'Tanda Tangani'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PinModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Otorisasi Eksekutif"
+        description="Masukkan 6 digit PIN kredensial Anda untuk menandatangani persetujuan ini dan mencatatnya ke Blockchain."
+        onConfirm={async (pin) => {
+          if (isSubmitting) return;
+          setIsSubmitting(true);
+          try {
+            await apiClient.post(`/disbursements/${id}/authorize`, { pin });
+            setShowModal(false);
+            toast.success("Berhasil diotorisasi & diteruskan ke Kaur Keuangan untuk eksekusi");
+            navigate("/kades/persetujuan-pencairan");
+          } catch (error: any) {
+            toast.error(error.response?.data?.error || "Gagal melakukan otorisasi");
+          } finally {
+            setIsSubmitting(false);
+          }
+        }}
+        isLoading={isSubmitting}
+      />
 
       {/* Modal Konfirmasi Tolak Intervensi Non-Prosedural */}
       {showRejectModal && (
@@ -403,7 +377,7 @@ export default function DisbursementDetailPage() {
               </button>
               <button
                 type="button"
-                onClick={handleLockTransaction}
+                onClick={() => setShowRejectPinModal(true)}
                 disabled={isRejecting}
                 className="px-6 py-3 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-colors font-bold shadow-md w-full sm:w-auto border-b-2 border-rose-800 disabled:opacity-50 text-sm flex items-center justify-center gap-2"
               >
@@ -413,6 +387,16 @@ export default function DisbursementDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Reject PIN Modal */}
+      <PinModal
+        isOpen={showRejectPinModal}
+        onClose={() => setShowRejectPinModal(false)}
+        title="Otorisasi Penolakan"
+        description="Masukkan 6 digit PIN kredensial Anda untuk menandatangani penolakan intervensi ini."
+        onConfirm={handleRejectWithPin}
+        isLoading={isRejecting}
+      />
     </RoleLayout>
   );
 }

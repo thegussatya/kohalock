@@ -148,6 +148,13 @@ router.get('/sekdes', authenticate, async (req: AuthRequest, res: Response): Pro
       where: { status: 'PENDING_SEKDES' }
     });
 
+    const delayedCount = await prisma.disbursement.count({
+      where: {
+        status: 'PENDING_SEKDES',
+        submittedAt: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }
+      }
+    });
+
     const verifiedDisbursements = await prisma.disbursement.findMany({
       where: { sekdesVerifierId: userId, verifiedAt: { not: null } }
     });
@@ -181,6 +188,7 @@ router.get('/sekdes', authenticate, async (req: AuthRequest, res: Response): Pro
 
     res.json(serialize({
       pendingCount,
+      delayedCount,
       avgVerificationDays,
       approvalRate,
       approvedAmountMonth,

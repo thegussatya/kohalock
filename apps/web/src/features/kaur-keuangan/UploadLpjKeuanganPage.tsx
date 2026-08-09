@@ -44,10 +44,10 @@ export default function UploadLpjKeuanganPage() {
     setUploading(proposalId);
     try {
       const formData = new FormData();
-      if (file) formData.append('file', file);
+      if (file) formData.append('lpjKeuangan', file);
       formData.append('pin', pin);
 
-      await apiClient.post(`/lpj/keuangan/${proposalId}`, formData, {
+      await apiClient.post(`/proposals/${proposalId}/lpj-keuangan`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       

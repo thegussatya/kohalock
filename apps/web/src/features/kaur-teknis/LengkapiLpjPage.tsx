@@ -168,7 +168,7 @@ export default function LengkapiLpjPage() {
       if (file) formData.append('file', file);
       formData.append('pin', pin);
 
-      const res = await apiClient.post(`/lpj/${disbursementId}/lock`, formData);
+      const res = await apiClient.post(`/disbursements/${disbursementId}/lpj`, formData);
       
       toast.success('LPJ Permanen Terkunci di Blockchain!');
       setLpjStatus('LOCKED_ONCHAIN');

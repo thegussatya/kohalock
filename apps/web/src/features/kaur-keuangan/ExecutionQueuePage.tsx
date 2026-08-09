@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../../lib/apiClient';
 import RoleLayout from '../../components/RoleLayout';
+import PinModal from '../../components/PinModal';
 import PageHeader from '../../components/PageHeader';
 import DataTable, { type TableColumn } from '../../components/DataTable';
 import { KAUR_KEUANGAN_MENU } from './menu';
@@ -186,7 +187,7 @@ export default function ExecutionQueuePage() {
               {pajakList.length > 0 && (
                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mt-4 text-xs text-blue-800">
                   <strong className="block mb-1">Informasi:</strong>
-                  Kas keluar tetap dicatat penuh sesuai tagihan. Pajak akan dicatat terpisah ke dalam Buku Pajak. Total pajak: <strong>Rp {pajakList.reduce((acc, curr) => acc + (Number(curr.nominal.replace(/\\D/g, '')) || 0), 0).toLocaleString('id-ID')}</strong>.
+                  Kas keluar tetap dicatat penuh sesuai tagihan. Pajak akan dicatat terpisah ke dalam Buku Pajak. Total pajak: <strong>Rp {pajakList.reduce((acc, curr) => acc + (Number(curr.nominal.replace(/\D/g, '')) || 0), 0).toLocaleString('id-ID')}</strong>.
                 </div>
               )}
             </div>
@@ -212,61 +213,33 @@ export default function ExecutionQueuePage() {
       )}
 
       {/* PIN Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
-            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Otorisasi PIN</h3>
-            <p className="text-slate-600 text-sm mb-6">
-              Masukkan 6 digit PIN Anda untuk mengeksekusi dan mencatat transaksi ke Buku Kas Umum.
-            </p>
-            
-            <div className="flex justify-center gap-2 mb-8">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="w-10 h-12 border-2 border-slate-300 rounded-lg flex items-center justify-center text-xl font-bold text-slate-900 bg-slate-50">
-                  •
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-3 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold"
-              >
-                Batal
-              </button>
-              <button
-                disabled={isSubmitting}
-                onClick={async () => {
-                  if (isSubmitting || !selectedTx) return;
-                  setIsSubmitting(true);
-                  try {
-                    await apiClient.post(`/disbursements/${selectedTx.id}/execute`, {
-                      pajak: pajakList.filter(p => p.jenisPajak && p.nominal).map(p => ({
-                        jenisPajak: p.jenisPajak,
-                        nominal: Number(p.nominal.replace(/\./g, ''))
-                      }))
-                    });
-                    setShowModal(false);
-                    toast.success("Dana berhasil dieksekusi & otomatis tercatat ke Buku Kas Umum");
-                    fetchData();
-                  } catch (error: any) {
-                    toast.error(error.response?.data?.error || "Gagal melakukan eksekusi");
-                  } finally {
-                    setIsSubmitting(false);
-                  }
-                }}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-bold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Memproses...' : 'Konfirmasi'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PinModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        title="Otorisasi Eksekusi"
+        description="Masukkan 6 digit PIN Anda untuk mengeksekusi dan mencatat transaksi ke Buku Kas Umum."
+        onConfirm={async (pin) => {
+          if (isSubmitting || !selectedTx) return;
+          setIsSubmitting(true);
+          try {
+            await apiClient.post(`/disbursements/${selectedTx.id}/execute`, {
+              pin,
+              pajak: pajakList.filter(p => p.jenisPajak && p.nominal).map(p => ({
+                jenisPajak: p.jenisPajak,
+                nominal: Number(p.nominal.replace(/\./g, ''))
+              }))
+            });
+            setShowModal(false);
+            toast.success("Dana berhasil dieksekusi & otomatis tercatat ke Buku Kas Umum");
+            fetchData();
+          } catch (error: any) {
+            toast.error(error.response?.data?.error || "Gagal melakukan eksekusi");
+          } finally {
+            setIsSubmitting(false);
+          }
+        }}
+        isLoading={isSubmitting}
+      />
 
       {showPanicModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">

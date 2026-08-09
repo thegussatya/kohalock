@@ -29,3 +29,49 @@ Folder ini berisi seluruh dokumen perencanaan proyek **KOHALOCK** (Sistem Transp
 - **Off-chain untuk UX, on-chain untuk kebenaran.** Semua yang butuh dibuktikan tidak bisa diubah (hash dokumen, status pencairan, tanda tangan digital) → smart contract. Semua yang butuh fleksibel/cepat query (chat, dashboard, notifikasi) → Postgres.
 - **6 role = 6 permission set, bukan 6 aplikasi.** Satu codebase React, routing & UI berbeda per role berdasarkan RBAC.
 - **Custodial key management.** PIN pengguna ≠ private key blockchain secara langsung — PIN dipakai untuk decrypt private key yang disimpan terenkripsi di backend.
+
+## Panduan Menjalankan Project di Local (Development)
+
+Proyek ini menggunakan arsitektur *monorepo* dengan `pnpm`. Untuk menjalankan seluruh ekosistem (Frontend, Backend, dan Blockchain) di komputer lokal, ikuti langkah-langkah berikut:
+
+### 1. Persiapan Database
+Pastikan Anda sudah memiliki PostgreSQL yang berjalan.
+1. Masuk ke folder backend: `cd apps/api`
+2. Buat file `.env` (copy dari `.env.example` jika ada) dan isi `DATABASE_URL` dengan koneksi Postgres Anda.
+3. Jalankan migrasi/push schema: `npx prisma db push`
+4. Masukkan data awal (akun dummy untuk tiap role): `npx prisma db seed`
+
+### 2. Menjalankan Jaringan Blockchain Lokal (Hardhat)
+Buka **Terminal 1** khusus untuk menjalankan node blockchain:
+```bash
+cd packages/contracts
+npx hardhat node
+```
+*(Biarkan terminal ini tetap terbuka dan berjalan)*
+
+### 3. Deploy Smart Contract ke Jaringan Lokal
+Buka **Terminal 2**, lalu lakukan deploy kontrak dan salin ABI ke backend:
+```bash
+cd packages/contracts
+npx hardhat run scripts/deploy.ts --network localhost
+npm run copy-abi
+```
+Setelah berhasil, catat `Contract Address` yang muncul, lalu masukkan ke dalam file `.env` di backend (`apps/api`) jika diperlukan (misalnya variabel `CONTRACT_ADDRESS`).
+
+### 4. Menjalankan Backend (API)
+Masih di **Terminal 2** (atau terminal baru):
+```bash
+cd apps/api
+pnpm dev
+```
+*(Backend biasanya berjalan di `http://localhost:3000` atau port yang diset di .env)*
+
+### 5. Menjalankan Frontend (Web)
+Buka **Terminal 3**:
+```bash
+cd apps/web
+pnpm dev
+```
+*(Buka URL yang muncul, biasanya `http://localhost:5173`, di browser Anda)*
+
+**Catatan:** Pastikan alamat API di frontend (`apps/web/.env` atau `apiClient.ts`) sudah mengarah ke localhost backend Anda.

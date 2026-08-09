@@ -31,10 +31,10 @@ export default function LaporanDesaPage() {
       const formData = new FormData();
       formData.append('tahun', tahun);
       formData.append('semester', semester);
-      if (file) formData.append('file', file);
+      if (file) formData.append('lpjDesa', file);
       formData.append('pin', pin);
 
-      const res = await apiClient.post('/lpj/desa', formData, {
+      await apiClient.post('/reports/lpj-desa', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       

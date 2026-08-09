@@ -1,7 +1,10 @@
 import { Wallet, Contract, ContractTransactionReceipt } from 'ethers';
 import { provider } from './blockchain.service';
 import * as DanaDesaLedger from '../config/DanaDesaLedger.json';
+import { decryptPrivateKey } from './crypto.service';
+import { PrismaClient } from '../../generated/prisma';
 
+const prisma = new PrismaClient();
 /**
  * Executes a transaction on the DanaDesaLedger contract.
  * @param userPrivateKey The private key of the user executing the transaction.
@@ -40,4 +43,25 @@ export async function executeContractTx(
   const receipt = await tx.wait();
   
   return receipt;
+}
+
+/**
+ * Convenience function to look up a user, decrypt their private key using their PIN,
+ * and execute a transaction.
+ */
+export async function executeAsUser(
+  userId: string,
+  pin: string,
+  functionName: string,
+  args: any[] = []
+): Promise<ContractTransactionReceipt | null> {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.encryptedPrivateKey) {
+    throw new Error('User wallet not found or not initialized');
+  }
+
+  // This will throw if PIN is incorrect
+  const privateKey = decryptPrivateKey(user.encryptedPrivateKey, pin);
+
+  return executeContractTx(privateKey, functionName, args);
 }

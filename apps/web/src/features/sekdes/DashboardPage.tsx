@@ -33,29 +33,32 @@ export default function DashboardPage() {
   const avgVerificationDays = data?.avgVerificationDays || "0 Hari";
   const approvalRate = data?.approvalRate || "N/A";
   const chartData = data?.chartData || [];
+  const delayedCount = data?.delayedCount || 0;
 
   return (
     <RoleLayout menuItems={SEKDES_MENU} userName="Siti Rahma" userRole="Sekretaris Desa">
       <PageHeader title="Dashboard Sekdes" description="Selamat datang di dashboard panel untuk Sekretaris Desa." />
 
       {/* Deadline Notification */}
-      <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="bg-amber-100 p-2 rounded-xl mt-0.5 sm:mt-0">
-            <AlertTriangle className="w-6 h-6 text-amber-600" />
+      {delayedCount > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="bg-amber-100 p-2 rounded-xl mt-0.5 sm:mt-0">
+              <AlertTriangle className="w-6 h-6 text-amber-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-amber-900 text-base">Tindakan Diperlukan</h4>
+              <p className="text-sm text-amber-800 mt-0.5">{delayedCount} pengajuan sudah menunggu lebih dari 3 hari, segera ditinjau.</p>
+            </div>
           </div>
-          <div>
-            <h4 className="font-bold text-amber-900 text-base">Tindakan Diperlukan</h4>
-            <p className="text-sm text-amber-800 mt-0.5">3 pengajuan sudah menunggu lebih dari 3 hari, segera ditinjau.</p>
-          </div>
+          <button 
+            onClick={() => navigate('/sekdes/verifikasi')}
+            className="whitespace-nowrap px-5 py-2 text-sm font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 rounded-xl transition-colors w-full sm:w-auto shadow-sm"
+          >
+            Lihat Sekarang
+          </button>
         </div>
-        <button 
-          onClick={() => navigate('/sekdes/verifikasi')}
-          className="whitespace-nowrap px-5 py-2 text-sm font-bold text-amber-900 bg-amber-200 hover:bg-amber-300 rounded-xl transition-colors w-full sm:w-auto shadow-sm"
-        >
-          Lihat Sekarang
-        </button>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div onClick={() => navigate('/sekdes/verifikasi')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">

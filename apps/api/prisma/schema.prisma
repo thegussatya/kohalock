@@ -20,8 +20,10 @@ model User {
   role         String
   email        String?  @unique
   passwordHash String?
-  jabatan      String?
-  createdAt    DateTime @default(now())
+  jabatan             String?
+  walletAddress       String?
+  encryptedPrivateKey String?
+  createdAt           DateTime @default(now())
 
   proposals            Proposal[]
   sekdesVerifications  Disbursement[]          @relation("SekdesVerification")

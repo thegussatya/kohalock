@@ -50,13 +50,13 @@ export default function PinModal({
         <div className="relative w-full max-w-[240px] mb-8">
           <input 
             ref={inputRef}
-            type="password" 
+            type="password"
+            autoComplete="new-password"
             maxLength={6}
             value={pin}
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
             disabled={isLoading}
-            className="w-full text-center tracking-[1em] text-3xl p-4 border border-slate-300 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-600 outline-none transition-all font-mono disabled:opacity-50"
-            placeholder="••••••"
+            className="w-full text-center tracking-[1em] text-3xl p-4 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono"
           />
         </div>
 

@@ -3,12 +3,16 @@ import { PrismaClient } from '../generated/prisma';
 import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 import { createNotification } from '../lib/notify';
 import { recalculateCashBookBalances, recalculateBankBookBalances } from '../src/utils/ledger.util';
+import { executeAsUser } from '../src/services/signer.service';
+import { id as ethersId, Interface } from 'ethers';
+import * as DanaDesaLedger from '../src/config/DanaDesaLedger.json';
 import multer from 'multer';
 import crypto from 'crypto';
 
 const router = Router();
 const prisma = new PrismaClient();
 import path from 'path';
+import fs from 'fs';
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -31,7 +35,7 @@ function serialize(obj: any): any {
 }
 
 // GET /disbursements/sisa-pagu/:proposalId
-router.get('/sisa-pagu/:proposalId', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/sisa-pagu/:proposalId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const proposalId = req.params.proposalId as string;
 
@@ -64,9 +68,13 @@ router.get('/sisa-pagu/:proposalId', authenticate, async (req: AuthRequest, res:
 });
 
 // POST /disbursements
-router.post('/', authenticate, upload.fields([{ name: 'beritaAcara', maxCount: 1 }, { name: 'foto', maxCount: 1 }]), async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/', authenticate, upload.fields([{ name: 'beritaAcara', maxCount: 1 }, { name: 'foto', maxCount: 1 }]), async (req: AuthRequest, res: Response) => {
   try {
-    const { proposalId, keterangan, nominal, geotagLat, geotagLng } = req.body;
+    const { proposalId, keterangan, nominal, geotagLat, geotagLng, pin } = req.body;
+
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN otorisasi wajib diisi' });
+    }
 
 
     const proposal = await prisma.proposal.findUnique({
@@ -117,6 +125,36 @@ router.post('/', authenticate, upload.fields([{ name: 'beritaAcara', maxCount: 1
       beritaAcaraHash = '0x' + crypto.createHash('sha256').update(fileBuffer).digest('hex');
     }
 
+    const reqGeotag = `${geotagLat},${geotagLng}`;
+    const bytes32Hash = beritaAcaraHash.startsWith('0x') && beritaAcaraHash.length === 66 ? beritaAcaraHash : ethersId(beritaAcaraHash || 'dummy');
+
+    // 1. Panggil Smart Contract
+    let receipt;
+    try {
+      receipt = await executeAsUser(req.user.userId, pin, 'submitDisbursement', [
+        proposal.onChainId,
+        reqNominal.toString(), // ethers can handle string for uint256
+        bytes32Hash,
+        reqGeotag
+      ]);
+    } catch (err: any) {
+      console.error('Smart contract error:', err);
+      return res.status(400).json({ error: 'Gagal mencatat ke blockchain. Periksa PIN atau koneksi.', details: err.message });
+    }
+
+    let onChainId = Math.floor(Math.random() * 1000000);
+    if (receipt) {
+       const iface = new Interface((DanaDesaLedger as any).abi || DanaDesaLedger.abi);
+       for (const log of receipt.logs) {
+         try {
+           const parsed = iface.parseLog({ topics: [...log.topics], data: log.data });
+           if (parsed?.name === 'DisbursementSubmitted') {
+             onChainId = Number(parsed.args[0]); // args.disbursementId
+           }
+         } catch (e) {}
+       }
+    }
+
     const disbursement = await prisma.disbursement.create({
       data: {
         proposalId,
@@ -126,7 +164,7 @@ router.post('/', authenticate, upload.fields([{ name: 'beritaAcara', maxCount: 1
         geotagLng: Number(geotagLng),
         geotagTimestamp: new Date(),
         status: 'PENDING_SEKDES',
-        onChainId: Math.floor(Math.random() * 1000000), // Dummy
+        onChainId: onChainId,
         beritaAcaraUrl,
         beritaAcaraHash,
         fotoUrl,
@@ -156,7 +194,7 @@ router.post('/', authenticate, upload.fields([{ name: 'beritaAcara', maxCount: 1
 });
 
 // PUT /disbursements/:id
-router.put('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.put('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
     const { keterangan, nominal, geotagLat, geotagLng } = req.body;
@@ -235,13 +273,19 @@ router.put('/:id', authenticate, async (req: AuthRequest, res: Response): Promis
 });
 
 // POST /disbursements/:id/lpj
-router.post('/:id/lpj', authenticate, upload.single('file'), async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/:id/lpj', authenticate, upload.single('file'), async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
+    const { pin, items } = req.body;
+    const file = req.file;
 
-    if (!req.file) {
+    if (!file) {
       res.status(400).json({ error: 'File tidak ditemukan' });
       return;
+    }
+
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN otorisasi wajib diisi' });
     }
 
     const disbursement = await prisma.disbursement.findUnique({
@@ -258,13 +302,57 @@ router.post('/:id/lpj', authenticate, upload.single('file'), async (req: AuthReq
       return;
     }
 
-    const fileUrl = `http://localhost:3000/uploads/${req.file.filename}`;
-
-    const updated = await prisma.disbursement.update({
-      where: { id },
-      data: {
-        lpjTeknisUrl: fileUrl
+    let parsedItems: any[] = [];
+    if (items) {
+      try {
+        parsedItems = JSON.parse(items);
+      } catch (e) {
+        return res.status(400).json({ error: 'Format items tidak valid' });
       }
+    }
+
+    let totalAmount = 0n;
+    for (const item of parsedItems) {
+      totalAmount += BigInt(item.hargaSatuan || 0) * BigInt(item.volume || 1);
+    }
+
+    const fileUrl = `/uploads/${file.filename}`;
+    
+    // Hash file content
+    const fileBuffer = fs.readFileSync(file.path);
+    const hashSum = crypto.createHash('sha256');
+    hashSum.update(fileBuffer);
+    const lpjHash = '0x' + hashSum.digest('hex');
+
+    // Eksekusi on-chain
+    try {
+      await executeAsUser(req.user.userId, pin, 'submitLpjTeknis', [disbursement.onChainId, totalAmount, lpjHash]);
+    } catch (err: any) {
+      console.error('Smart contract error:', err);
+      return res.status(400).json({ error: 'Gagal mencatat LPJ di blockchain.', details: err.message });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      for (const item of parsedItems) {
+        await tx.lpjItem.create({
+          data: {
+            disbursementId: id,
+            uraian: item.uraian,
+            volume: parseFloat(item.volume) || 1,
+            satuan: item.satuan,
+            hargaSatuan: BigInt(item.hargaSatuan || 0),
+            totalHarga: BigInt(item.hargaSatuan || 0) * BigInt(item.volume || 1)
+          }
+        });
+      }
+
+      return await tx.disbursement.update({
+        where: { id },
+        data: {
+          lpjTeknisUrl: fileUrl,
+          lpjTeknisHash: lpjHash,
+        }
+      });
     });
 
     res.json(serialize(updated));
@@ -275,7 +363,7 @@ router.post('/:id/lpj', authenticate, upload.single('file'), async (req: AuthReq
 });
 
 // GET /disbursements
-router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { status } = req.query;
 
@@ -308,7 +396,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response): Promise<v
 });
 
 // GET /disbursements/rejections
-router.get('/rejections', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/rejections', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const rejectionLogs = await prisma.rejectionLog.findMany({
       include: {
@@ -363,7 +451,7 @@ router.get('/rejections', authenticate, async (req: AuthRequest, res: Response):
 });
 
 // GET /disbursements/execution-queue
-router.get('/execution-queue', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/execution-queue', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const disbursements = await prisma.disbursement.findMany({
       where: { status: 'PENDING_EKSEKUSI' },
@@ -386,9 +474,30 @@ router.get('/execution-queue', authenticate, async (req: AuthRequest, res: Respo
 
 
 // POST /disbursements/:id/verify
-router.post('/:id/verify', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/:id/verify', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
+    const { pin } = req.body;
+
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN otorisasi wajib diisi' });
+    }
+
+    const disbursement = await prisma.disbursement.findUnique({
+      where: { id }
+    });
+
+    if (!disbursement) {
+      return res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+    }
+
+    // Eksekusi on-chain
+    try {
+      await executeAsUser(req.user.userId, pin, 'verifyBySekdes', [disbursement.onChainId]);
+    } catch (err: any) {
+      console.error('Smart contract error:', err);
+      return res.status(400).json({ error: 'Gagal verifikasi di blockchain.', details: err.message });
+    }
     
     const updated = await prisma.disbursement.update({
       where: { id },
@@ -423,7 +532,7 @@ router.post('/:id/verify', authenticate, async (req: AuthRequest, res: Response)
 });
 
 // GET /disbursements/verifications
-router.get('/verifications', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/verifications', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const sekdesId = req.user?.userId;
     
@@ -465,7 +574,7 @@ router.get('/verifications', authenticate, async (req: AuthRequest, res: Respons
 });
 
 // GET /disbursements/authorizations
-router.get('/authorizations', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/authorizations', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const kadesId = req.user?.userId;
     
@@ -495,7 +604,7 @@ router.get('/authorizations', authenticate, async (req: AuthRequest, res: Respon
 });
 
 // GET /disbursements/:id
-router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
     const disbursement = await prisma.disbursement.findUnique({
@@ -524,15 +633,32 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promis
 });
 
 // POST /disbursements/:id/return-revision
-router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { catatan } = req.body;
+    const { catatan, pin } = req.body;
     const sekdesId = req.user?.userId;
 
     if (!sekdesId) {
       res.status(401).json({ error: 'Unauthorized' });
       return;
+    }
+
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN otorisasi wajib diisi' });
+    }
+
+    const disbursement = await prisma.disbursement.findUnique({ where: { id } });
+    if (!disbursement) {
+      return res.status(404).json({ error: 'Disbursement tidak ditemukan' });
+    }
+
+    // Eksekusi on-chain
+    try {
+      await executeAsUser(sekdesId, pin, 'returnForRevision', [disbursement.onChainId, catatan]);
+    } catch (err: any) {
+      console.error('Smart contract error:', err);
+      return res.status(400).json({ error: 'Gagal mencatat penolakan di blockchain.', details: err.message });
     }
 
     const updated = await prisma.disbursement.update({
@@ -574,11 +700,15 @@ router.post('/:id/return-revision', authenticate, async (req: AuthRequest, res: 
 });
 
 // POST /disbursements/:id/reject-intervention
-router.post('/:id/reject-intervention', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/:id/reject-intervention', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
-    const { alasan } = req.body;
+    const { alasan, pin } = req.body;
     
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN otorisasi wajib diisi untuk membekukan transaksi' });
+    }
+
     const disbursement = await prisma.disbursement.findUnique({
       where: { id }
     });
@@ -587,6 +717,12 @@ router.post('/:id/reject-intervention', authenticate, async (req: AuthRequest, r
       res.status(404).json({ error: 'Disbursement tidak ditemukan' });
       return;
     }
+
+    // Hash alasan
+    const reasonHash = ethersId(alasan || "Intervensi ditolak Kades");
+
+    // Eksekusi blockchain
+    const receipt = await executeAsUser(req.user.userId, pin, 'rejectIntervention', [disbursement.onChainId, reasonHash]);
 
     // Hanya bisa menolak intervensi yang sedang menunggu persetujuan (atau diizinkan kades)
     // Walaupun dalam kondisi darurat Kades bisa membekukan yang sudah dieksekusi, sesuai spec MVP kita bekukan yang PENDING.
@@ -603,7 +739,7 @@ router.post('/:id/reject-intervention', authenticate, async (req: AuthRequest, r
         data: {
           disbursementId: id,
           kadesId: req.user?.userId!,
-          txHash: `0xMOCK${Math.random().toString(16).substr(2, 8).toUpperCase()}`,
+          txHash: receipt?.hash || '',
         }
       });
 
@@ -618,9 +754,14 @@ router.post('/:id/reject-intervention', authenticate, async (req: AuthRequest, r
 });
 
 // POST /disbursements/:id/authorize
-router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
+    const { pin } = req.body;
+
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN otorisasi wajib diisi' });
+    }
     
     const disbursement = await prisma.disbursement.findUnique({
       where: { id }
@@ -634,6 +775,14 @@ router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Respon
     if (disbursement.status !== 'PENDING_KADES') {
       res.status(400).json({ error: 'Pengajuan tidak dalam status PENDING_KADES' });
       return;
+    }
+
+    // Eksekusi on-chain
+    try {
+      await executeAsUser(req.user.userId, pin, 'authorizeByKades', [disbursement.onChainId]);
+    } catch (err: any) {
+      console.error('Smart contract error:', err);
+      return res.status(400).json({ error: 'Gagal otorisasi di blockchain.', details: err.message });
     }
 
     const updated = await prisma.disbursement.update({
@@ -669,10 +818,15 @@ router.post('/:id/authorize', authenticate, async (req: AuthRequest, res: Respon
 });
 
 // POST /disbursements/:id/execute
-router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
+router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const id = req.params.id as string;
+    const { pin } = req.body;
     const potonganPajak = req.body.potonganPajak || req.body.pajak;
+
+    if (!pin) {
+      return res.status(400).json({ error: 'PIN otorisasi wajib diisi' });
+    }
     
     const disbursement = await prisma.disbursement.findUnique({
       where: { id },
@@ -687,6 +841,14 @@ router.post('/:id/execute', authenticate, async (req: AuthRequest, res: Response
     if (disbursement.status !== 'PENDING_EKSEKUSI') {
       res.status(400).json({ error: 'Pengajuan tidak dalam status PENDING_EKSEKUSI' });
       return;
+    }
+
+    // Eksekusi on-chain
+    try {
+      await executeAsUser(req.user.userId, pin, 'executeDisbursement', [disbursement.onChainId]);
+    } catch (err: any) {
+      console.error('Smart contract error:', err);
+      return res.status(400).json({ error: 'Gagal eksekusi pencairan di blockchain.', details: err.message });
     }
 
     const sekarang = new Date();

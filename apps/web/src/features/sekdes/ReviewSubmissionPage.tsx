@@ -3,8 +3,9 @@ import BackLink from '../../components/BackLink';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Download, ShieldAlert } from 'lucide-react';
+import { Download, ShieldAlert, FileText, CheckCircle, XCircle, MapPin, Eye } from 'lucide-react';
 import RoleLayout from '../../components/RoleLayout';
+import PinModal from '../../components/PinModal';
 import MapWidget from '../../components/MapWidget';
 import DocumentPreviewViewer from '../../components/DocumentPreviewViewer';
 import { SEKDES_MENU } from './menu';
@@ -165,50 +166,26 @@ export default function ReviewSubmissionPage() {
       )}
 
       {/* Modal PIN */}
-      {showPinModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Tanda Tangan Digital</h3>
-            <p className="text-sm text-slate-600 mb-8">
-              Masukkan 6 digit PIN rahasia Anda untuk memberikan persetujuan (approval) yang akan dicatat permanen ke dalam sistem.
-            </p>
-            <input 
-              type="password" 
-              maxLength={6}
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="w-full text-center tracking-[1em] text-3xl p-4 border border-slate-300 rounded-xl mb-8 focus:ring-4 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all font-mono"
-              placeholder="••••••"
-            />
-            <div className="flex justify-end gap-3">
-              <button 
-                type="button"
-                onClick={() => setShowPinModal(false)}
-                className="px-5 py-2.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-bold"
-              >
-                Batal
-              </button>
-              <button 
-                type="button"
-                onClick={async () => {
-                  try {
-                    await apiClient.post(`/disbursements/${id}/verify`, { pin });
-                    setShowPinModal(false);
-                    setPin('');
-                    toast.success("Berhasil diverifikasi & diteruskan ke Kades");
-                    navigate("/sekdes/verifikasi");
-                  } catch (error: any) {
-                    toast.error(error.response?.data?.error || "Gagal melakukan verifikasi");
-                  }
-                }}
-                className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-bold shadow-sm"
-              >
-                Konfirmasi
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setPin('');
+        }}
+        title="Tanda Tangan Digital"
+        description="Masukkan 6 digit PIN rahasia Anda untuk memberikan persetujuan (approval) yang akan dicatat permanen ke dalam sistem."
+        onConfirm={async (pin) => {
+          try {
+            await apiClient.post(`/disbursements/${id}/verify`, { pin });
+            setShowPinModal(false);
+            setPin('');
+            toast.success("Berhasil diverifikasi & diteruskan ke Kades");
+            navigate("/sekdes/verifikasi");
+          } catch (error: any) {
+            toast.error(error.response?.data?.error || "Gagal melakukan verifikasi");
+          }
+        }}
+      />
 
       {showPanicModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">

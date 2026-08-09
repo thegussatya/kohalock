@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import RoleLayout from '../../components/RoleLayout';
+import PinModal from '../../components/PinModal';
 import PageHeader from '../../components/PageHeader';
 import Badge from '../../components/Badge';
 import { KAUR_KEUANGAN_MENU } from './menu';
@@ -259,45 +260,31 @@ export default function MonthlyClosingPage() {
       )}
 
       {/* PIN Modal */}
-      {showPinModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white p-8 rounded-2xl w-full max-w-sm shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 text-center">
-            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 mb-2">Otorisasi PIN</h3>
-            <p className="text-slate-600 text-sm mb-6">
-              Masukkan 6 digit PIN Anda untuk memvalidasi penutupan buku.
-            </p>
-            
-            <input 
-              type="password" 
-              maxLength={6}
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              className="w-full text-center tracking-[1em] text-3xl p-4 border border-slate-300 rounded-xl mb-8 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all font-mono"
-              placeholder="••••••"
-            />
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setShowPinModal(false)}
-                className="flex-1 px-4 py-3 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors font-bold"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmPin}
-                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-bold shadow-sm"
-              >
-                Konfirmasi
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PinModal
+        isOpen={showPinModal}
+        onClose={() => {
+          setShowPinModal(false);
+          setPin('');
+        }}
+        title="Otorisasi PIN"
+        description="Masukkan 6 digit PIN Anda untuk memvalidasi penutupan buku."
+        onConfirm={async (pin) => {
+          try {
+            await apiClient.post('/monthly-closing/close', { 
+              bulan: closingBulan, 
+              tahun: closingTahun,
+              pin 
+            });
+            toast.success(`Buku Kas bulan ${closingBulan}/${closingTahun} berhasil ditutup!`);
+            fetchClosings();
+          } catch (error: any) {
+            toast.error(error.response?.data?.error || "Gagal menutup buku bulanan");
+          } finally {
+            setShowPinModal(false);
+            setPin('');
+          }
+        }}
+      />
     </RoleLayout>
   );
 }

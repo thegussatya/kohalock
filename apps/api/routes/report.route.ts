@@ -4,6 +4,22 @@ import { authenticate, AuthRequest } from '../middleware/auth.middleware';
 
 const router = Router();
 const prisma = new PrismaClient();
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+import { executeAsUser } from '../src/services/signer.service';
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '..', 'uploads'));
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
 
 function serialize(obj: any): any {
   return JSON.parse(
@@ -264,6 +280,54 @@ router.get('/lpj-details', authenticate, async (req: AuthRequest, res: Response)
   } catch (error: any) {
     console.error('Error fetching LPJ details:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/reports/lpj-desa (Kades)
+router.post('/lpj-desa', authenticate, upload.single('lpjDesa'), async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { tahun, semester, pin } = req.body;
+    const file = req.file;
+
+    if (!pin) {
+      res.status(400).json({ error: 'PIN diperlukan' });
+      return;
+    }
+    if (!file) {
+      res.status(400).json({ error: 'Dokumen LPJ Desa diperlukan' });
+      return;
+    }
+    if (!tahun || !semester) {
+      res.status(400).json({ error: 'Tahun dan semester diperlukan' });
+      return;
+    }
+
+    const fileUrl = `/uploads/${file.filename}`;
+    
+    // Hash file content
+    const fileBuffer = fs.readFileSync(file.path);
+    const hashSum = crypto.createHash('sha256');
+    hashSum.update(fileBuffer);
+    const lpjHash = '0x' + hashSum.digest('hex');
+
+    // Execute Smart Contract
+    await executeAsUser(req.user.userId, pin, 'submitLpjDesa', [parseInt(tahun), parseInt(semester), lpjHash]);
+
+    // Update DB
+    const laporan = await prisma.laporanRealisasiDesa.create({
+      data: {
+        tahun: parseInt(tahun),
+        semester: parseInt(semester),
+        dokumenUrl: fileUrl,
+        dokumenHash: lpjHash,
+        kadesId: req.user.userId!
+      }
+    });
+
+    res.json({ message: 'LPJ Desa berhasil disubmit ke blockchain', laporan: serialize(laporan) });
+  } catch (error: any) {
+    console.error('Error submitting LPJ Desa:', error);
+    res.status(500).json({ error: error.message || 'Gagal submit LPJ Desa' });
   }
 });
 

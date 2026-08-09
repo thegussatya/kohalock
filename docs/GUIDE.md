@@ -694,6 +694,65 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 ---
 
+### Skenario 7: Pelaporan LPJ Berjenjang & Berlapis
+
+> **Kasus:** Setelah pencairan dieksekusi, dana desa harus dilaporkan pertanggungjawabannya. KOHALOCK menggunakan konsep LPJ 3 Lapis: LPJ Teknis (per pencairan), LPJ Keuangan (per program), dan LPJ Desa (per semester/tahun).
+
+#### Langkah 1 — Kaur Teknis: Melaporkan LPJ Teknis (Rincian Belanja)
+
+1. Login sebagai **Budi Santoso** (`budi.santoso.kaur-teknis@kohalock.desa` / `password123`)
+2. Buka menu **Formulir LPJ Teknis**
+3. Pilih transaksi pencairan yang sudah berstatus `DISBURSED` (sudah dieksekusi).
+4. Isi tabel rincian belanja aktual (Barang/Jasa, Volume, Satuan, Harga Satuan). Total harga akan dikalkulasi otomatis.
+5. Upload dokumen bukti kwitansi/nota belanja (PDF).
+6. Masukkan PIN Smart Contract.
+7. ✅ Data rincian beserta hash PDF akan disimpan permanen ke Blockchain. Status LPJ transaksi menjadi `LOCKED_ONCHAIN`.
+
+#### Langkah 2 — Kaur Keuangan: Mengunci LPJ Keuangan Program
+
+1. Login sebagai **Hastuti** (`hastuti.kaur-keuangan@kohalock.desa` / `password123`)
+2. Buka menu **Laporan LPJ Keuangan**
+3. Sistem akan menampilkan daftar program/kegiatan yang sedang berjalan atau sudah selesai.
+4. Pilih program yang seluruh termin pencairannya sudah di-LPJ-kan.
+5. Upload rekapitulasi pembukuan program (PDF).
+6. Masukkan PIN Smart Contract.
+7. ✅ Dokumen terkunci on-chain. Progress bar program di halaman publik akan menampilkan ikon *Verified/Locked*.
+
+#### Langkah 3 — Kades: Mengesahkan Laporan Realisasi Desa (LPJ Desa)
+
+1. Login sebagai **Ahmad Fauzi** (`ahmad.fauzi.kades@kohalock.desa` / `password123`)
+2. Buka menu **Laporan Realisasi Desa**
+3. Pilih `Tahun Anggaran` dan `Semester`.
+4. Upload dokumen Laporan Penyelenggaraan Pemerintahan Desa (LPPD/LPJ Desa).
+5. Masukkan PIN Smart Contract.
+6. ✅ Laporan tingkat desa ini secara resmi dipublikasikan dan terkunci di Blockchain, siap untuk diaudit oleh Inspektorat atau dipantau masyarakat umum.
+
+---
+
+### Skenario 8: Alat Uji Integritas Dokumen (Auditor Forensik)
+
+> **Kasus:** Auditor dari Inspektorat menerima flashdisk berisi file PDF Berita Acara dan LPJ dari perangkat desa. Auditor ingin memastikan bahwa file tersebut benar-benar asli (otentik) dan tidak diedit atau dimanipulasi setelah dana cair.
+
+#### Langkah 1 — Auditor: Akses Alat Uji Bukti Digital
+
+1. Login sebagai **Inspektur Wilayah** (`inspektur.auditor@kohalock.desa` / `password123`)
+2. Buka menu **Alat Uji Bukti Digital** (Integrity Checker).
+
+#### Langkah 2 — Auditor: Uji File PDF Luring (Offline File)
+
+1. Pilih metode pencarian: **Cari berdasarkan ID Transaksi** atau **Cari berdasarkan Hash**.
+2. Masukkan ID transaksi (atau biarkan kosong jika ingin mencocokkan hash secara global).
+3. Seret dan lepas (drag & drop) file PDF dari flashdisk ke dalam area upload.
+4. Sistem akan melakukan hashing SHA-256 secara lokal di browser Auditor (file tidak dikirim ke server).
+5. Sistem akan mencocokkan hash lokal tersebut dengan *Golden Hash* yang tersimpan di dalam Smart Contract (Blockchain).
+
+#### Langkah 3 — Hasil Analisis Keaslian
+
+- **Jika File ASLI (Otentik):** Sistem akan menampilkan banner hijau dengan pesan **"Dokumen Valid & Otentik"**, menunjukkan bahwa byte per byte file tersebut sama persis dengan saat diunggah pertama kali.
+- **Jika File PALSU/DIUBAH:** Sistem akan menampilkan peringatan merah **"Palsu/Dimanipulasi"**. Ini membuktikan bahwa file di flashdisk sudah diedit (misal: angka diedit dengan Photoshop), karena hash-nya berbeda dengan yang ada di Blockchain.
+
+---
+
 ## Akun Demo
 
 Semua akun demo menggunakan password: **`password123`**

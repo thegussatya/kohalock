@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 
 import RoleLayout from '../../components/RoleLayout';
 import GeotagCameraCapture from '../../components/GeotagCameraCapture';
+import PinModal from '../../components/PinModal';
 import { Download, ShieldAlert } from 'lucide-react';
 import { KAUR_TEKNIS_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
@@ -23,6 +24,7 @@ export default function SubmitDisbursementPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPanicAction, setIsPanicAction] = useState(false);
   const [showPanicModal, setShowPanicModal] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
 
   useEffect(() => {
     // Check for edit mode
@@ -145,74 +147,12 @@ export default function SubmitDisbursementPage() {
             return;
           }
 
-          try {
-            const formData = new FormData();
-            formData.append('proposalId', selectedProgramId);
-            formData.append('keterangan', keterangan);
-            formData.append('nominal', rawNominal.toString());
-            formData.append('geotagLat', geotagCoords.lat.toString());
-            formData.append('geotagLng', geotagCoords.lng.toString());
-            
-            if (beritaAcaraFile) {
-              formData.append('beritaAcara', beritaAcaraFile);
-            }
-            
-            if (geotagPhoto) {
-              // Convert dataURL to Blob
-              const res = await fetch(geotagPhoto);
-              const blob = await res.blob();
-              formData.append('foto', blob, 'geotag.jpg');
-            }
-
-            let response;
-            if (isEditing && editId) {
-              response = await apiClient.put(`/disbursements/${editId}`, {
-                keterangan,
-                nominal: rawNominal,
-                geotagLat: geotagCoords.lat,
-                geotagLng: geotagCoords.lng
-              });
-            } else {
-              response = await apiClient.post('/disbursements', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-              });
-            }
-
-            if (response.status === 201 || response.status === 200) {
-              
-              if (isPanicAction) {
-                const targetId = isEditing ? editId : response.data.id;
-                await apiClient.post(`/disbursements/${targetId}/reject-intervention`, { alasan: "Intervensi paksaan pencairan (Kaur Teknis)" });
-                toast.success('TRANSAKSI DIBEKUKAN SECARA PERMANEN!');
-                setTimeout(() => {
-                  window.location.href = '/kaur-teknis/dashboard';
-                }, 1500);
-                return;
-              }
-
-              toast.success(isEditing ? "Revisi berhasil dikirim kembali ke Sekdes" : "Pengajuan pencairan berhasil dikirim ke Sekdes");
-              // Refresh sisa pagu
-              apiClient.get(`/disbursements/sisa-pagu/${selectedProgramId}`).then(res => {
-                setSisaPagu(Number(res.data.sisaPagu));
-              });
-              
-              if (isEditing) {
-                // If edit mode is complete, optionally redirect back to rejection history
-                setTimeout(() => {
-                  window.location.href = '/kaur-teknis/riwayat-penolakan';
-                }, 1500);
-              } else {
-                setNominal('');
-                setKeterangan('');
-                setGeotagCoords(null);
-              }
-            }
-          } catch (error: any) {
-            const msg = error.response?.data?.error || error.response?.data?.message || "Gagal mengajukan pencairan";
-            toast.error(msg);
+          if (!showPinModal && !isPanicAction) {
+            setShowPinModal(true);
+            setIsSubmitting(false);
+            return;
           }
         }}>
-          
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Program Terdaftar */}
@@ -374,6 +314,74 @@ export default function SubmitDisbursementPage() {
             </div>
           </div>
         </div>
+      )}
+      {showPinModal && (
+        <PinModal 
+          isOpen={showPinModal}
+          onClose={() => setShowPinModal(false)}
+          isLoading={isSubmitting}
+          onConfirm={async (pin) => {
+            setIsSubmitting(true);
+            try {
+              const rawNominal = Number(nominal.replace(/\./g, ''));
+              const formData = new FormData();
+              formData.append('proposalId', selectedProgramId);
+              formData.append('keterangan', keterangan);
+              formData.append('nominal', rawNominal.toString());
+              formData.append('geotagLat', geotagCoords!.lat.toString());
+              formData.append('geotagLng', geotagCoords!.lng.toString());
+              formData.append('pin', pin);
+              
+              if (beritaAcaraFile) {
+                formData.append('beritaAcara', beritaAcaraFile);
+              }
+              
+              if (geotagPhoto) {
+                const res = await fetch(geotagPhoto);
+                const blob = await res.blob();
+                formData.append('foto', blob, 'geotag.jpg');
+              }
+
+              let response;
+              if (isEditing && editId) {
+                response = await apiClient.put(`/disbursements/${editId}`, {
+                  keterangan,
+                  nominal: rawNominal,
+                  geotagLat: geotagCoords!.lat,
+                  geotagLng: geotagCoords!.lng,
+                  pin
+                });
+              } else {
+                response = await apiClient.post('/disbursements', formData, {
+                  headers: { 'Content-Type': 'multipart/form-data' }
+                });
+              }
+
+              if (response.status === 201 || response.status === 200) {
+                toast.success(isEditing ? "Revisi berhasil dikirim kembali ke Sekdes" : "Pengajuan pencairan berhasil dikirim ke Sekdes");
+                apiClient.get(`/disbursements/sisa-pagu/${selectedProgramId}`).then(res => {
+                  setSisaPagu(Number(res.data.sisaPagu));
+                });
+                
+                if (isEditing) {
+                  setTimeout(() => {
+                    window.location.href = '/kaur-teknis/riwayat-penolakan';
+                  }, 1500);
+                } else {
+                  setNominal('');
+                  setKeterangan('');
+                  setGeotagCoords(null);
+                }
+                setShowPinModal(false);
+              }
+            } catch (error: any) {
+              const msg = error.response?.data?.error || error.response?.data?.message || "Gagal mengajukan pencairan";
+              toast.error(msg);
+            } finally {
+              setIsSubmitting(false);
+            }
+          }}
+        />
       )}
     </RoleLayout>
   );
