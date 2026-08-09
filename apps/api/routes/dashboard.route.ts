@@ -353,15 +353,20 @@ router.get('/auditor', authenticate, async (req: AuthRequest, res: Response): Pr
     const totalTurnover = allDisbursements.reduce((acc, curr) => acc + curr.nominal, BigInt(0));
 
     const allInterventions = await prisma.interventionLog.findMany();
-    const redFlagCount = allInterventions.length;
+    const allWhistleblowers = await prisma.whistleblowerReport.findMany();
+    const redFlagCount = allInterventions.length + allWhistleblowers.length;
 
     const labels6m = getLast6MonthsLabels();
     const chartData = labels6m.map(l => {
-      const anomalies = allInterventions.filter(inv => 
-        inv.createdAt.getMonth() === l.month && 
+      const interventionCount = allInterventions.filter(inv =>
+        inv.createdAt.getMonth() === l.month &&
         inv.createdAt.getFullYear() === l.year
       ).length;
-      return { month: l.label, anomalies };
+      const wbCount = allWhistleblowers.filter(wb =>
+        wb.createdAt.getMonth() === l.month &&
+        wb.createdAt.getFullYear() === l.year
+      ).length;
+      return { month: l.label, anomalies: interventionCount + wbCount };
     });
 
     res.json(serialize({
