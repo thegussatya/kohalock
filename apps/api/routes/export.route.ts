@@ -129,9 +129,8 @@ router.post('/legal-report', authenticate, async (req: AuthRequest, res: Respons
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     
     // Pipe to response
-    const safeFilename = proposal.judulUsulan.replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF ]/g, '').replace(/\s+/g, '_');
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="legal_report_${safeFilename}.pdf"`);
+    // IDM Anti-Intercept: Kita hilangkan header Content-Disposition.
     doc.pipe(res);
 
     // Header Title

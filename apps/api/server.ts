@@ -23,6 +23,7 @@ import interventionRouter from './routes/intervention.route';
 import villageIncomeRouter from './routes/village-income.route';
 import lpjRouter from './routes/lpj.route';
 import auditNoteRouter from './routes/audit-note.route';
+import correctionRouter from './routes/correction.route';
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -64,6 +65,7 @@ app.use('/api/interventions', interventionRouter);
 app.use('/api/village-income', villageIncomeRouter);
 app.use('/api/lpj', lpjRouter);
 app.use('/api/audit-notes', auditNoteRouter);
+app.use('/api/koreksi', correctionRouter);
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'KOHALOCK API jalan' });
 });

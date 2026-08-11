@@ -74,12 +74,18 @@ export default function DisbursementDetailPage() {
 
   const handleDownloadSertifikat = async (certId: string) => {
     try {
-      const res = await apiClient.get(`/interventions/${certId}/certificate`);
-      if (res.data && res.data.pdfUrl) {
-        window.open(res.data.pdfUrl, '_blank');
-      } else {
-        toast.error('Gagal memuat sertifikat');
-      }
+      const res = await apiClient.get(`/interventions/${certId}/certificate`, {
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Sertifikat_Penolakan_${certId.slice(0, 8).toUpperCase()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Sertifikat berhasil diunduh');
     } catch (error) {
       toast.error('Gagal mengunduh sertifikat');
     }

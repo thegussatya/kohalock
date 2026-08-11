@@ -70,6 +70,7 @@ import KaurKeuanganBankBook from '../features/kaur-keuangan/BankBookPage';
 import KaurKeuanganTaxBook from '../features/kaur-keuangan/TaxBookPage';
 import KaurKeuanganMonthlyClosing from '../features/kaur-keuangan/MonthlyClosingPage';
 import KaurKeuanganRealizationReport from '../features/kaur-keuangan/RealizationReportPage';
+import KaurKeuanganCorrectionTransaction from '../features/kaur-keuangan/CorrectionTransactionPage';
 import KaurKeuanganLockedArchive from '../features/kaur-keuangan/LockedArchivePage';
 import KaurKeuanganSettings from '../features/kaur-keuangan/SettingsPage';
 import KaurKeuanganHelp from '../features/kaur-keuangan/HelpPage';
@@ -357,6 +358,10 @@ export const router = createBrowserRouter([
       {
         path: '/kaur-keuangan/penutupan-buku',
         element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganMonthlyClosing /></ProtectedRoute>,
+      },
+      {
+        path: '/kaur-keuangan/transaksi-koreksi',
+        element: <ProtectedRoute allowedRole="kaur-keuangan"><KaurKeuanganCorrectionTransaction /></ProtectedRoute>,
       },
       {
         path: '/kaur-keuangan/laporan',

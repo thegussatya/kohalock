@@ -444,6 +444,9 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 > **Kasus:** Kaur Teknis mengajukan pencairan termin 2 sebesar Rp 60.000.000, tapi Sekdes menemukan foto bukti lapangan tidak sesuai lokasi (koordinat GPS di luar area proyek).
 
+#### Langkah 0 — Persiapan Data (Jika Database Kosong)
+Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar. Jika database Anda kosong, silakan login sebagai Kaur Teknis dan buat satu Program baru terlebih dahulu.
+
 #### Langkah 1 — Kaur Teknis: Ajukan Pencairan Termin 2
 
 1. Login sebagai **Budi Santoso**
@@ -481,6 +484,11 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 ### Skenario 3: Panic Button & Pengawasan Forensik
 
 > **Kasus:** Kades menemukan pencairan termin 3 senilai Rp 40.000.000 yang sudah diverifikasi Sekdes, tapi mencurigai adanya mark-up harga yang signifikan. Kades menekan Panic Button. Auditor kemudian melakukan investigasi, dan warga juga mengirim laporan rahasia.
+
+#### Langkah 0 — Persiapan Data (Wajib Dibaca)
+Skenario ini mensyaratkan ada pencairan yang berstatus **`PENDING_KADES`**. Jika database kosong:
+1. Login sebagai **Kaur Teknis**, buat program baru dan ajukan pencairan.
+2. Login sebagai **Sekdes**, verifikasi pengajuan tersebut agar statusnya naik ke Kades.
 
 #### Langkah 1 — Kades: Intervensi Pencairan
 
@@ -545,6 +553,45 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 > **Kasus:** Kades mendapat tekanan dari pihak tertentu untuk segera menyetujui pencairan yang mencurigakan. Kades memanfaatkan fitur "Tolak Intervensi Non-Prosedural" langsung dari halaman detail pengajuan untuk membekukan transaksi dan menerbitkan sertifikat resmi penolakan.
 
+#### Langkah 0 — Persiapan Data (Wajib Dibaca)
+Karena fitur ini bekerja pada pengajuan yang **menunggu persetujuan Kades**, Anda harus membuat data dari awal jika database masih kosong.
+
+**A. Login sebagai Kaur Teknis — Buat Program**
+1. Login: `budi.santoso.kaur-teknis@kohalock.desa` / `password123`
+2. Buka menu **Program Saya** → klik **[+ Buat Program Baru]**
+3. Isi form **Musrembang**:
+   - Dusun: `Dusun Timur`
+   - Judul Usulan: `Pengadaan Pipa HDPE Jaringan Air Bersih`
+   - Kategori: `Infrastruktur`
+   - Volume: `500`, Satuan: `Meter`
+   - Pagu Maksimal: `75000000`
+   - Upload **Formulir Musrembang** (PDF apa saja), Upload **RAB** (PDF apa saja)
+4. Klik **[Daftarkan ke Blockchain]**, masukkan PIN: `123456` → tunggu konfirmasi
+5. ✅ Program tersimpan dan muncul di daftar program Anda
+
+**B. Login sebagai Kaur Teknis — Ajukan Pencairan**
+1. Masih login sebagai Budi Santoso
+2. Buka detail program **Pengadaan Pipa HDPE** yang baru dibuat
+3. Klik tombol **[Ajukan Pencairan Termin]**
+4. Isi form:
+   - Keterangan: `Termin 1 - Pembelian Material Pipa`
+   - Nominal: `35000000`
+   - Upload **Berita Acara** (PDF apa saja)
+   - Upload **Foto Lapangan** (foto/gambar apa saja)
+   - Geotag: biarkan sistem mengambil lokasi, atau masukkan koordinat manual
+5. Masukkan PIN: `123456` → klik **[Ajukan]**
+6. ✅ Status pencairan: **PENDING_SEKDES**
+7. Logout
+
+**C. Login sebagai Sekdes — Verifikasi & Teruskan ke Kades**
+1. Login: `siti.rahma.sekdes@kohalock.desa` / `password123`
+2. Buka menu **Verifikasi Pengajuan** — terlihat 1 pengajuan baru
+3. Klik item **Termin 1 - Pembelian Material Pipa**
+4. Review detail di halaman, pastikan semua dokumen terlihat
+5. Klik tombol **[Setujui & Teruskan ke Kades]**, masukkan PIN: `123456`
+6. ✅ Status berubah: **PENDING_KADES**
+7. Logout. Data siap untuk Skenario 4.
+
 #### Langkah 1 — Kades: Buka Halaman Detail Pengajuan yang Mencurigakan
 
 1. Login sebagai **Ahmad Fauzi** (`ahmad.fauzi.kades@kohalock.desa` / `password123`)
@@ -586,6 +633,43 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 ### Skenario 5: Penutupan Buku Bulanan & Koreksi Jurnal
 
 > **Kasus:** Di akhir bulan, Kaur Keuangan menutup buku bulan Juli. Setelah dikunci, ditemukan kesalahan nominal pada satu entri — Kaur Keuangan melakukan koreksi melalui jurnal pembalik tanpa merusak audit trail.
+
+#### Langkah 0 — Persiapan Data (Wajib Dibaca)
+Skenario ini membutuhkan **minimal 1 pencairan yang sudah dieksekusi** (status `DISBURSED`) agar ada entri di Buku Kas Umum. Ikuti seluruh alur berikut jika database Anda kosong.
+
+**A. Kaur Teknis — Buat Program & Ajukan Pencairan**
+1. Login: `budi.santoso.kaur-teknis@kohalock.desa` / `password123`
+2. Buat program baru dengan data:
+   - Dusun: `Dusun Selatan`, Judul: `Pengaspalan Jalan Lingkar RT 03`
+   - Kategori: `Infrastruktur`, Volume: `200`, Satuan: `M2`
+   - Pagu Maksimal: `80000000`
+   - Upload formulir & RAB (PDF apa saja)
+3. Daftarkan ke blockchain, PIN: `123456`
+4. Buka detail program, klik **[Ajukan Pencairan Termin]**:
+   - Keterangan: `Termin 1 - Pembelian Aspal`
+   - Nominal: `40000000`
+   - Upload berita acara & foto (file apa saja)
+5. Masukkan PIN `123456`, klik **[Ajukan]**
+6. Logout
+
+**B. Sekdes — Verifikasi**
+1. Login: `siti.rahma.sekdes@kohalock.desa` / `password123`
+2. Buka **Verifikasi Pengajuan**, klik item Termin 1
+3. Klik **[Setujui & Teruskan ke Kades]**, PIN: `123456`
+4. Logout
+
+**C. Kades — Otorisasi**
+1. Login: `ahmad.fauzi.kades@kohalock.desa` / `password123`
+2. Buka **Persetujuan Pencairan**, klik item Termin 1
+3. Klik **[Otorisasi Pencairan]**, masukkan PIN: `123456`
+4. Logout
+
+**D. Kaur Keuangan — Eksekusi (Cairkan Dana)**
+1. Login: `hastuti.kaur-keuangan@kohalock.desa` / `password123`
+2. Buka menu **Antrean Eksekusi**, klik item Termin 1
+3. Klik **[Eksekusi Pencairan]**, masukkan PIN: `123456`
+4. ✅ Status: **DISBURSED** — entri `Rp 40.000.000` otomatis muncul di Buku Kas bulan berjalan
+5. Tetap login sebagai Hastuti untuk melanjutkan ke Langkah 1 di bawah
 
 #### Langkah 1 — Kaur Keuangan: Verifikasi Sebelum Menutup Buku
 
@@ -634,6 +718,9 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 ### Skenario 6: Mencatat Pendapatan Desa & Dampaknya ke BKU
 
 > **Kasus:** Di awal bulan Agustus, desa menerima dua sumber penerimaan: pencairan Dana Desa Tahap 2 dari pemerintah pusat sebesar Rp 350.000.000 (Transfer), dan setoran hasil BUMDes Maju Bersama sebesar Rp 18.500.000 (PADes). Kaur Keuangan perlu mencatat keduanya agar saldo BKU terupdate sebelum proses eksekusi pencairan berjalan.
+
+#### Langkah 0 — Catatan
+Skenario ini **tidak memerlukan data sebelumnya** — Kaur Keuangan bisa langsung mencatat pendapatan kapan saja. Skenario ini berdiri sendiri.
 
 #### Langkah 1 — Kaur Keuangan: Catat Dana Desa Tahap 2 (Transfer)
 
@@ -698,6 +785,27 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 > **Kasus:** Setelah pencairan dieksekusi, dana desa harus dilaporkan pertanggungjawabannya. KOHALOCK menggunakan konsep LPJ 3 Lapis: LPJ Teknis (per pencairan), LPJ Keuangan (per program), dan LPJ Desa (per semester/tahun).
 
+#### Langkah 0 — Persiapan Data (Wajib Dibaca)
+LPJ Teknis hanya bisa diisi pada pencairan berstatus **`DISBURSED`**. Selesaikan **Skenario 1** (atau Skenario 5 Langkah 0) terlebih dahulu hingga Kaur Keuangan mengeksekusi dana. Setelah ada data DISBURSED, lanjutkan ke bawah.
+
+Jika ingin membuat data fresh untuk skenario ini, ikuti langkah berikut:
+
+**A. Kaur Teknis — Buat Program**
+1. Login: `budi.santoso.kaur-teknis@kohalock.desa` / `password123`
+2. Buat program:
+   - Dusun: `Dusun Barat`, Judul: `Pembangunan Tembok Penahan Tanah`
+   - Kategori: `Infrastruktur`, Volume: `50`, Satuan: `M3`, Pagu: `60000000`
+3. Daftarkan ke blockchain, PIN: `123456`
+4. Ajukan pencairan:
+   - Keterangan: `Termin 1 - Pekerjaan Pondasi`, Nominal: `25000000`
+   - Upload berita acara & foto (file apa saja), PIN: `123456`
+5. Logout
+
+**B. Sekdes — Verifikasi → C. Kades — Otorisasi → D. Kaur Keuangan — Eksekusi**
+_(Ikuti langkah B, C, D yang sama persis seperti di Skenario 5 Langkah 0 di atas)_
+
+Setelah eksekusi berhasil, lanjutkan ke Langkah 1 skenario ini sebagai Kaur Teknis.
+
 #### Langkah 1 — Kaur Teknis: Melaporkan LPJ Teknis (Rincian Belanja)
 
 1. Login sebagai **Budi Santoso** (`budi.santoso.kaur-teknis@kohalock.desa` / `password123`)
@@ -732,6 +840,15 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 ### Skenario 8: Alat Uji Integritas Dokumen (Auditor Forensik)
 
 > **Kasus:** Auditor dari Inspektorat menerima flashdisk berisi file PDF Berita Acara dan LPJ dari perangkat desa. Auditor ingin memastikan bahwa file tersebut benar-benar asli (otentik) dan tidak diedit atau dimanipulasi setelah dana cair.
+
+#### Langkah 0 — Persiapan Data
+Untuk menguji fitur ini, Anda membutuhkan sebuah **file PDF Berita Acara yang pernah di-upload ke sistem** (dari proses pengajuan pencairan sebelumnya).
+
+1. Jika belum ada data: selesaikan alur Skenario 1 (buat pengajuan dan upload Berita Acara).
+2. Setelah ada pencairan, buka halaman detail pencairan tersebut — di sana ada link **[Lihat Berita Acara]**. Klik dan simpan file PDF tersebut ke komputer Anda (ini mensimulasikan "file dari flashdisk").
+3. File yang sama akan dipakai di Langkah 2 untuk diuji keasliannya.
+
+**Untuk menguji kasus PALSU:** Edit dulu file PDF tersebut dengan aplikasi apa saja (misal: buka di browser → print to PDF lagi), lalu upload. Karena byte-nya berubah, hash-nya juga akan berbeda dan sistem akan mendeteksinya sebagai **manipulasi**.
 
 #### Langkah 1 — Auditor: Akses Alat Uji Bukti Digital
 

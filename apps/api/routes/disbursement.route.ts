@@ -333,6 +333,9 @@ router.post('/:id/lpj', authenticate, upload.single('file'), async (req: AuthReq
     }
 
     const updated = await prisma.$transaction(async (tx) => {
+      // Hapus item lama agar tidak terduplikasi
+      await tx.lpjItem.deleteMany({ where: { disbursementId: id } });
+      
       for (const item of parsedItems) {
         await tx.lpjItem.create({
           data: {
