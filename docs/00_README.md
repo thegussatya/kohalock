@@ -41,6 +41,15 @@ Pastikan Anda sudah memiliki PostgreSQL yang berjalan.
 3. Jalankan migrasi/push schema: `npx prisma db push`
 4. Masukkan data awal (akun dummy untuk tiap role): `npx prisma db seed`
 
+> [!TIP]
+> **Mengosongkan / Reset Total Database**: 
+> Jika Anda ingin menghapus seluruh data di database (termasuk data pengguna/user) dan mengatur ulang skema ke kondisi bersih (empty state), jalankan perintah berikut di folder `apps/api`:
+> ```bash
+> npx prisma db push --force-reset
+> ```
+> Setelah itu, Anda bisa menjalankan kembali `npx prisma db seed` untuk mengisi ulang akun-akun dummy jika diperlukan.
+
+
 ### 2. Menjalankan Jaringan Blockchain Lokal (Hardhat)
 Buka **Terminal 1** khusus untuk menjalankan node blockchain:
 ```bash
