@@ -820,9 +820,12 @@ Setelah eksekusi berhasil, lanjutkan ke Langkah 1 skenario ini sebagai Operator 
 2. Buka menu **Formulir LPJ Teknis**
 3. Pilih transaksi pencairan yang sudah berstatus `DISBURSED` (sudah dieksekusi).
 4. Isi tabel rincian belanja aktual. Berikut contoh data yang bisa Anda gunakan (pastikan totalnya mencapai Rp 40.000.000 sesuai pencairan Termin 1):
-   - **Barang/Jasa**: `Batu Kali` | **Volume**: `100` | **Satuan**: `Truk` | **Harga Satuan**: `200000`
-   - **Barang/Jasa**: `Semen Portland` | **Volume**: `200` | **Satuan**: `Sak` | **Harga Satuan**: `75000`
-   - **Barang/Jasa**: `Sewa Mesin Molen` | **Volume**: `10` | **Satuan**: `Hari` | **Harga Satuan**: `500000`
+   - **Barang/Jasa**: `Batu Kali` | **Volume**: `50` | **Satuan**: `Truk` | **Harga Satuan**: `200000`
+   - **Barang/Jasa**: `Semen Portland` | **Volume**: `100` | **Satuan**: `Sak` | **Harga Satuan**: `75000`
+   - **Barang/Jasa**: `Besi Beton 12mm` | **Volume**: `100` | **Satuan**: `Batang` | **Harga Satuan**: `80000`
+   - **Barang/Jasa**: `Pasir Pasang` | **Volume**: `20` | **Satuan**: `Truk` | **Harga Satuan**: `250000`
+   - **Barang/Jasa**: `Upah Tukang (HOK)` | **Volume**: `20` | **Satuan**: `Hari` | **Harga Satuan**: `150000`
+   - **Barang/Jasa**: `Upah Pekerja (HOK)` | **Volume**: `50` | **Satuan**: `Hari` | **Harga Satuan**: `130000`
 5. Upload dokumen bukti kwitansi/nota belanja (PDF apa saja).
 6. Masukkan PIN Smart Contract.
 7. ✅ Data rincian beserta hash PDF akan disimpan permanen ke Blockchain. Status LPJ transaksi menjadi `LOCKED_ONCHAIN`.
