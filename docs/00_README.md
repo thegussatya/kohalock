@@ -86,3 +86,12 @@ cd apps/api
 npx ts-node scripts/reset-onchain-data.ts
 ```
 *(Script ini akan otomatis menghapus semua data transaksi lama seperti proposal, pencairan, atau buku kas, sehingga Anda bisa memulai simulasi ulang dari awal)*
+
+> [!IMPORTANT]
+> **Masalah "Sender doesn't have enough funds to send tx"**: 
+> Jika Anda mendapati error ini saat mencoba transaksi setelah me-restart node/mendeploy ulang kontrak, hal itu karena saldo wallet dinamis di database telah ter-reset menjadi `0` di blockchain yang baru. Untuk mengatasinya, jalankan kembali perintah database seed untuk mengisi saldo wallet (funding 1 ETH) dan memperbarui hak akses peran:
+> ```bash
+> cd apps/api
+> npx prisma db seed
+> ```
+
