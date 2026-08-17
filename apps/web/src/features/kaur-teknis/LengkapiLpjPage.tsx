@@ -5,7 +5,7 @@ import PageHeader from '../../components/PageHeader';
 import { KAUR_TEKNIS_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 import { toast } from 'react-hot-toast';
-import { Plus, Trash2, Save, ArrowLeft, Upload, FileSpreadsheet, Lock, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Upload, FileSpreadsheet, Lock, CheckCircle2, Download } from 'lucide-react';
 import PinModal from '../../components/PinModal';
 
 interface LpjItemForm {
@@ -235,13 +235,23 @@ export default function LengkapiLpjPage() {
           description="Masukkan rincian item belanja sesuai dengan nota atau kwitansi pengeluaran yang sah."
         />
         
-        <button 
-          onClick={exportToExcel}
-          className="inline-flex items-center text-sm font-bold text-green-700 bg-green-50 border border-green-200 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors shadow-sm"
-        >
-          <FileSpreadsheet className="w-4 h-4 mr-2" />
-          Export ke Excel (CSV)
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <a 
+            href="/templates/Template Laporan Pertanggungjawaban.docx" 
+            download 
+            className="inline-flex items-center justify-center text-sm font-bold text-blue-700 bg-white border border-blue-300 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Template LPJ (Word)
+          </a>
+          <button 
+            onClick={exportToExcel}
+            className="inline-flex items-center justify-center text-sm font-bold text-green-700 bg-green-50 border border-green-200 px-4 py-2 rounded-lg hover:bg-green-100 transition-colors shadow-sm"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-2" />
+            Export ke Excel (CSV)
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 print:hidden">
