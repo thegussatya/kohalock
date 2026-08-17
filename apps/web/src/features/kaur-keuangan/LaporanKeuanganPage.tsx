@@ -83,7 +83,14 @@ export default function LaporanKeuanganPage() {
           title={`Laporan Keuangan Desa (APBDes) - ${currentYear}`} 
           description="Rekapitulasi otomatis Pendapatan dan Realisasi Belanja dari sistem." 
         />
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
+          <a 
+            href="/templates/Template Laporan Keuangan Desa (Pertanggungjawaban APBDes).docx" 
+            download 
+            className="px-4 py-2 bg-white text-blue-700 border border-blue-300 hover:bg-blue-50 rounded-lg shadow-sm font-bold flex items-center justify-center gap-2 text-sm transition-colors"
+          >
+            <Download className="w-4 h-4" /> Template (Word)
+          </a>
           <button 
             onClick={exportToExcel}
             className="px-4 py-2 bg-green-600 text-white hover:bg-green-700 rounded-lg shadow-sm font-bold flex items-center justify-center gap-2 text-sm transition-colors"
