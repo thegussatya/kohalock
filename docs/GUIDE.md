@@ -845,10 +845,15 @@ Setelah eksekusi berhasil, lanjutkan ke Langkah 1 skenario ini sebagai Operator 
 
 #### Langkah 3 — Kades: Mengesahkan Laporan Realisasi Desa (LPJ Desa)
 
+Sebelum pengesahan, dokumen LPJ Desa biasanya disiapkan melalui proses berikut:
+1. Melalui menu **Laporan Keuangan Desa (APBDes)**, klik tombol **[Template (Word)]** untuk mengunduh *template* kosong, dan **[Export ke Excel]** untuk mengunduh rekapitulasi angka APBDes yang digenerate otomatis oleh sistem.
+2. *Copy-paste* data APBDes dari Excel ke dalam tabel di dokumen Word, sesuaikan formatnya, lalu cetak dan simpan sebagai **PDF**. Dokumen PDF inilah yang menjadi LPPD/LPJ Desa final.
+
+Setelah dokumen siap, Kades melakukan pengesahan secara *on-chain*:
 1. Login sebagai **Ahmad Fauzi** (`ahmad.fauzi.kades@kohalock.desa` / `password123`)
 2. Buka menu **Laporan Realisasi Desa**
 3. Pilih `Tahun Anggaran` dan `Semester`.
-4. Upload dokumen Laporan Penyelenggaraan Pemerintahan Desa (LPPD/LPJ Desa).
+4. Upload dokumen Laporan Penyelenggaraan Pemerintahan Desa (LPPD/LPJ Desa) berformat PDF tadi.
 5. Masukkan PIN Smart Contract.
 6. ✅ Laporan tingkat desa ini secara resmi dipublikasikan dan terkunci di Blockchain, siap untuk diaudit oleh Inspektorat atau dipantau masyarakat umum.
 
