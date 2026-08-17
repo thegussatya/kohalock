@@ -841,6 +841,7 @@ Setelah eksekusi berhasil, lanjutkan ke Langkah 1 skenario ini sebagai Operator 
 5. Upload rekapitulasi pembukuan program (PDF).
 6. Masukkan PIN Smart Contract.
 7. ✅ Dokumen terkunci on-chain. Progress bar program di halaman publik akan menampilkan ikon *Verified/Locked*.
+8. Untuk melihat hasilnya, buka menu **Dashboard Publik → Pantau Proyek → Detail Proyek**. Pada bagian "Transparansi Dana", dokumen LPJ Keuangan Final kini telah tampil secara publik dan diverifikasi oleh sistem blockchain.
 
 #### Langkah 3 — Kades: Mengesahkan Laporan Realisasi Desa (LPJ Desa)
 
