@@ -32,75 +32,78 @@ Folder ini berisi seluruh dokumen perencanaan proyek **KOHALOCK** (Sistem Transp
 
 ## Panduan Menjalankan Project di Local (Development)
 
-Proyek ini menggunakan arsitektur *monorepo* dengan `pnpm`. Untuk menjalankan seluruh ekosistem (Frontend, Backend, dan Blockchain) di komputer lokal, ikuti langkah-langkah berikut:
+Proyek ini menggunakan arsitektur *monorepo* dengan `pnpm`. Ikuti panduan di bawah ini untuk memulai dari kondisi bersih atau menjalankan ulang proyek saat seluruh terminal dalam keadaan mati.
 
-### 1. Persiapan Database
-Pastikan Anda sudah memiliki PostgreSQL yang berjalan.
-1. Masuk ke folder backend: `cd apps/api`
-2. Buat file `.env` (copy dari `.env.example` jika ada) dan isi `DATABASE_URL` dengan koneksi Postgres Anda.
-3. Jalankan migrasi/push schema: `npx prisma db push`
-4. Masukkan data awal (akun dummy untuk tiap role): `npx prisma db seed`
+---
 
-> [!TIP]
-> **Mengosongkan / Reset Total Database**: 
-> Jika Anda ingin menghapus seluruh data di database (termasuk data pengguna/user) dan mengatur ulang skema ke kondisi bersih (empty state), jalankan perintah berikut di folder `apps/api`:
-> ```bash
-> npx prisma db push --force-reset
-> ```
-> Setelah itu, Anda bisa menjalankan kembali `npx prisma db seed` untuk mengisi ulang akun-akun dummy jika diperlukan.
+### A. Alur Memulai Proyek Harian (Jika Semua Terminal Mati / Baru Dinyalakan)
+Ini adalah alur yang paling sering Anda gunakan saat mulai bekerja kembali. Ikuti urutan terminal di bawah ini dengan tepat:
 
-
-### 2. Menjalankan Jaringan Blockchain Lokal (Hardhat)
-Buka **Terminal 1** khusus untuk menjalankan node blockchain:
+#### 💻 Terminal 1 — Blockchain Node
+Jalankan node blockchain Hardhat lokal secara *in-memory* di terminal pertama:
 ```bash
 cd packages/contracts
 npx hardhat node
 ```
 *(Biarkan terminal ini tetap terbuka dan berjalan)*
 
-### 3. Deploy Smart Contract ke Jaringan Lokal
-Buka **Terminal 2**, lalu lakukan deploy kontrak dan salin ABI ke backend:
+#### 💻 Terminal 2 — Inisialisasi Kontrak & Database
+Buka terminal baru di root proyek untuk men-deploy kontrak pintar dan menyinkronkan data database Anda agar sesuai dengan blockchain yang baru berjalan:
 ```bash
-cd packages/contracts
-npx hardhat run scripts/deploy.ts --network localhost
-npm run copy-abi
+pnpm init-local
 ```
-Setelah berhasil, catat `Contract Address` yang muncul, lalu masukkan ke dalam file `.env` di backend (`apps/api`) jika diperlukan (misalnya variabel `CONTRACT_ADDRESS`).
+> [!NOTE]
+> Perintah otomatis ini akan melakukan:
+> 1. Deploy smart contract ke node blockchain lokal.
+> 2. Menulis konfigurasi `CONTRACT_ADDRESS` yang baru secara otomatis ke file `apps/api/.env`.
+> 3. Menyalin ABI kontrak terbaru ke backend (`apps/api/src/config`).
+> 4. Menghapus data transaksi lama di database agar tidak bentrok dengan blockchain baru.
+> 5. **Pengisian Gas Fee (Funding)**: Mengisi ulang saldo gas (1 ETH) ke setiap wallet dinamis pengguna desa (Kaur, Sekdes, Kades, Kaur Keuangan) yang terdaftar di database, serta mendaftarkan hak akses mereka (*roles*).
 
-### 4. Menjalankan Backend (API)
-Masih di **Terminal 2** (atau terminal baru):
+#### 💻 Terminal 3 — Backend API
+Jalankan server API backend:
 ```bash
 cd apps/api
 pnpm dev
 ```
-*(Backend biasanya berjalan di `http://localhost:3000` atau port yang diset di .env)*
+*(Server biasanya berjalan di `http://localhost:3000`)*
 
-### 5. Menjalankan Frontend (Web)
-Buka **Terminal 3**:
+#### 💻 Terminal 4 — Frontend Web
+Jalankan server pengembangan frontend:
 ```bash
 cd apps/web
 pnpm dev
 ```
-*(Buka URL yang muncul, biasanya `http://localhost:5173`, di browser Anda)*
+*(Buka tautan `http://localhost:5173` di web browser Anda untuk menggunakan aplikasi)*
 
-**Catatan:** Pastikan alamat API di frontend (`apps/web/.env` atau `apiClient.ts`) sudah mengarah ke localhost backend Anda.
+---
 
-### 6. Memulai Ulang atau Mereset Lingkungan Lokal (Setelah terminal mati / Hardhat di-restart)
-Jika Anda memulai ulang komputer, menutup seluruh terminal, atau me-restart node blockchain lokal (`npx hardhat node`), seluruh state blockchain in-memory akan hilang. Anda harus men-deploy ulang kontrak dan menyinkronkan database dengan blockchain baru tersebut.
+### B. Setup & Persiapan Database Pertama Kali
+Jika Anda baru pertama kali meng-clone repositori ini di komputer lokal, lakukan persiapan awal database Anda:
 
-Kami telah menyediakan script otomatis untuk melakukan hal ini dalam satu perintah. Ikuti langkah berikut:
+1. Masuk ke folder backend: `cd apps/api`
+2. Buat file `.env` (salin dari `.env.example`) dan isi `DATABASE_URL` dengan koneksi Postgres Anda.
+3. Jalankan migrasi/push schema untuk membuat tabel: `npx prisma db push`
+4. Masukkan data awal (akun dummy untuk tiap role): `npx prisma db seed`
 
-1. **Jalankan Node Blockchain Lokal** di **Terminal 1**:
+---
+
+### C. Pemeliharaan & Troubleshooting (Penting)
+
+#### 1. Masalah "Sender doesn't have enough funds to send tx" (Gas Fee)
+Jika Anda mendapatkan error gas fee saat mencoba transaksi, hal ini terjadi karena blockchain lokal di-restart namun backend belum sempat di-seeding ulang, sehingga saldo wallet dinamis pengguna kembali menjadi `0` di blockchain.
+*   **Solusi**: Pastikan Anda sudah menjalankan `pnpm init-local` di root proyek setelah Hardhat node berjalan, dan pastikan Anda me-restart server backend (`apps/api`) setelah file `.env` berubah agar ia membaca alamat kontrak yang baru.
+
+#### 2. Mengosongkan / Reset Total Database
+Jika Anda ingin menghapus seluruh data di database (termasuk data pengguna/user) dan mengatur ulang skema ke kondisi bersih (empty state) untuk memulai kembali dari awal:
+1. Masuk ke folder backend: `cd apps/api`
+2. Jalankan perintah hapus skema:
    ```bash
-   cd packages/contracts
-   npx hardhat node
+   npx prisma db push --force-reset
    ```
-2. **Inisialisasi & Sinkronisasi** di **Terminal 2** (jalankan dari root proyek):
+3. Isi kembali akun-akun dummy baru:
    ```bash
-   pnpm init-local
+   npx prisma db seed
    ```
-   *(Script ini otomatis men-deploy smart contract, menyalin berkas ABI, mengosongkan data transaksi lama di database, dan mengisi ulang saldo/funding 1 ETH ke wallet peran pengguna desa).*
-
-Setelah itu, Anda cukup menjalankan server Express backend (`pnpm dev` di `apps/api`) dan frontend (`pnpm dev` di `apps/web`) seperti biasa.
-
-
+> [!IMPORTANT]
+> **Penting**: Setelah melakukan reset total database, sesi login lama Anda di browser masih akan tersimpan. Anda **wajib menekan tombol Keluar (Log Out)** di browser dan login kembali menggunakan akun desa baru hasil seeding agar tidak terjadi konflik alamat wallet lama.
