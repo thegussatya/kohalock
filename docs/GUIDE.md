@@ -826,9 +826,11 @@ Setelah eksekusi berhasil, lanjutkan ke Langkah 1 skenario ini sebagai Operator 
    - **Barang/Jasa**: `Pasir Pasang` | **Volume**: `20` | **Satuan**: `Truk` | **Harga Satuan**: `250000`
    - **Barang/Jasa**: `Upah Tukang (HOK)` | **Volume**: `20` | **Satuan**: `Hari` | **Harga Satuan**: `150000`
    - **Barang/Jasa**: `Upah Pekerja (HOK)` | **Volume**: `50` | **Satuan**: `Hari` | **Harga Satuan**: `130000`
-5. Upload dokumen bukti kwitansi/nota belanja (PDF apa saja).
-6. Masukkan PIN Smart Contract.
-7. ✅ Data rincian beserta hash PDF akan disimpan permanen ke Blockchain. Status LPJ transaksi menjadi `LOCKED_ONCHAIN`.
+5. Di bagian atas halaman, klik **[Template LPJ (Word)]** untuk mengunduh *template* kosong, dan klik **[Export ke Excel (CSV)]** untuk mengunduh rincian tabel Anda.
+6. Buka kedua *file* tersebut, *copy-paste* rincian belanja dari Excel ke dalam tabel di dokumen Word, sesuaikan formatnya jika perlu, lalu **simpan/export dokumen Word tersebut menjadi PDF**.
+7. Pada bagian bawah halaman web, unggah *file* PDF tadi ke bagian **Upload Dokumen LPJ Fisik (PDF) - Wajib untuk Audit**.
+8. Klik tombol **Kunci ke Blockchain**, lalu masukkan PIN Smart Contract: `123456`.
+9. ✅ Data rincian beserta hash PDF akan disimpan permanen ke Blockchain. Status LPJ transaksi menjadi `LOCKED_ONCHAIN`.
 
 #### Langkah 2 — Kaur Keuangan: Mengunci LPJ Keuangan Program
 
