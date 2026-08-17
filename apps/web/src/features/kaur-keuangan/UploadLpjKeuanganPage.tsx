@@ -4,7 +4,7 @@ import PageHeader from '../../components/PageHeader';
 import { KAUR_KEUANGAN_MENU } from './menu';
 import apiClient from '../../lib/apiClient';
 import { toast } from 'react-hot-toast';
-import { Upload, CheckCircle2, FileText, Search, Lock } from 'lucide-react';
+import { Upload, CheckCircle2, FileText, Search, Lock, Download } from 'lucide-react';
 import PinModal from '../../components/PinModal';
 import Badge from '../../components/Badge';
 
@@ -74,6 +74,17 @@ export default function UploadLpjKeuanganPage() {
         title="Laporan LPJ Keuangan" 
         description="Unggah dan kunci dokumen LPJ Keuangan ke dalam Blockchain untuk keperluan audit per program/kegiatan." 
       />
+
+      <div className="mb-6 flex">
+        <a 
+          href="/templates/Template Laporan Pertanggungjawaban Keuangan Desa.docx" 
+          download 
+          className="inline-flex items-center justify-center text-sm font-bold text-blue-700 bg-white border border-blue-300 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Download Template LPJ Keuangan (Word)
+        </a>
+      </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
