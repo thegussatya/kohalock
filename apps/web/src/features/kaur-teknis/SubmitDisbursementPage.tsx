@@ -208,9 +208,9 @@ export default function SubmitDisbursementPage() {
                 className="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-medium bg-white transition-colors disabled:bg-slate-100 disabled:text-slate-400"
               >
                 <option value="" disabled>-- Pilih Termin --</option>
-                <option value="Tahap I">Tahap I (40% - Jan s/d Sep)</option>
-                <option value="Tahap II">Tahap II (40% - Mar s/d Sep)</option>
-                <option value="Tahap III">Tahap III (20% - Mulai Juni)</option>
+                <option value="Tahap I">Tahap I (40%)</option>
+                <option value="Tahap II">Tahap II (40%)</option>
+                <option value="Tahap III">Tahap III (20%)</option>
               </select>
             </div>
 
