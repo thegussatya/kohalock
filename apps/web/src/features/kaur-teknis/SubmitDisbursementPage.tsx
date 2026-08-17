@@ -137,6 +137,12 @@ export default function SubmitDisbursementPage() {
           const rawNominal = Number(nominal.replace(/\./g, ''));
           const isNominalExceeds = rawNominal > sisaPagu;
 
+          if (!termin) {
+            toast.error('Pilih Termin Pencairan terlebih dahulu');
+            setIsSubmitting(false);
+            return;
+          }
+
           if (!nominal || rawNominal <= 0) {
             toast.error('Nominal tidak valid');
             setIsSubmitting(false);
@@ -198,12 +204,13 @@ export default function SubmitDisbursementPage() {
                 value={termin}
                 onChange={(e) => setTermin(e.target.value)}
                 disabled={!selectedProgramId}
+                required
                 className="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-medium bg-white transition-colors disabled:bg-slate-100 disabled:text-slate-400"
               >
                 <option value="" disabled>-- Pilih Termin --</option>
-                <option value="Tahap I">Tahap I (40%)</option>
-                <option value="Tahap II">Tahap II (40%)</option>
-                <option value="Tahap III">Tahap III (20%)</option>
+                <option value="Tahap I">Tahap I (40% - Jan s/d Sep)</option>
+                <option value="Tahap II">Tahap II (40% - Mar s/d Sep)</option>
+                <option value="Tahap III">Tahap III (20% - Mulai Juni)</option>
               </select>
             </div>
 
@@ -220,28 +227,16 @@ export default function SubmitDisbursementPage() {
 
           {/* Nominal Pengajuan */}
           <div className="max-w-md mb-6">
-            <label className="block text-sm font-bold text-slate-700 mb-2">Nominal Pengajuan</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Nominal Pengajuan (Otomatis)</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">Rp</span>
               <input 
                 type="text" 
                 value={nominal}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '');
-                  const formatted = val ? new Intl.NumberFormat('id-ID').format(parseInt(val, 10)) : '';
-                  setNominal(formatted);
-                }}
-                disabled={!selectedProgramId || !!termin}
-                className={`w-full pl-12 p-3.5 border rounded-lg focus:ring-2 outline-none text-base font-bold transition-all ${
-                  !selectedProgramId 
-                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
-                    : isNominalExceeds 
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50 text-red-700' 
-                      : termin
-                        ? 'border-slate-300 bg-slate-50 text-slate-800'
-                        : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white'
-                }`}
-                placeholder={selectedProgramId ? "Masukkan angka pengajuan..." : "Pilih program terlebih dahulu"}
+                readOnly
+                disabled
+                className={`w-full pl-12 p-3.5 border rounded-lg outline-none text-base font-bold transition-all bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed`}
+                placeholder="Pilih Termin agar nominal terhitung otomatis..."
               />
             </div>
             {isNominalExceeds && (
@@ -291,7 +286,7 @@ export default function SubmitDisbursementPage() {
           <div className="pt-6 border-t border-slate-200 flex justify-end gap-3 flex-wrap">
             <button
               type="button"
-              onClick={(e) => {
+              onClick={() => {
                 setIsPanicAction(true);
                 setShowPanicModal(true);
               }}
@@ -337,7 +332,7 @@ export default function SubmitDisbursementPage() {
               </button>
               <button 
                 type="button"
-                onClick={(e) => {
+                onClick={() => {
                   // Manually trigger form submit 
                   const form = document.getElementById("disbursementForm") as HTMLFormElement;
                   if(form) form.requestSubmit();
@@ -362,7 +357,8 @@ export default function SubmitDisbursementPage() {
               const rawNominal = Number(nominal.replace(/\./g, ''));
               const formData = new FormData();
               formData.append('proposalId', selectedProgramId);
-              formData.append('keterangan', keterangan);
+              const finalKeterangan = termin ? `[${termin}] ${keterangan}` : keterangan;
+              formData.append('keterangan', finalKeterangan);
               formData.append('nominal', rawNominal.toString());
               formData.append('geotagLat', geotagCoords!.lat.toString());
               formData.append('geotagLng', geotagCoords!.lng.toString());
@@ -381,7 +377,7 @@ export default function SubmitDisbursementPage() {
               let response;
               if (isEditing && editId) {
                 response = await apiClient.put(`/disbursements/${editId}`, {
-                  keterangan,
+                  keterangan: finalKeterangan,
                   nominal: rawNominal,
                   geotagLat: geotagCoords!.lat,
                   geotagLng: geotagCoords!.lng,
