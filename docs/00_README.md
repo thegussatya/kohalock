@@ -85,22 +85,22 @@ pnpm dev
 
 **Catatan:** Pastikan alamat API di frontend (`apps/web/.env` atau `apiClient.ts`) sudah mengarah ke localhost backend Anda.
 
-### 6. Mereset Database setelah Deploy Ulang Blockchain
-Jika Anda merestart node blockchain lokal (`npx hardhat node`) dan mendeploy ulang kontrak, data transaksi di database relasional akan menjadi usang atau tidak sinkron dengan status hash di blockchain yang baru. Oleh karena itu, jalankan perintah berikut untuk mereset on-chain data:
+### 6. Memulai Ulang atau Mereset Lingkungan Lokal (Setelah terminal mati / Hardhat di-restart)
+Jika Anda memulai ulang komputer, menutup seluruh terminal, atau me-restart node blockchain lokal (`npx hardhat node`), seluruh state blockchain in-memory akan hilang. Anda harus men-deploy ulang kontrak dan menyinkronkan database dengan blockchain baru tersebut.
 
-1. Pastikan Anda sudah menjalankan ulang deploy smart contract (Langkah 3).
-2. Dari root proyek, masuk ke folder backend:
-```bash
-cd apps/api
-npx ts-node scripts/reset-onchain-data.ts
-```
-*(Script ini akan otomatis menghapus semua data transaksi lama seperti proposal, pencairan, atau buku kas, sehingga Anda bisa memulai simulasi ulang dari awal)*
+Kami telah menyediakan script otomatis untuk melakukan hal ini dalam satu perintah. Ikuti langkah berikut:
 
-> [!IMPORTANT]
-> **Masalah "Sender doesn't have enough funds to send tx"**: 
-> Jika Anda mendapati error ini saat mencoba transaksi setelah me-restart node/mendeploy ulang kontrak, hal itu karena saldo wallet dinamis di database telah ter-reset menjadi `0` di blockchain yang baru. Untuk mengatasinya, jalankan kembali perintah database seed untuk mengisi saldo wallet (funding 1 ETH) dan memperbarui hak akses peran:
-> ```bash
-> cd apps/api
-> npx prisma db seed
-> ```
+1. **Jalankan Node Blockchain Lokal** di **Terminal 1**:
+   ```bash
+   cd packages/contracts
+   npx hardhat node
+   ```
+2. **Inisialisasi & Sinkronisasi** di **Terminal 2** (jalankan dari root proyek):
+   ```bash
+   pnpm init-local
+   ```
+   *(Script ini otomatis men-deploy smart contract, menyalin berkas ABI, mengosongkan data transaksi lama di database, dan mengisi ulang saldo/funding 1 ETH ke wallet peran pengguna desa).*
+
+Setelah itu, Anda cukup menjalankan server Express backend (`pnpm dev` di `apps/api`) dan frontend (`pnpm dev` di `apps/web`) seperti biasa.
+
 
