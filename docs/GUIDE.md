@@ -875,15 +875,14 @@ Untuk menguji fitur ini, Anda membutuhkan sebuah **file PDF Berita Acara yang pe
 #### Langkah 1 — Auditor: Akses Alat Uji Bukti Digital
 
 1. Login sebagai **Inspektur Wilayah** (`inspektur.auditor@kohalock.desa` / `password123`)
-2. Buka menu **Alat Uji Bukti Digital** (Integrity Checker).
+2. Buka menu **Verifikasi Dokumen & Bukti**.
 
 #### Langkah 2 — Auditor: Uji File PDF Luring (Offline File)
 
-1. Pilih metode pencarian: **Cari berdasarkan ID Transaksi** atau **Cari berdasarkan Hash**.
-2. Masukkan ID transaksi (atau biarkan kosong jika ingin mencocokkan hash secara global).
-3. Seret dan lepas (drag & drop) file PDF dari flashdisk ke dalam area upload.
-4. Sistem akan melakukan hashing SHA-256 secara lokal di browser Auditor (file tidak dikirim ke server).
-5. Sistem akan mencocokkan hash lokal tersebut dengan *Golden Hash* yang tersimpan di dalam Smart Contract (Blockchain).
+1. Pilih **Jenis Dokumen yang Akan Diuji** (misalnya: *Berita Acara Pencairan* atau *LPJ Teknis*).
+2. Pilih transaksi/dokumen spesifik dari *dropdown* daftar yang muncul di bawahnya.
+3. Seret dan lepas (drag & drop) file PDF dari flashdisk Anda ke dalam area kotak unggah.
+4. Sistem akan melakukan *hashing* (kriptografi) terhadap file tersebut dan membandingkannya dengan *Golden Hash* yang tersimpan permanen di dalam Smart Contract (Blockchain).
 
 #### Langkah 3 — Hasil Analisis Keaslian
 
