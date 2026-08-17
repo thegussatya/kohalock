@@ -49,10 +49,10 @@ async function main() {
   const users = [
     {
       nama: 'Budi Santoso',
-      email: 'budi.santoso.kaur-teknis@kohalock.desa',
+      email: 'budi.santoso.operator-desa@kohalock.desa',
       passwordHash,
       role: 'kaur-teknis',
-      jabatan: 'Kaur Teknis'
+      jabatan: 'Operator Desa'
     },
     {
       nama: 'Siti Rahma',

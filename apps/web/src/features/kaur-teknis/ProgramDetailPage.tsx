@@ -32,7 +32,7 @@ export default function ProgramDetailPage() {
 
 
   return (
-    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
+    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Operator Desa">
       <div className="mb-6">
         <Link 
           to="/kaur-teknis/program-saya" 

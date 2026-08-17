@@ -12,7 +12,6 @@ export default function MonthlyClosingPage() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
   const [closingState, setClosingState] = useState<'idle' | 'hashing' | 'success'>('idle');
-  const [pin, setPin] = useState('');
   const [months, setMonths] = useState<any[]>([]);
   const [validations, setValidations] = useState<any>(null);
   const [currentOpenMonth, setCurrentOpenMonth] = useState<any>(null);
@@ -58,8 +57,8 @@ export default function MonthlyClosingPage() {
     setShowPinModal(true);
   };
 
-  const handleConfirmPin = async () => {
-    if (pin.length !== 6) {
+  const handleConfirmPin = async (pinStr: string) => {
+    if (pinStr.length !== 6) {
       toast.error("PIN harus 6 digit");
       return;
     }
@@ -70,7 +69,7 @@ export default function MonthlyClosingPage() {
       const res = await apiClient.post('/monthly-closing/close', {
         bulan: currentOpenMonth.bulan,
         tahun: currentOpenMonth.tahun,
-        pin
+        pin: pinStr
       });
       
       setClosingState('success');
@@ -262,28 +261,10 @@ export default function MonthlyClosingPage() {
       {/* PIN Modal */}
       <PinModal
         isOpen={showPinModal}
-        onClose={() => {
-          setShowPinModal(false);
-          setPin('');
-        }}
+        onClose={() => setShowPinModal(false)}
         title="Otorisasi PIN"
         description="Masukkan 6 digit PIN Anda untuk memvalidasi penutupan buku."
-        onConfirm={async (pin) => {
-          try {
-            await apiClient.post('/monthly-closing/close', { 
-              bulan: closingBulan, 
-              tahun: closingTahun,
-              pin 
-            });
-            toast.success(`Buku Kas bulan ${closingBulan}/${closingTahun} berhasil ditutup!`);
-            fetchClosings();
-          } catch (error: any) {
-            toast.error(error.response?.data?.error || "Gagal menutup buku bulanan");
-          } finally {
-            setShowPinModal(false);
-            setPin('');
-          }
-        }}
+        onConfirm={handleConfirmPin}
       />
     </RoleLayout>
   );

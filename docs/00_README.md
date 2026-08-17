@@ -75,3 +75,14 @@ pnpm dev
 *(Buka URL yang muncul, biasanya `http://localhost:5173`, di browser Anda)*
 
 **Catatan:** Pastikan alamat API di frontend (`apps/web/.env` atau `apiClient.ts`) sudah mengarah ke localhost backend Anda.
+
+### 6. Mereset Database setelah Deploy Ulang Blockchain
+Jika Anda merestart node blockchain lokal (`npx hardhat node`) dan mendeploy ulang kontrak, data transaksi di database relasional akan menjadi usang atau tidak sinkron dengan status hash di blockchain yang baru. Oleh karena itu, jalankan perintah berikut untuk mereset on-chain data:
+
+1. Pastikan Anda sudah menjalankan ulang deploy smart contract (Langkah 3).
+2. Dari root proyek, masuk ke folder backend:
+```bash
+cd apps/api
+npx ts-node scripts/reset-onchain-data.ts
+```
+*(Script ini akan otomatis menghapus semua data transaksi lama seperti proposal, pencairan, atau buku kas, sehingga Anda bisa memulai simulasi ulang dari awal)*

@@ -10,12 +10,12 @@
 - [x] Setup Postgres + Prisma, migrate schema awal (`04_DATABASE_SCHEMA.md`)
 - [x] Setup auth dasar (login, JWT, RBAC middleware)
 
-## Fase 1 — Alur Inti Kaur Teknis → Sekdes → Kades (MVP Kritis)
+## Fase 1 — Alur Inti Operator Desa → Sekdes → Kades (MVP Kritis)
 - [ ] Contract: `registerProposal`, `submitDisbursement`, `verifyBySekdes`, `disburse`, `returnForRevision` + test Hardhat
 - [ ] Deploy contract ke testnet (Polygon Amoy)
 - [ ] Custodial signer service (generate keypair saat user dibuat, encrypt/decrypt via PIN)
 - [ ] `chain-indexer` service (listen event → update Postgres)
-- [x] UI Kaur Teknis: Dashboard, Form Musrembang, Ajukan Pencairan (dengan kamera native + geotag watermark), Riwayat Penolakan
+- [x] UI Operator Desa: Dashboard, Form Musrembang, Ajukan Pencairan (dengan kamera native + geotag watermark), Riwayat Penolakan
 - [x] UI Sekdes: Dashboard, Verifikasi Pengajuan (Split-View Reviewer + Map widget + PDF viewer + Hash checker), Pantauan Anggaran
 - [x] UI Kades: Dashboard, Persetujuan Pencairan, halaman detail + tombol Cairkan Dana
 

@@ -50,14 +50,14 @@ Lokasi: `apps/api/routes/`
 | Endpoint | Method | Protected | Ringkasan Fungsi |
 | :--- | :--- | :--- | :--- |
 | `/api/auth/login` | POST | Tidak | Melakukan autentikasi menggunakan email dan password, lalu mengembalikan token JWT. |
-| `/api/proposals/` | POST | Ya | Membuat proposal / usulan program baru dari Kaur Teknis. |
+| `/api/proposals/` | POST | Ya | Membuat proposal / usulan program baru dari Operator Desa. |
 | `/api/proposals/` | GET | Ya | Mengambil daftar semua proposal (termasuk relasi pembuatnya). |
 | `/api/disbursements/sisa-pagu/:proposalId` | GET | Ya | Mengambil sisa pagu anggaran dari suatu proposal (paguMaksimal dikurangi total pencairan yang valid). |
 | `/api/disbursements/` | POST | Ya | Membuat pengajuan pencairan (disbursement) baru dengan status awal `PENDING_SEKDES`. |
 | `/api/disbursements/` | GET | Ya | Mengambil daftar pengajuan, mendukung *query parameter* `?status=` untuk memfilter berdasarkan status. |
 | `/api/disbursements/execution-queue` | GET | Ya | Mengambil khusus pengajuan dengan status `PENDING_EKSEKUSI` (untuk Kaur Keuangan). |
 | `/api/disbursements/:id` | GET | Ya | Mengambil detail spesifik pengajuan pencairan. |
-| `/api/disbursements/:id` | PUT | Ya | (Kaur Teknis) Menyimpan revisi pengajuan pencairan yang dikembalikan (update nominal/geotag), mereset status kembali ke `PENDING_SEKDES`. |
+| `/api/disbursements/:id` | PUT | Ya | (Operator Desa) Menyimpan revisi pengajuan pencairan yang dikembalikan (update nominal/geotag), mereset status kembali ke `PENDING_SEKDES`. |
 | `/api/disbursements/:id/verify` | POST | Ya | (Sekdes) Memverifikasi pengajuan. Mengubah status ke `PENDING_KADES` dan set `verifiedAt`. |
 | `/api/disbursements/:id/return-revision` | POST | Ya | (Sekdes/Kades) Menolak dengan catatan revisi, mengubah status ke `RETURNED_FOR_REVISION`. |
 | `/api/disbursements/:id/authorize` | POST | Ya | (Kades) Mengotorisasi pencairan. Mengubah status ke `PENDING_EKSEKUSI` dan set `authorizedAt`. |
@@ -75,7 +75,7 @@ Lokasi: `apps/api/routes/`
 | `/api/monthly-closing/:id/verify` | GET | Ya | Memverifikasi kecocokan hash kriptografis dari ledger bulanan yang tersimpan dengan data historis. |
 | `/api/ledger/timeline` | GET | Ya | Mengambil daftar pencairan untuk ditampilkan di eksplorer. Mendukung filter pencarian (`?search=`) berbasis judul usulan. |
 | `/api/ledger/timeline/:id` | GET | Ya | Mengambil detail 1 pencairan yang dipetakan sebagai rentetan tahapan timeline berdasarkan timestamp. |
-| `/api/dashboard/*` | GET | Ya | Endpoint agregasi metrik spesifik untuk 5 role (Kaur Teknis, Sekdes, Kades, Auditor, BPD). |
+| `/api/dashboard/*` | GET | Ya | Endpoint agregasi metrik spesifik untuk 5 role (Operator Desa, Sekdes, Kades, Auditor, BPD). |
 | `/api/public/summary` | GET | Tidak | Endpoint agregasi metrik ringkasan dana, realisasi, dan jumlah proyek untuk dashboard publik. |
 | `/api/public/projects` | GET | Tidak | Mengambil daftar seluruh proyek dengan filter judul (`?search=`), dusun (`?dusun=`), dan status (`?status=`). |
 | `/api/public/projects/:id` | GET | Tidak | Mengambil detail publik 1 proyek lengkap dengan informasi termin pencairan dan galeri geotagging. |
@@ -122,8 +122,8 @@ Rute (*route*) didaftarkan pada Express *app* dengan urutan berikut:
 ## 5. Alur Inti yang Sudah Terhubung End-to-End
 Sistem tata kelola desa KOHALOCK saat ini telah memfasilitasi alur transaksi dari hulu ke hilir:
 
-1.  **Musrembang**: Kaur Teknis membuat program kerja / proposal baru di `/api/proposals`.
-2.  **Ajukan Pencairan**: Kaur Teknis mengajukan dana untuk proposal tersebut di `/api/disbursements`. Status: **`PENDING_SEKDES`** (mencatat `submittedAt`).
+1.  **Musrembang**: Operator Desa membuat program kerja / proposal baru di `/api/proposals`.
+2.  **Ajukan Pencairan**: Operator Desa mengajukan dana untuk proposal tersebut di `/api/disbursements`. Status: **`PENDING_SEKDES`** (mencatat `submittedAt`).
 3.  **Verifikasi Sekdes**: Sekdes mereviu dan menyetujui. Status transisi: **`PENDING_KADES`** (mencatat id sekdes dan `verifiedAt`).
 4.  **Otorisasi Kades**: Kepala Desa meninjau kembali dan memberikan persetujuan final. Status transisi: **`PENDING_EKSEKUSI`** (mencatat id kades dan *field* `authorizedAt` yang baru ditambahkan untuk mengakomodasi timeline yang lebih akurat).
 5.  **Eksekusi Kaur Keuangan**: Bendahara mencairkan dana. Status transisi: **`DISBURSED`** (mencatat `disbursedAt`).
@@ -133,8 +133,8 @@ Sistem tata kelola desa KOHALOCK saat ini telah memfasilitasi alur transaksi dar
 Halaman-halaman frontend yang **SUDAH** diintegrasikan untuk memanggil data langsung dari API asli (bukan data statis):
 
 *   **Semua Modul & Dashboard (100% Tersambung)**
-    Berdasarkan update terakhir, seluruh modul untuk 7 role (Kaur Teknis, Sekdes, Kades, Kaur Keuangan, BPD/Adat, Auditor, dan Publik) telah berhasil diintegrasikan dengan *endpoint* backend. Ini mencakup seluruh fitur yang sebelumnya masih berstatus *dummy*, termasuk namun tidak terbatas pada:
-    *   **Kaur Teknis**: My Programs, Program Detail, Formulir Musrembang, Ajukan Pencairan, Riwayat Penolakan.
+    Berdasarkan update terakhir, seluruh modul untuk 7 role (Operator Desa, Sekdes, Kades, Kaur Keuangan, BPD/Adat, Auditor, dan Publik) telah berhasil diintegrasikan dengan *endpoint* backend. Ini mencakup seluruh fitur yang sebelumnya masih berstatus *dummy*, termasuk namun tidak terbatas pada:
+    *   **Operator Desa**: My Programs, Program Detail, Formulir Musrembang, Ajukan Pencairan, Riwayat Penolakan.
     *   **Sekdes**: Verification Queue, Budget Monitoring, Clarification Inbox, Verification History.
     *   **Kades**: Disbursement Approval, Disbursement Detail, Authorization History, Clarification Analytics, Public Clarification Center, Integrity Shield (Panic Button).
     *   **Kaur Keuangan**: Execution Queue, General Cash Book, Bank Book, Tax Book, Monthly Closing, Correction Transaction, Village Income.

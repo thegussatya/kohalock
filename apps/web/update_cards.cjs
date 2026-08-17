@@ -34,25 +34,25 @@ for (const [role, cardsMap] of Object.entries(mappings)) {
   let isModified = false;
 
   if (!content.includes("import { useNavigate }")) {
-    const importMatch = content.match(/import .*?;\\n/g);
+    const importMatch = content.match(/import .*?;\n/g);
     if (importMatch) {
       const lastImport = importMatch[importMatch.length - 1];
-      content = content.replace(lastImport, lastImport + "import { useNavigate } from 'react-router-dom';\\n");
+      content = content.replace(lastImport, lastImport + "import { useNavigate } from 'react-router-dom';\n");
       isModified = true;
     }
   }
 
   if (!content.includes("const navigate = useNavigate();")) {
-    content = content.replace(/export default function DashboardPage\(\) \{\n/, "export default function DashboardPage() {\\n  const navigate = useNavigate();\\n");
+    content = content.replace(/export default function DashboardPage\(\) \{\n/, "export default function DashboardPage() {\n  const navigate = useNavigate();\n");
     isModified = true;
   }
 
   for (const [cardTitle, route] of Object.entries(cardsMap)) {
-    const cardRegex = new RegExp('<MetricCard\\\\s+title="' + cardTitle + '"[\\\\s\\\\S]*?\\\\/>', 'g');
+    const cardRegex = new RegExp('<MetricCard\\s+title="' + cardTitle + '"[\\s\\S]*?\\/>', 'g');
     
     content = content.replace(cardRegex, (match) => {
       if (match.includes('onClick=')) return match;
-      return '<div onClick={() => navigate(\\'' + route + '\\')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">\\n          ' + match + '\\n        </div>';
+      return `<div onClick={() => navigate('${route}')} className="cursor-pointer hover:shadow-md transition-shadow rounded-2xl">\n          ${match}\n        </div>`;
     });
     isModified = true;
   }

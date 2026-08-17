@@ -3,7 +3,7 @@ import BackLink from '../../components/BackLink';
 import { toast } from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Download, ShieldAlert, FileText, CheckCircle, XCircle, MapPin, Eye } from 'lucide-react';
+import { Download, ShieldAlert } from 'lucide-react';
 import RoleLayout from '../../components/RoleLayout';
 import PinModal from '../../components/PinModal';
 import MapWidget from '../../components/MapWidget';
@@ -93,7 +93,7 @@ export default function ReviewSubmissionPage() {
             )}
             <div className="mt-4 pt-4 border-t border-slate-100">
               <p className="text-sm font-bold text-slate-700">Program: {data.proposal?.judulUsulan}</p>
-              <p className="text-xs text-slate-500 mt-1">Kaur Teknis: {data.proposal?.kaurTeknis?.nama}</p>
+              <p className="text-xs text-slate-500 mt-1">Operator Desa: {data.proposal?.kaurTeknis?.nama}</p>
               <p className="text-xs text-slate-600 mt-2 italic">"{data.keterangan}"</p>
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function ReviewSubmissionPage() {
           <div className="bg-white p-8 rounded-2xl w-full max-w-lg shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200">
             <h3 className="text-2xl font-bold text-slate-900 mb-2">Kembalikan Dokumen</h3>
             <p className="text-sm text-slate-600 mb-6">
-              Berikan catatan evaluasi yang jelas agar Kaur Teknis dapat memperbaiki dokumen pengajuan ini.
+              Berikan catatan evaluasi yang jelas agar Operator Desa dapat memperbaiki dokumen pengajuan ini.
             </p>
             <textarea 
               rows={5}

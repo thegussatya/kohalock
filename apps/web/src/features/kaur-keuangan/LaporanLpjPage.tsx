@@ -86,7 +86,7 @@ export default function LaporanLpjPage() {
       <div className="relative mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
         <PageHeader 
           title={`Laporan Rincian LPJ Barang & Jasa - ${currentYear}`} 
-          description="Rekapitulasi seluruh rincian belanja dari Kaur Teknis per kegiatan." 
+          description="Rekapitulasi seluruh rincian belanja dari Operator Desa per kegiatan." 
         />
         <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
           <select 

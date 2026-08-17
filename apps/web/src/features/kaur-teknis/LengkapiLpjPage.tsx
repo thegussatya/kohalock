@@ -218,7 +218,7 @@ export default function LengkapiLpjPage() {
   if (loading) return <div className="p-8 text-center text-slate-500 font-bold animate-pulse">Memuat data...</div>;
 
   return (
-    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
+    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Operator Desa">
       <div className="mb-6 print:hidden">
         <button 
           onClick={() => navigate(-1)}
@@ -470,7 +470,7 @@ export default function LengkapiLpjPage() {
 
         <div className="flex justify-end pr-12">
           <div className="text-center">
-            <p className="mb-16">KOHALOCK, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>Kaur Teknis</p>
+            <p className="mb-16">KOHALOCK, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br/>Operator Desa</p>
             <p className="font-bold underline">Budi Santoso</p>
           </div>
         </div>

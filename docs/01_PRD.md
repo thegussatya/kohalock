@@ -10,7 +10,7 @@ KOHALOCK adalah platform digital untuk mengelola siklus dana desa (Musrembang �
 ## 2. Alur Bisnis Inti (Core Flow)
 
 ```
-[Kaur Teknis]                [Sekdes]                [Kades]
+[Operator Desa]                [Sekdes]                [Kades]
 Usulan Musrembang   ─────►
    (lock ke chain)
                                                             
@@ -36,7 +36,7 @@ Detail UI lengkap per role ada di `docs/specs/MODUL_*.md`. Ringkasan tanggung ja
 
 | Role | Tanggung Jawab Utama | Aksi On-Chain | Aksi Off-Chain |
 |---|---|---|---|
-| **Kaur Teknis** (Role 1) | Input usulan Musrembang, ajukan pencairan termin, lengkapi rincian LPJ belanja, upload bukti lapangan (foto geotag) | Lock usulan, sign & ajukan pencairan | Isi form rincian LPJ dinamis, ekspor CSV |
+| **Operator Desa** (Role 1) | Input usulan Musrembang, ajukan pencairan termin, lengkapi rincian LPJ belanja, upload bukti lapangan (foto geotag) | Lock usulan, sign & ajukan pencairan | Isi form rincian LPJ dinamis, ekspor CSV |
 | **Sekdes** (Role 2) | Verifikator tahap 1: cek hash dokumen, lokasi GPS, PDF berita acara | Sign "Verifikasi & Teruskan ke Kades" | Balas klarifikasi warga, kembalikan untuk revisi |
 | **Kades** (Role 3) | Otorisator final pencairan, "panic button" tolak intervensi non-prosedural, generator bukti publik (QR/link) | Sign "Cairkan Dana" (final), sign "Tolak Intervensi" | Kelola kredensial PKI |
 | **Publik** (Role 4) | Pantau proyek & anggaran, ajukan klarifikasi, lapor rahasia (whistleblower) | — (read-only) | Kirim pertanyaan, lapor, scan QR |
@@ -54,7 +54,7 @@ Detail UI lengkap per role ada di `docs/specs/MODUL_*.md`. Ringkasan tanggung ja
 
 ## 5. Pelaporan & Audit (Baru)
 
-- **LPJ Dinamis**: Laporan Pertanggungjawaban kini diinput secara baris-per-baris (item, volume, harga) oleh Kaur Teknis dan tidak boleh melebihi plafon pencairan.
+- **LPJ Dinamis**: Laporan Pertanggungjawaban kini diinput secara baris-per-baris (item, volume, harga) oleh Operator Desa dan tidak boleh melebihi plafon pencairan.
 - **Laporan APBDes Otomatis**: Bendahara (Kaur Keuangan) dan Kades dapat melihat agregasi dari seluruh pendapatan desa dan realisasi belanja LPJ yang terakumulasi secara otomatis di menu Pelaporan. Sistem dapat mencetak laporan akhir maupun mengekspornya ke format CSV/Excel.
 
 ## 6. Out of Scope (v1)

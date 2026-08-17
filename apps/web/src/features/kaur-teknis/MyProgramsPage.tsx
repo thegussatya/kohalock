@@ -55,7 +55,7 @@ export default function MyProgramsPage() {
   };
 
   return (
-    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
+    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Operator Desa">
       <PageHeader 
         title="Program Saya" 
         description="Semua usulan Musrembang yang pernah Anda ajukan" 

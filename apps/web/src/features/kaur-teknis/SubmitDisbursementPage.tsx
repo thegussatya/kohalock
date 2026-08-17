@@ -14,6 +14,7 @@ export default function SubmitDisbursementPage() {
   const [selectedProgramId, setSelectedProgramId] = useState<string>('');
   const [sisaPagu, setSisaPagu] = useState<number>(0);
   const [keterangan, setKeterangan] = useState('');
+  const [termin, setTermin] = useState<string>('');
   const [nominal, setNominal] = useState<string>('');
   const [geotagCoords, setGeotagCoords] = useState<{lat: number, lng: number} | null>(null);
   const [geotagPhoto, setGeotagPhoto] = useState<string | null>(null);
@@ -69,6 +70,22 @@ export default function SubmitDisbursementPage() {
     }
   }, [selectedProgramId]);
   
+  useEffect(() => {
+    if (termin && selectedProgramId) {
+      const p = programList.find(x => x.id === selectedProgramId);
+      if (p && p.paguMaksimal) {
+        const pagu = Number(p.paguMaksimal);
+        let calc = 0;
+        if (termin === 'Tahap I' || termin === 'Tahap II') calc = pagu * 0.4;
+        else if (termin === 'Tahap III') calc = pagu * 0.2;
+        
+        if (calc > 0) {
+          setNominal(new Intl.NumberFormat('id-ID').format(calc));
+        }
+      }
+    }
+  }, [termin, selectedProgramId, programList]);
+
   const selectedProgram = programList.find(p => p.id === selectedProgramId);
   
   // Validasi sederhana: Cek apakah nominal melebihi sisa pagu anggaran
@@ -76,7 +93,7 @@ export default function SubmitDisbursementPage() {
   const isNominalExceeds = parsedNominal > sisaPagu;
 
   return (
-    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
+    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Operator Desa">
       <PageHeader 
         title={isEditing ? "Revisi Pengajuan Pencairan" : "Ajukan Pencairan"} 
         description={isEditing ? "Perbaiki data pengajuan yang dikembalikan oleh Sekdes." : "Formulir pengajuan pencairan dana untuk program yang telah disetujui di Musrembang."} 
@@ -163,6 +180,7 @@ export default function SubmitDisbursementPage() {
                 onChange={(e) => {
                   setSelectedProgramId(e.target.value);
                   setNominal(''); // Reset nominal ketika ganti program agar validasi ikut terset
+                  setTermin('');
                 }}
                 className="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-medium bg-white transition-colors"
               >
@@ -170,6 +188,22 @@ export default function SubmitDisbursementPage() {
                 {programList.map(p => (
                   <option key={p.id} value={p.id}>{p.judulUsulan}</option>
                 ))}
+              </select>
+            </div>
+
+            {/* Termin */}
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Termin Pencairan</label>
+              <select 
+                value={termin}
+                onChange={(e) => setTermin(e.target.value)}
+                disabled={!selectedProgramId}
+                className="w-full p-3.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm font-medium bg-white transition-colors disabled:bg-slate-100 disabled:text-slate-400"
+              >
+                <option value="" disabled>-- Pilih Termin --</option>
+                <option value="Tahap I">Tahap I (40%)</option>
+                <option value="Tahap II">Tahap II (40%)</option>
+                <option value="Tahap III">Tahap III (20%)</option>
               </select>
             </div>
 
@@ -197,13 +231,15 @@ export default function SubmitDisbursementPage() {
                   const formatted = val ? new Intl.NumberFormat('id-ID').format(parseInt(val, 10)) : '';
                   setNominal(formatted);
                 }}
-                disabled={!selectedProgramId}
+                disabled={!selectedProgramId || !!termin}
                 className={`w-full pl-12 p-3.5 border rounded-lg focus:ring-2 outline-none text-base font-bold transition-all ${
                   !selectedProgramId 
                     ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                     : isNominalExceeds 
                       ? 'border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50 text-red-700' 
-                      : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white'
+                      : termin
+                        ? 'border-slate-300 bg-slate-50 text-slate-800'
+                        : 'border-slate-300 focus:ring-blue-500 focus:border-blue-500 text-slate-800 bg-white'
                 }`}
                 placeholder={selectedProgramId ? "Masukkan angka pengajuan..." : "Pilih program terlebih dahulu"}
               />
@@ -371,6 +407,7 @@ export default function SubmitDisbursementPage() {
                   setNominal('');
                   setKeterangan('');
                   setGeotagCoords(null);
+                  setTermin('');
                 }
                 setShowPinModal(false);
               }

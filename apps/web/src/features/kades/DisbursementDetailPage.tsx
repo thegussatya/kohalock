@@ -69,7 +69,7 @@ export default function DisbursementDetailPage() {
   const judulUsulan = data.proposal?.judulUsulan || 'Program';
   const nominalDiajukan = Number(data.nominal);
   const nominalStr = nominalDiajukan.toLocaleString('id-ID');
-  const namaKaur = data.proposal?.kaurTeknis?.nama || 'Kaur Teknis';
+  const namaKaur = data.proposal?.kaurTeknis?.nama || 'Operator Desa';
   const isMelebihi = nominalDiajukan > sisaPagu;
 
   const handleDownloadSertifikat = async (certId: string) => {
@@ -165,7 +165,7 @@ export default function DisbursementDetailPage() {
               </p>
             )}
             <div className="mt-4 pt-4 border-t border-slate-100">
-              <p className="text-sm font-bold text-slate-700">Kaur Teknis: {namaKaur}</p>
+              <p className="text-sm font-bold text-slate-700">Operator Desa: {namaKaur}</p>
               <p className="text-xs text-slate-600 mt-2 italic">"{data.keterangan}"</p>
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function DisbursementDetailPage() {
               
               <div className="relative pl-6">
                 <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-blue-500 ring-4 ring-slate-50"></div>
-                <h4 className="text-sm font-bold text-slate-900">{namaKaur} (Kaur Teknis)</h4>
+                <h4 className="text-sm font-bold text-slate-900">{namaKaur} (Operator Desa)</h4>
                 <p className="text-xs font-semibold text-slate-500 mb-1">Mengajukan Pencairan</p>
                 <p className="text-xs text-slate-400">{data.submittedAt ? new Date(data.submittedAt).toLocaleDateString('id-ID') : '-'}</p>
               </div>

@@ -8,6 +8,10 @@ async function main() {
   await prisma.lpjItem.deleteMany();
   await prisma.taxBookEntry.deleteMany();
   await prisma.supervisionNote.deleteMany();
+  await prisma.whistleblowerReport.deleteMany();
+  await prisma.clarificationTicket.deleteMany();
+  await prisma.adatCase.deleteMany();
+  await prisma.notification.deleteMany();
   await prisma.interventionLog.deleteMany();
   await prisma.rejectionLog.deleteMany();
   await prisma.disbursement.deleteMany();

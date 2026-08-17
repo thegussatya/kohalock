@@ -142,7 +142,7 @@ export default function LegalExportPage() {
               <p className="font-semibold mb-2">Dokumen yang akan diuji secara otomatis dalam laporan ini:</p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>1. Berita Acara & Foto Fisik (dari Sekdes) untuk tiap tahap pencairan.</li>
-                <li>2. LPJ Fisik (dari Kaur Teknis) untuk tiap tahap pencairan.</li>
+                <li>2. LPJ Fisik (dari Operator Desa) untuk tiap tahap pencairan.</li>
                 <li>3. LPJ Keuangan (dari Kaur Keuangan) untuk keseluruhan program ini.</li>
                 <li>4. Laporan Realisasi Desa (dari Kades) untuk semester berjalan.</li>
               </ul>

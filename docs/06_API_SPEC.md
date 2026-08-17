@@ -17,7 +17,7 @@ Base URL: `/api/v1` (atau Kustom di server.ts: `/api`). Auth: `Authorization: Be
 - `POST /public/whistleblower` *(public)* — menerima payload whistleblower (encrypted-only) dari masyarakat tanpa logging backend.
 
 ## 3. Proposal (Musrembang)
-- `POST /proposals/` — `KAUR_TEKNIS`. Membuat proposal / usulan program baru dari Kaur Teknis.
+- `POST /proposals/` — `KAUR_TEKNIS`. Membuat proposal / usulan program baru dari Operator Desa.
 - `GET /proposals/` — Mengambil daftar semua proposal (termasuk relasi pembuatnya).
 
 ## 4. Disbursement (Pencairan)
@@ -70,7 +70,7 @@ Base URL: `/api/v1` (atau Kustom di server.ts: `/api`). Auth: `Authorization: Be
 - `GET /adat-cases` — `TOKOH_ADAT`/`BPD`. Mengambil daftar seluruh resolusi adat.
 
 ## 9. Dashboard Analytics (`/api/dashboard/*`)
-- `GET /dashboard/kaur-teknis` — Ringkasan usulan dan pencairan Kaur Teknis.
+- `GET /dashboard/kaur-teknis` — Ringkasan usulan dan pencairan Operator Desa.
 - `GET /dashboard/sekdes` — Dashboard metrik kinerja Sekdes.
 - `GET /dashboard/sekdes/budget` — Monitoring anggaran & sisa kas Sekdes.
 - `GET /dashboard/kades` — Ringkasan serapan anggaran & ranking dusun (Kades).

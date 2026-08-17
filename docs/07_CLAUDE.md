@@ -4,7 +4,7 @@
 
 ## Apa Project Ini
 
-KOHALOCK — platform transparansi dana desa berbasis blockchain, 6 role (Kaur Teknis, Sekdes, Kades, Publik, Auditor, BPD/Tokoh Adat). Detail lengkap: lihat `docs/01_PRD.md`, `docs/02_ARCHITECTURE.md`.
+KOHALOCK — platform transparansi dana desa berbasis blockchain, 6 role (Operator Desa, Sekdes, Kades, Publik, Auditor, BPD/Tokoh Adat). Detail lengkap: lihat `docs/01_PRD.md`, `docs/02_ARCHITECTURE.md`.
 
 ## Struktur Repo
 

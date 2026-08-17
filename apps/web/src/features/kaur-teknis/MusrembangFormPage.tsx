@@ -18,7 +18,6 @@ export default function MusrembangFormPage() {
   const [rabFile, setRabFile] = useState<File | null>(null);
 
   const [showModal, setShowModal] = useState(false);
-  const [pin, setPin] = useState('');
 
   const formatCurrency = (val: string) => {
     const raw = val.replace(/[^0-9]/g, '');
@@ -31,7 +30,7 @@ export default function MusrembangFormPage() {
   };
 
   return (
-    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
+    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Operator Desa">
       <div className="mb-8">
         <PageHeader title="Formulir Musrembang (Usulan Baru)" description="Catat dan abadikan usulan pembangunan dari hasil musyawarah warga langsung ke dalam Blockchain untuk menjamin transparansi anggaran." />
 
@@ -60,7 +59,7 @@ export default function MusrembangFormPage() {
               <input 
                 type="text" 
                 readOnly
-                value="Bpk. Budi Santoso (Kaur Teknis)"
+                value="Bpk. Budi Santoso (Operator Desa)"
                 className="w-full p-3.5 border border-slate-200 rounded-xl bg-slate-50 text-slate-500 text-sm font-semibold cursor-not-allowed"
               />
             </div>
@@ -143,7 +142,7 @@ export default function MusrembangFormPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Pagu Anggaran Maksimal</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2">Pagu Anggaran</label>
               <input 
                 type="text"
                 value={pagu}

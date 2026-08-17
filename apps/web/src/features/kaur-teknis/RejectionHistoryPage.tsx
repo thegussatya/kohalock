@@ -105,7 +105,7 @@ export default function RejectionHistoryPage() {
   };
 
   return (
-    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
+    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Operator Desa">
       <PageHeader title="Riwayat Penolakan" description="Halaman untuk memantau pengajuan yang ditolak sistem atau dikembalikan oleh verifikator." />
 
 

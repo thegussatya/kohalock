@@ -109,7 +109,7 @@ export default function IntegrityCheckerPage() {
   return (
     <RoleLayout menuItems={AUDITOR_MENU} userName="Inspektur Andi" userRole="Auditor / APH" settingsPath="/auditor/profil">
       <div className="mb-8">
-        <PageHeader title="Uji Alat Bukti (Integrity Checker)" description="Integrity Checker: Verifikasi keaslian dokumen digital atau foto lapangan dengan mencocokkan *Hash Cryptography* lokal melawan data yang tercatat permanen di Ledger Blockchain." />
+        <PageHeader title="Verifikasi Dokumen & Bukti (Integrity Checker)" description="Integrity Checker: Verifikasi keaslian dokumen digital atau foto lapangan dengan mencocokkan *Hash Cryptography* lokal melawan data yang tercatat permanen di Ledger Blockchain." />
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 mb-8 max-w-5xl">
@@ -127,7 +127,7 @@ export default function IntegrityCheckerPage() {
               className="w-full p-3.5 border border-slate-300 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm bg-slate-50 transition-colors font-semibold"
             >
               <option value="berita_acara">Berita Acara Pencairan (Sekdes/Kades)</option>
-              <option value="lpj_teknis">LPJ Fisik (Kaur Teknis)</option>
+              <option value="lpj_teknis">LPJ Fisik (Operator Desa)</option>
               <option value="lpj_keuangan">LPJ Keuangan (Bendahara)</option>
               <option value="lpj_desa">Laporan Realisasi Desa (Kades)</option>
             </select>

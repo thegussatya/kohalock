@@ -17,7 +17,7 @@ export default function HelpPage() {
     <SharedHelpPage
       menuItems={KAUR_TEKNIS_MENU}
       userName="Budi Santoso"
-      userRole="Kaur Teknis"
+      userRole="Operator Desa"
       faqItems={faqItems}
     />
   );

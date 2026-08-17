@@ -369,11 +369,41 @@ router.get('/auditor', authenticate, async (req: AuthRequest, res: Response): Pr
       return { month: l.label, anomalies: interventionCount + wbCount };
     });
 
+    const unresolvedWhistleblowersCount = allWhistleblowers.filter(wb => ['DITERIMA', 'PENDING', 'SEDANG_DIPROSES', 'PROSES'].includes(wb.status)).length;
+
+    const allDisbursementsWithProposal = await prisma.disbursement.findMany({
+      include: { proposal: true },
+      orderBy: { submittedAt: 'desc' }
+    });
+
+    const transactionDocuments = allDisbursementsWithProposal.map(d => {
+      const p = d.proposal;
+      let rabUrl = null;
+      if (p && p.fileUrls && typeof p.fileUrls === 'object') {
+        const urls = p.fileUrls as any;
+        rabUrl = urls.rabUrl || null;
+      }
+      return {
+        id: d.id,
+        namaProgram: p ? p.judulUsulan : 'Program Tidak Diketahui',
+        tanggal: d.submittedAt,
+        nominal: Number(d.nominal),
+        status: d.status,
+        rabUrl,
+        beritaAcaraUrl: d.beritaAcaraUrl || null,
+        fotoUrl: d.fotoUrl || null,
+        lpjTeknisUrl: d.lpjTeknisUrl || null,
+        lpjKeuanganUrl: p ? p.lpjKeuanganUrl : null
+      };
+    });
+
     res.json(serialize({
       totalTurnover,
       redFlagCount,
       chartData,
-      timeBoundAccess
+      timeBoundAccess,
+      unresolvedWhistleblowersCount,
+      transactionDocuments
     }));
   } catch (error: any) {
     res.status(500).json({ error: error.message });

@@ -79,7 +79,7 @@ Rekomendasi tooling monorepo: **pnpm workspaces + Turborepo** (ringan, cocok unt
 
 ## 4. Alur Data End-to-End (contoh: Ajukan Pencairan)
 
-1. **Kaur Teknis** isi form di `apps/web` → submit ke `POST /api/disbursements`.
+1. **Operator Desa** isi form di `apps/web` → submit ke `POST /api/disbursements`.
 2. `apps/api` terima file upload → `hash.service` hitung SHA-256 → `storage.service` simpan file ke S3 → simpan metadata ke Postgres (status: `PENDING_SEKDES`).
 3. `signer.service` decrypt private key Kaur (pakai PIN dari request) → sign & kirim tx `submitDisbursement(hash, nominal, programId)` ke contract via `blockchain.service`.
 4. Frontend polling status tx (pending → confirmed) pakai TanStack Query.

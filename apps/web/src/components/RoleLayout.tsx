@@ -25,7 +25,7 @@ export default function RoleLayout({ menuItems, settingsPath, userName = "Nama P
 
   const getDummySearchData = (role: string) => {
     switch (role) {
-      case 'Kaur Teknis':
+      case 'Operator Desa':
         return [
           { label: 'Formulir Musrembang', path: '/kaur-teknis/formulir-musrembang', category: 'Halaman' },
           { label: 'Ajukan Pencairan', path: '/kaur-teknis/ajukan-pencairan', category: 'Halaman' },
@@ -60,7 +60,7 @@ export default function RoleLayout({ menuItems, settingsPath, userName = "Nama P
         ];
       case 'Auditor / APH':
         return [
-          { label: 'Uji Alat Bukti', path: '/auditor/uji-bukti', category: 'Halaman' },
+          { label: 'Verifikasi Dokumen & Bukti', path: '/auditor/uji-bukti', category: 'Halaman' },
           { label: 'Kronologi Transaksi', path: '/auditor/ledger', category: 'Halaman' },
           { label: 'TX-001 (Pengaspalan)', path: '/auditor/ledger', category: 'Transaksi' },
           { label: 'TX-002 (Posyandu)', path: '/auditor/ledger', category: 'Transaksi' },

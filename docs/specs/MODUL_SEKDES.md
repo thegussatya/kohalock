@@ -25,7 +25,7 @@
 *   **Halaman Pemeriksaan (Split-View Reviewer - Muncul saat tombol ditekan):**
     *   **Panel Kiri (Data Teknis & Lapangan):**
         *   Rincian Anggaran: Teks *Read-Only* yang membandingkan (Sisa Pagu vs Nominal Diajukan).
-        *   Visualisasi Lokasi: *Widget Map* interaktif (Peta) yang langsung menampilkan titik merah (*pin*) dari koordinat GPS foto yang diunggah Kaur Teknis. Ada *preview* foto di atas peta.
+        *   Visualisasi Lokasi: *Widget Map* interaktif (Peta) yang langsung menampilkan titik merah (*pin*) dari koordinat GPS foto yang diunggah Operator Desa. Ada *preview* foto di atas peta.
         *   Status Keabsahan File (Hash Checker): *Badge* otomatis. Hijau "✅ Dokumen Otentik" atau Merah "🚨 Peringatan: Hash Berbeda / File Dimodifikasi".
     *   **Panel Kanan (Pratinjau Dokumen):**
         *   *PDF Viewer* yang tertanam (*embedded*) langsung di halaman sehingga Sekdes bisa langsung membaca lembar Berita Acara tanpa harus *download* file-nya ke komputer.

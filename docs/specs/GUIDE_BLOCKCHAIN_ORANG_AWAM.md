@@ -32,7 +32,7 @@ Pengajuan      Verifikasi     Persetujuan    Pencairan
 Dana Desa      Sekdes         Kades          Cair
 ```
 
-- Setiap **Blok** berisi sekumpulan data transaksi (misalnya: "Kaur Teknis mengajukan
+- Setiap **Blok** berisi sekumpulan data transaksi (misalnya: "Operator Desa mengajukan
   pencairan Rp 50 juta untuk perbaikan jalan desa pada tanggal 1 Agustus 2026").
 - Setiap blok juga menyimpan **sidik jari digital (hash)** dari blok sebelumnya, sehingga
   semua blok saling terhubung seperti rantai.
@@ -199,10 +199,10 @@ ketika menu tersebut diakses.
 
 ---
 
-### 6.1 ROLE: KAUR TEKNIS
+### 6.1 ROLE: OPERATOR DESA
 
 #### Menu: Formulir Musrembang (Pengajuan Program)
-- **Alur di Aplikasi**: Kaur Teknis mengisi formulir usulan program desa (nama program, lokasi
+- **Alur di Aplikasi**: Operator Desa mengisi formulir usulan program desa (nama program, lokasi
   dusun, kategori kegiatan, pagu maksimal anggaran) beserta upload dokumen musrembang.
 - **Yang Terjadi di Backend**:
   1. File dokumen musrembang (PDF daftar hadir, notulensi) di-upload ke server.
@@ -211,7 +211,7 @@ ketika menu tersebut diakses.
   3. Data proposal dan dokumen disimpan ke database (PostgreSQL).
 - **Yang Terjadi di Blockchain**:
   - Fungsi `registerProposal(dusun, kategori, paguMaksimal, dokumenHash)` di smart contract
-    dipanggil menggunakan kunci privat Kaur Teknis.
+    dipanggil menggunakan kunci privat Operator Desa.
   - Blockchain mencatat: "Proposal dengan ID #1 terdaftar atas nama dompet `0x123...` dengan
     hash dokumen `a3f8...`, pagu maksimal Rp X, pada blok ke-1024."
   - Peristiwa ini tercatat dalam sebuah **Event** bernama `ProposalRegistered` di blockchain.
@@ -220,7 +220,7 @@ ketika menu tersebut diakses.
   menurunkan limit anggaran secara curang.
 
 #### Menu: Ajukan Pencairan Dana
-- **Alur di Aplikasi**: Kaur Teknis mengisi formulir pencairan termin (nominal, keterangan,
+- **Alur di Aplikasi**: Operator Desa mengisi formulir pencairan termin (nominal, keterangan,
   foto lokasi dengan geotag, upload Berita Acara).
 - **Yang Terjadi di Backend**:
   1. Foto dan Berita Acara (PDF) di-upload ke server.

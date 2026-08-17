@@ -9,7 +9,7 @@
 
 KOHALOCK — sistem transparansi & tata kelola dana desa berbasis
 blockchain (rencana: Solidity + testnet Polygon, BELUM diimplementasi),
-dengan 7 role: Kaur Teknis, Sekdes, Kades, Publik, Auditor, BPD & Tokoh
+dengan 7 role: Operator Desa, Sekdes, Kades, Publik, Auditor, BPD & Tokoh
 Adat, dan Kaur Keuangan (ditambahkan belakangan lewat adendum).
 
 Ini proyek PKM (Program Kreativitas Mahasiswa) mahasiswa Indonesia,
@@ -82,7 +82,7 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
   WhistleblowerReport, AdatCase, SupervisionNote, AuditorAccessToken,
   CashBookEntry, BankBookEntry, TaxBookEntry, MonthlyClosing,
   CorrectionTransaction, Notification)
-- Endpoint Dashboard (Kaur Teknis) - sudah tersambung dengan data dinamis.
+- Endpoint Dashboard (Operator Desa) - sudah tersambung dengan data dinamis.
 - Endpoint Buku Bank & Penutupan Buku Bulanan (Kaur Keuangan) - sudah tersambung, logic pencatatan/penguncian otomatis sudah berjalan, **termasuk Hash-lock kriptografis asli via crypto SHA-256**.
 - Endpoint Buku Pajak (GET/POST setor) - sudah dibuat, dan logic potongan otomatis pada pencairan (`execute`) dicatat secara terpisah tanpa memotong nilai awal (SUDAH IMPLEMENTASI).
 - Endpoint Koreksi, Realisasi, & Arsip Terkunci (Kaur Keuangan) - sudah tersambung end-to-end.
@@ -93,7 +93,7 @@ Kalau ada perbedaan antara file itu dengan 01-08, PERCAYA 09/10.
 - **Supabase Database (Fix):** Memandu user untuk me-*resume* database yang Paused (Error PrismaClientKnownRequestError teratasi).
 - **Aritmetika Pajak (Fix):** Memperbaiki bug parsing kalkulasi total pajak (menambahkan regex hapus non-digit sebelum `Number()`) di `ExecutionQueuePage.tsx`.
 - **Transparansi Dokumen Publik (Fitur):** Menambahkan URL Formulir Musrenbang dan RAB dari `fileUrls` JSON backend ke `ProjectDetailPage.tsx` untuk diunduh publik (dengan penanganan aman via TypeScript `as any`).
-- **File Upload Kaur Teknis (Fitur):** Merombak API `POST /proposals` menggunakan modul `multer` (diskStorage). Mengubah frontend `MusrembangFormPage.tsx` menjadi `FormData` agar input file PDF Daftar Hadir & RAB benar-benar tersimpan di server, bukan hanya pajangan/dummy.
+- **File Upload Operator Desa (Fitur):** Merombak API `POST /proposals` menggunakan modul `multer` (diskStorage). Mengubah frontend `MusrembangFormPage.tsx` menjadi `FormData` agar input file PDF Daftar Hadir & RAB benar-benar tersimpan di server, bukan hanya pajangan/dummy.
 - **Evaluasi Kriptografi Auditor (Evaluasi):** Menganalisis penyebab error 500 pada fitur *Integrity Checker* (`crypto.createHash`). Disimpulkan bahwa buffer memori kosong akibat `diskStorage` multer. (Menunggu izin user untuk mengimplementasikan `fs.readFileSync` fisik).
 - **Pembersihan UI Auditor:** Menghapus permanen rute, file, dan navigasi sidebar untuk menu "Template Laporan" yang tidak dipakai, termasuk membersihkan *unused imports*.
 

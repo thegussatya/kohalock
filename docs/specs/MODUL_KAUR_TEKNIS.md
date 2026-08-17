@@ -1,4 +1,4 @@
-# Role 1: Kaur Teknis / Operator Desa
+# Role 1: Operator Desa / Operator Desa
 
 ### Sidebar Menu:
 *   Dashboard
@@ -20,7 +20,7 @@
 ### Rincian Fitur Formulir Musrembang:
 *   **Identitas Usulan dan Agenda:**
     *   Nama Dusun / Wilayah: Diisi menggunakan *Dropdown* (Pilihan: "Dusun 1", "Dusun 2", "Dusun 3", dst).
-    *   Penanggung Jawab Usulan: Teks *Read-Only* (Otomatis terisi dari nama Kaur Teknis yang sedang *login*).
+    *   Penanggung Jawab Usulan: Teks *Read-Only* (Otomatis terisi dari nama Operator Desa yang sedang *login*).
     *   Dokumen Pendukung Musrembang: *Input File* ganda (Hanya menerima PDF).
         *   Unggah Daftar Hadir Warga.
         *   Unggah Notulensi Rapat.
@@ -62,4 +62,4 @@
         *   *Contoh 1:* "ERROR: Nilai pengajuan Rp 150.000.000 melebihi sisa pagu Rp 100.000.000."
         *   *Contoh 2:* "ERROR: Koordinat GPS foto berada di luar batas wilayah desa."
         *   *Contoh 3:* "REVISI SEKDES: Tolong lengkapi tanda tangan ketua RT di Berita Acara."
-    *   Tombol **[Perbaiki Pengajuan]**: Mengarahkan Kaur Teknis kembali ke halaman "Ajukan Pencairan" dengan form yang sudah terisi data lama, sehingga Kaur hanya perlu mengganti bagian yang salah.
+    *   Tombol **[Perbaiki Pengajuan]**: Mengarahkan Operator Desa kembali ke halaman "Ajukan Pencairan" dengan form yang sudah terisi data lama, sehingga Kaur hanya perlu mengganti bagian yang salah.

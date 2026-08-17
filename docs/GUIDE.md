@@ -99,7 +99,7 @@ kohalock/
 ### ✅ Yang Sudah Selesai
 
 - Seluruh **UI/halaman** untuk ke-7 role (50+ halaman) sudah dibangun
-- **Backend API** untuk alur inti pencairan (Kaur Teknis → Sekdes → Kades → Kaur Keuangan) sudah berfungsi end-to-end
+- **Backend API** untuk alur inti pencairan (Operator Desa → Sekdes → Kades → Kaur Keuangan) sudah berfungsi end-to-end
 - **Modul Bendahara** lengkap: Buku Kas, Buku Bank, Buku Pajak, Penutupan Buku, Koreksi, Laporan Realisasi
 - **Modul Pendapatan Desa** (VillageIncomePage) sudah terhubung penuh: form input, filter, tabel, MetricCards & Chart dari API — otomatis sync ke Buku Kas Umum
 - **Dashboard** semua role sudah terhubung ke data aktual
@@ -146,7 +146,7 @@ Namun aparat desa tidak bisa diminta menginstal wallet crypto seperti MetaMask. 
 
 ## 6. Daftar Role & Fitur
 
-### 5.1. Kaur Teknis (Operator Desa)
+### 5.1. Operator Desa (Operator Desa)
 
 **Siapa:** Staf teknis desa yang bertanggung jawab menginput usulan dan mengajukan pencairan.
 
@@ -168,7 +168,7 @@ Namun aparat desa tidak bisa diminta menginstal wallet crypto seperti MetaMask. 
 | ------------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | **Dashboard**                   | Jumlah pengajuan pending, rata-rata waktu verifikasi, klarifikasi menunggu                          | Data real-time dari Disbursement & ClarificationTicket                                                                              |
 | **Verifikasi Pengajuan**        | Antrean pencairan yang menunggu di-review (Split-View: peta, PDF, hash checker)                     | Membaca `Disbursement` status `PENDING_SEKDES`                                                                                      |
-| **Approve / Kembalikan Revisi** | Setujui → status berubah jadi `PENDING_KADES`. Tolak → status jadi `RETURNED_FOR_REVISION` + alasan | Mengubah status Disbursement → kalau disetujui, muncul di Persetujuan Kades. Kalau ditolak, muncul di Riwayat Penolakan Kaur Teknis |
+| **Approve / Kembalikan Revisi** | Setujui → status berubah jadi `PENDING_KADES`. Tolak → status jadi `RETURNED_FOR_REVISION` + alasan | Mengubah status Disbursement → kalau disetujui, muncul di Persetujuan Kades. Kalau ditolak, muncul di Riwayat Penolakan Operator Desa |
 | **Pantauan Anggaran**           | Monitor saldo kas, dana cair, dana dalam proses                                                     | Agregasi dari Proposal & Disbursement                                                                                               |
 | **Inbox Klarifikasi**           | Menjawab pertanyaan warga yang masuk                                                                | Membaca & membalas `ClarificationTicket` → jawaban muncul di halaman Klarifikasi Publik                                             |
 
@@ -254,13 +254,13 @@ Namun aparat desa tidak bisa diminta menginstal wallet crypto seperti MetaMask. 
 
 Bagian ini menjelaskan secara spesifik: **jika input data sekian → harapan hasil yang muncul di fitur/role terhubung adalah sekian.**
 
-### 7.1. Kaur Teknis — Input & Output Terhubung
+### 7.1. Operator Desa — Input & Output Terhubung
 
 | Fitur                   | Input Pengguna                                                                                                      | Harapan Output di Fitur Lain                                                                                                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Formulir Musrembang** | Dusun, Judul, Kategori, Volume + Satuan, Pagu Maksimal, Upload RAB/PDF                                              | 1. Record `Proposal` dibuat.<br>2. Muncul di **Program Saya** Kaur Teknis.<br>3. Muncul di **Dashboard Publik → Pantau Proyek** (progress 0%).<br>4. Menjadi pilihan di dropdown **Ajukan Pencairan**.                              |
+| **Formulir Musrembang** | Dusun, Judul, Kategori, Volume + Satuan, Pagu Maksimal, Upload RAB/PDF                                              | 1. Record `Proposal` dibuat.<br>2. Muncul di **Program Saya** Operator Desa.<br>3. Muncul di **Dashboard Publik → Pantau Proyek** (progress 0%).<br>4. Menjadi pilihan di dropdown **Ajukan Pencairan**.                              |
 | **Ajukan Pencairan**    | Pilih Proposal, Keterangan Termin, Nominal (mis. `50000000`), Upload PDF Berita Acara, Ambil Foto Geotagging Native | 1. Validasi: jika `Nominal > Sisa Pagu` → ditolak sistem, pesan error muncul.<br>2. Jika lolos: `Disbursement` dibuat status `PENDING_SEKDES`.<br>3. Item otomatis muncul di **Verifikasi Pengajuan Sekdes** (Split-View Reviewer). |
-| **Riwayat Penolakan**   | Klik item yang statusnya `RETURNED_FOR_REVISION`                                                                    | 1. Detail alasan revisi dari Sekdes ditampilkan.<br>2. Tombol **[Perbaiki & Ajukan Ulang]** membuka form Ajukan Pencairan dengan data lama (_pre-filled_), Kaur Teknis cukup mengganti berkas yang salah.                           |
+| **Riwayat Penolakan**   | Klik item yang statusnya `RETURNED_FOR_REVISION`                                                                    | 1. Detail alasan revisi dari Sekdes ditampilkan.<br>2. Tombol **[Perbaiki & Ajukan Ulang]** membuka form Ajukan Pencairan dengan data lama (_pre-filled_), Operator Desa cukup mengganti berkas yang salah.                           |
 
 ### 7.2. Sekdes — Input & Output Terhubung
 
@@ -268,7 +268,7 @@ Bagian ini menjelaskan secara spesifik: **jika input data sekian → harapan has
 | ----------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Split-View Reviewer** | Klik item `PENDING_SEKDES` di Verifikasi Pengajuan     | Membuka tampilan dua panel: (kiri) detail nominal & keterangan, (kanan) preview PDF Berita Acara + Peta GPS Geotag + Badge Hash Checker.           |
 | **Aksi: Setujui**       | Klik **[Verifikasi & Teruskan ke Kades]** + PIN Sekdes | 1. Status `Disbursement` → `PENDING_KADES`.<br>2. Item berpindah ke **Persetujuan Pencairan Kades**.<br>3. Notifikasi dikirim ke Kades.            |
-| **Aksi: Kembalikan**    | Klik **[Kembalikan untuk Revisi]** + Isi teks alasan   | 1. Status → `RETURNED_FOR_REVISION`.<br>2. Item muncul di **Riwayat Penolakan Kaur Teknis** beserta catatan alasan.<br>3. `RejectionLog` tercatat. |
+| **Aksi: Kembalikan**    | Klik **[Kembalikan untuk Revisi]** + Isi teks alasan   | 1. Status → `RETURNED_FOR_REVISION`.<br>2. Item muncul di **Riwayat Penolakan Operator Desa** beserta catatan alasan.<br>3. `RejectionLog` tercatat. |
 | **Inbox Klarifikasi**   | Pilih tiket warga + Ketik teks jawaban resmi + Kirim   | 1. Jawaban tersimpan di `ClarificationTicket`.<br>2. Tampil otomatis di **halaman Klarifikasi Publik** untuk warga yang bertanya.                  |
 
 ### 7.3. Kades — Input & Output Terhubung
@@ -302,7 +302,7 @@ Bagian ini menjelaskan secara spesifik: **jika input data sekian → harapan has
 | ----------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Uji Alat Bukti (Integrity Checker)**    | Pilih ID Disbursement → Upload ulang file PDF Berita Acara                     | Sistem menghitung SHA-256 file tersebut dan mencocokkan dengan hash yang disimpan saat upload pertama.<br>→ **Cocok:** Badge hijau "Dokumen Otentik".<br>→ **Tidak Cocok:** Badge merah "Dokumen Dimodifikasi" + timestamp perubahan. |
 | **Kotak Masuk Rahasia**                   | Klik laporan whistleblower → Masukkan Passphrase Kunci Privat Inspektorat      | Mendekripsi Ciphertext menjadi teks asli laporan rahasia warga di memori browser (tidak pernah dikirim ke server dalam bentuk plaintext).                                                                                             |
-| **Kronologi Transaksi (Ledger Explorer)** | Pilih ID Disbursement atau rentang tanggal                                     | Timeline visual lengkap: Submitted by Kaur Teknis → Verified by Sekdes → Authorized/Rejected by Kades → Executed by Bendahara. Setiap tahap ada timestamp, nama user, dan hash dokumen.                                               |
+| **Kronologi Transaksi (Ledger Explorer)** | Pilih ID Disbursement atau rentang tanggal                                     | Timeline visual lengkap: Submitted by Operator Desa → Verified by Sekdes → Authorized/Rejected by Kades → Executed by Bendahara. Setiap tahap ada timestamp, nama user, dan hash dokumen.                                               |
 | **Ekspor Laporan Hukum**                  | Centang transaksi yang relevan → Klik **[Generate PDF]** atau **[Export CSV]** | File PDF Berita Acara Pemeriksaan (BAP) atau CSV data mentah siap digunakan untuk keperluan hukum dan penyidikan.                                                                                                                     |
 
 ### 7.7. BPD & Tokoh Adat — Input & Output Terhubung
@@ -322,7 +322,7 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                        ALUR UTAMA PENCAIRAN                              │
 │                                                                          │
-│  KAUR TEKNIS              SEKDES                KADES              KAUR  │
+│  OPERATOR DESA              SEKDES                KADES              KAUR  │
 │  ──────────              ──────                ─────              KEUANGAN│
 │                                                                          │
 │  Formulir       ┌──►  Verifikasi      ┌──►  Persetujuan    ┌──► Antrean │
@@ -333,7 +333,7 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 │  Ajukan    ─────┘   [Approve] ────────┘   [Authorize] ─────┘  [Execute] │
 │  Pencairan        atau                  atau                       │    │
 │                   [Revisi] ──► kembali  [Panic Button]             │    │
-│                     ke Kaur Teknis       ──► InterventionLog       │    │
+│                     ke Operator Desa       ──► InterventionLog       │    │
 │                                              (Red-Flag)            │    │
 │                                                                    ▼    │
 │                                                              Buku Kas   │
@@ -362,7 +362,7 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 **Ringkasan Keterkaitan Penting:**
 
-- Pencairan yang dibuat **Kaur Teknis** akan muncul di antrean **Sekdes**, lalu **Kades**, lalu **Kaur Keuangan** secara berurutan
+- Pencairan yang dibuat **Operator Desa** akan muncul di antrean **Sekdes**, lalu **Kades**, lalu **Kaur Keuangan** secara berurutan
 - Setelah **Kaur Keuangan** mengeksekusi, data otomatis tercatat di 3 buku (Kas, Bank, Pajak)
 - Semua pencairan yang sudah selesai langsung terlihat di **Dashboard Publik** sebagai update progres proyek
 - **Panic Button** Kades menciptakan log intervensi yang muncul sebagai red-flag di dashboard **Auditor** dan **BPD**
@@ -375,11 +375,11 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 ### Skenario 1: Alur Normal Pencairan Dana (Happy Path)
 
-> **Kasus:** Dusun Mekar mengusulkan pembangunan jembatan melalui Musrembang dengan pagu anggaran Rp 150.000.000. Kaur Teknis mengajukan pencairan termin pertama sebesar Rp 50.000.000.
+> **Kasus:** Dusun Mekar mengusulkan pembangunan jembatan melalui Musrembang dengan pagu anggaran Rp 150.000.000. Operator Desa mengajukan pencairan termin pertama sebesar Rp 50.000.000.
 
-#### Langkah 1 — Kaur Teknis: Buat Proposal Musrembang
+#### Langkah 1 — Operator Desa: Buat Proposal Musrembang
 
-1. Login sebagai **Budi Santoso** (`budi.santoso.kaur-teknis@kohalock.desa` / `password123`)
+1. Login sebagai **Budi Santoso** (`budi.santoso.operator-desa@kohalock.desa` / `password123`)
 2. Buka menu **Formulir Musrembang**
 3. Isi formulir:
    - Dusun: `Mekar`
@@ -391,7 +391,7 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 5. Klik **Kirim Usulan**
 6. ✅ Proposal muncul di halaman **Program Saya** dan di **Dashboard Publik**
 
-#### Langkah 2 — Kaur Teknis: Ajukan Pencairan Termin 1
+#### Langkah 2 — Operator Desa: Ajukan Pencairan Termin 1
 
 1. Buka menu **Ajukan Pencairan**
 2. Pilih proposal: `Pembangunan Jembatan Dusun Mekar`
@@ -442,12 +442,12 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 ### Skenario 2: Pencairan Ditolak & Direvisi
 
-> **Kasus:** Kaur Teknis mengajukan pencairan termin 2 sebesar Rp 60.000.000, tapi Sekdes menemukan foto bukti lapangan tidak sesuai lokasi (koordinat GPS di luar area proyek).
+> **Kasus:** Operator Desa mengajukan pencairan termin 2 sebesar Rp 60.000.000, tapi Sekdes menemukan foto bukti lapangan tidak sesuai lokasi (koordinat GPS di luar area proyek).
 
 #### Langkah 0 — Persiapan Data (Jika Database Kosong)
-Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar. Jika database Anda kosong, silakan login sebagai Kaur Teknis dan buat satu Program baru terlebih dahulu.
+Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar. Jika database Anda kosong, silakan login sebagai Operator Desa dan buat satu Program baru terlebih dahulu.
 
-#### Langkah 1 — Kaur Teknis: Ajukan Pencairan Termin 2
+#### Langkah 1 — Operator Desa: Ajukan Pencairan Termin 2
 
 1. Login sebagai **Budi Santoso**
 2. Buka **Ajukan Pencairan**, pilih proposal `Pembangunan Jembatan Dusun Mekar`
@@ -465,14 +465,14 @@ Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar.
 5. Isi alasan: `"Koordinat GPS foto tidak sesuai dengan lokasi proyek. Mohon foto ulang di lokasi yang benar."`
 6. ✅ Status berubah: **RETURNED_FOR_REVISION**
 
-#### Langkah 3 — Kaur Teknis: Lihat Alasan Penolakan
+#### Langkah 3 — Operator Desa: Lihat Alasan Penolakan
 
 1. Login kembali sebagai **Budi Santoso**
 2. Buka menu **Riwayat Penolakan**
 3. Terlihat entry: `Termin 2 - Rangka Baja` dengan alasan revisi dari Sekdes
-4. Kaur Teknis bisa mengajukan ulang dengan foto yang benar melalui **Ajukan Pencairan** (pencairan baru dengan data yang diperbaiki)
+4. Operator Desa bisa mengajukan ulang dengan foto yang benar melalui **Ajukan Pencairan** (pencairan baru dengan data yang diperbaiki)
 
-#### Langkah 4 — Kaur Teknis: Ajukan Ulang
+#### Langkah 4 — Operator Desa: Ajukan Ulang
 
 1. Buka **Ajukan Pencairan** lagi
 2. Pilih proposal yang sama, isi data serupa tapi kali ini dengan foto yang benar dari lokasi proyek
@@ -487,7 +487,7 @@ Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar.
 
 #### Langkah 0 — Persiapan Data (Wajib Dibaca)
 Skenario ini mensyaratkan ada pencairan yang berstatus **`PENDING_KADES`**. Jika database kosong:
-1. Login sebagai **Kaur Teknis**, buat program baru dan ajukan pencairan.
+1. Login sebagai **Operator Desa**, buat program baru dan ajukan pencairan.
 2. Login sebagai **Sekdes**, verifikasi pengajuan tersebut agar statusnya naik ke Kades.
 
 #### Langkah 1 — Kades: Intervensi Pencairan
@@ -521,7 +521,7 @@ Skenario ini mensyaratkan ada pencairan yang berstatus **`PENDING_KADES`**. Jika
    - Lihat timeline: Submitted → Verified by Sekdes → **Rejected by Kades (Intervention)**
    - Setiap tahap ada timestamp presisi dan hash dokumen terkait
 4. Buka **Uji Alat Bukti (Integrity Checker)**:
-   - Upload ulang file berita acara PDF yang diperoleh dari pihak Kaur Teknis
+   - Upload ulang file berita acara PDF yang diperoleh dari pihak Operator Desa
    - Sistem mencocokkan hash → jika match, berarti dokumen ini tidak diubah sejak diunggah
 5. Buka **Kotak Masuk Rahasia**:
    - Terlihat 1 laporan baru (masih berupa ciphertext)
@@ -556,8 +556,8 @@ Skenario ini mensyaratkan ada pencairan yang berstatus **`PENDING_KADES`**. Jika
 #### Langkah 0 — Persiapan Data (Wajib Dibaca)
 Karena fitur ini bekerja pada pengajuan yang **menunggu persetujuan Kades**, Anda harus membuat data dari awal jika database masih kosong.
 
-**A. Login sebagai Kaur Teknis — Buat Program**
-1. Login: `budi.santoso.kaur-teknis@kohalock.desa` / `password123`
+**A. Login sebagai Operator Desa — Buat Program**
+1. Login: `budi.santoso.operator-desa@kohalock.desa` / `password123`
 2. Buka menu **Program Saya** → klik **[+ Buat Program Baru]**
 3. Isi form **Musrembang**:
    - Dusun: `Dusun Timur`
@@ -569,7 +569,7 @@ Karena fitur ini bekerja pada pengajuan yang **menunggu persetujuan Kades**, And
 4. Klik **[Daftarkan ke Blockchain]**, masukkan PIN: `123456` → tunggu konfirmasi
 5. ✅ Program tersimpan dan muncul di daftar program Anda
 
-**B. Login sebagai Kaur Teknis — Ajukan Pencairan**
+**B. Login sebagai Operator Desa — Ajukan Pencairan**
 1. Masih login sebagai Budi Santoso
 2. Buka detail program **Pengadaan Pipa HDPE** yang baru dibuat
 3. Klik tombol **[Ajukan Pencairan Termin]**
@@ -637,8 +637,8 @@ Karena fitur ini bekerja pada pengajuan yang **menunggu persetujuan Kades**, And
 #### Langkah 0 — Persiapan Data (Wajib Dibaca)
 Skenario ini membutuhkan **minimal 1 pencairan yang sudah dieksekusi** (status `DISBURSED`) agar ada entri di Buku Kas Umum. Ikuti seluruh alur berikut jika database Anda kosong.
 
-**A. Kaur Teknis — Buat Program & Ajukan Pencairan**
-1. Login: `budi.santoso.kaur-teknis@kohalock.desa` / `password123`
+**A. Operator Desa — Buat Program & Ajukan Pencairan**
+1. Login: `budi.santoso.operator-desa@kohalock.desa` / `password123`
 2. Buat program baru dengan data:
    - Dusun: `Dusun Selatan`, Judul: `Pengaspalan Jalan Lingkar RT 03`
    - Kategori: `Infrastruktur`, Volume: `200`, Satuan: `M2`
@@ -790,8 +790,8 @@ LPJ Teknis hanya bisa diisi pada pencairan berstatus **`DISBURSED`**. Selesaikan
 
 Jika ingin membuat data fresh untuk skenario ini, ikuti langkah berikut:
 
-**A. Kaur Teknis — Buat Program**
-1. Login: `budi.santoso.kaur-teknis@kohalock.desa` / `password123`
+**A. Operator Desa — Buat Program**
+1. Login: `budi.santoso.operator-desa@kohalock.desa` / `password123`
 2. Buat program:
    - Dusun: `Dusun Barat`, Judul: `Pembangunan Tembok Penahan Tanah`
    - Kategori: `Infrastruktur`, Volume: `50`, Satuan: `M3`, Pagu: `60000000`
@@ -804,11 +804,11 @@ Jika ingin membuat data fresh untuk skenario ini, ikuti langkah berikut:
 **B. Sekdes — Verifikasi → C. Kades — Otorisasi → D. Kaur Keuangan — Eksekusi**
 _(Ikuti langkah B, C, D yang sama persis seperti di Skenario 5 Langkah 0 di atas)_
 
-Setelah eksekusi berhasil, lanjutkan ke Langkah 1 skenario ini sebagai Kaur Teknis.
+Setelah eksekusi berhasil, lanjutkan ke Langkah 1 skenario ini sebagai Operator Desa.
 
-#### Langkah 1 — Kaur Teknis: Melaporkan LPJ Teknis (Rincian Belanja)
+#### Langkah 1 — Operator Desa: Melaporkan LPJ Teknis (Rincian Belanja)
 
-1. Login sebagai **Budi Santoso** (`budi.santoso.kaur-teknis@kohalock.desa` / `password123`)
+1. Login sebagai **Budi Santoso** (`budi.santoso.operator-desa@kohalock.desa` / `password123`)
 2. Buka menu **Formulir LPJ Teknis**
 3. Pilih transaksi pencairan yang sudah berstatus `DISBURSED` (sudah dieksekusi).
 4. Isi tabel rincian belanja aktual (Barang/Jasa, Volume, Satuan, Harga Satuan). Total harga akan dikalkulasi otomatis.
@@ -876,7 +876,7 @@ Semua akun demo menggunakan password: **`password123`**
 
 | Role          | Email                                    | Nama              |
 | ------------- | ---------------------------------------- | ----------------- |
-| Kaur Teknis   | `budi.santoso.kaur-teknis@kohalock.desa` | Budi Santoso      |
+| Operator Desa   | `budi.santoso.operator-desa@kohalock.desa` | Budi Santoso      |
 | Sekdes        | `siti.rahma.sekdes@kohalock.desa`        | Siti Rahma        |
 | Kades         | `ahmad.fauzi.kades@kohalock.desa`        | Ahmad Fauzi       |
 | Publik        | `warga.publik@kohalock.desa`             | Warga Publik      |

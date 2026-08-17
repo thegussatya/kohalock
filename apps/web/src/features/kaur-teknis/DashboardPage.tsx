@@ -35,8 +35,8 @@ export default function DashboardPage() {
   const chartData = data?.chartData || [];
 
   return (
-    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Kaur Teknis">
-      <PageHeader title="Dashboard Kaur Teknis" description="Selamat datang di dashboard panel untuk Kaur Teknis." />
+    <RoleLayout menuItems={KAUR_TEKNIS_MENU} userName="Budi Santoso" userRole="Operator Desa">
+      <PageHeader title="Dashboard Operator Desa" description="Selamat datang di dashboard panel untuk Operator Desa." />
 
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

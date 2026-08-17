@@ -4,7 +4,7 @@
 
 | Role Enum | Nama | Sifat Akses |
 |---|---|---|
-| `KAUR_TEKNIS` | Kaur Teknis / Operator Desa | Write (proposal & disbursement) |
+| `KAUR_TEKNIS` | Operator Desa / Operator Desa | Write (proposal & disbursement) |
 | `SEKDES` | Sekretaris Desa | Write (verifikasi tahap 1) |
 | `KADES` | Kepala Desa | Write (otorisasi final, panic button) |
 | `KAUR_KEUANGAN` | Kaur Keuangan / Bendahara | Write (eksekusi pencairan, BKU, rekonsiliasi bulanan) |

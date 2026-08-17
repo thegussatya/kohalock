@@ -31,7 +31,7 @@
 
 *Seluruh konfigurasi menu (label, path, icon) telah diisolasi secara ketat dan disentralisasi ke dalam masing-masing `menu.ts` di tiap folder fitur.*
 
-### 1. Kaur Teknis
+### 1. Operator Desa
 | Path | Komponen | Label Sidebar | Icon |
 |---|---|---|---|
 | `/kaur-teknis` | `DashboardPage` | Dashboard | `LayoutDashboard` |
@@ -167,15 +167,15 @@ Role ini dirancang untuk mendigitalisasi penatausahaan keuangan setelah pencaira
 2. **Crash Variant pada MetricCard**: Ditemukan sebelumnya *error crash* pada UI akibat properti string untuk warna komponen di `MetricCard` yang tidak dikenali (`info`). Perbaikan telah dikerjakan dengan menambahkan _fallback style_ statis sehingga komponen tidak akan *crash* di saat aplikasi berjalan, betapapun keliru _props_ diturunkan.
 
 ## Pembaruan Terkini (Full-Stack Integrations)
-1. **Alur Revisi Pencairan (Kaur Teknis - Sekdes)**: 
+1. **Alur Revisi Pencairan (Operator Desa - Sekdes)**: 
    - Halaman `RejectionHistoryPage` kini memiliki tombol aksi "Perbaiki" untuk pencairan yang dikembalikan.
    - Halaman `SubmitDisbursementPage` mendukung mode edit (`?edit=id`) yang otomatis memuat ulang data lama, dan menggunakan tombol "Kirim Revisi" untuk mengupdate data via API `PUT /disbursements/:id` (mengubah status kembali ke `PENDING_SEKDES`).
 2. **Uji Alat Bukti / Integrity Checker (Auditor)**:
    - Filter `?status=DISBURSED` telah dilepas. Auditor sekarang dapat melihat dan memindai hash dokumen dari seluruh riwayat pencairan, termasuk yang berstatus ditolak (`REJECTED_SYSTEM`) untuk keperluan investigasi forensik.
-3. **Formulir Musrembang (Kaur Teknis)**:
+3. **Formulir Musrembang (Operator Desa)**:
    - Menambahkan kolom unggahan **RAB & Gambar Desain (PDF)** untuk melengkapi dokumen induk selain Daftar Hadir dan Notulensi.
-4. **LPJ Otomatis & Laporan Keuangan (Kaur Teknis & Kaur Keuangan)**:
-   - Kaur Teknis kini menginput rincian pengeluaran LPJ (baris-demi-baris) dengan kalkulasi sisa dana. Format laporan bisa dicetak atau diekspor ke Excel (CSV).
+4. **LPJ Otomatis & Laporan Keuangan (Operator Desa & Kaur Keuangan)**:
+   - Operator Desa kini menginput rincian pengeluaran LPJ (baris-demi-baris) dengan kalkulasi sisa dana. Format laporan bisa dicetak atau diekspor ke Excel (CSV).
    - Menu Laporan APBDes otomatis ditambahkan di Kaur Keuangan yang merekapitulasi seluruh pendapatan & LPJ secara matematis.
 5. **Perbaikan UX & Bug Resolusi (UI/Routing)**:
    - Halaman yang sengaja dihapus (seperti `CorrectionTransactionPage`) telah dibersihkan dari `router.tsx` dan `menu.ts` untuk menghindari *crash* HMR Vite.

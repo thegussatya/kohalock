@@ -69,7 +69,7 @@ export default function VerificationQueuePage() {
 
   return (
     <RoleLayout menuItems={SEKDES_MENU} userName="Siti Rahma" userRole="Sekretaris Desa">
-      <PageHeader title="Verifikasi Pengajuan" description="Halaman antrean pengajuan pencairan dari Kaur Teknis." />
+      <PageHeader title="Verifikasi Pengajuan" description="Halaman antrean pengajuan pencairan dari Operator Desa." />
 
 
       {/* Tabs */}

@@ -52,14 +52,14 @@ struct Disbursement {
 
 | Fungsi | Caller (role) | Efek |
 |---|---|---|
-| `registerProposal(dusun, kategori, pagu, dokumenHash)` | Kaur Teknis | Buat `Proposal` baru, emit `ProposalRegistered` |
-| `submitDisbursement(proposalId, nominal, beritaAcaraHash, geotag)` | Kaur Teknis | Cek `nominal <= sisaPagu`, buat `Disbursement` status `PENDING_SEKDES`, emit `DisbursementSubmitted`. Jika nominal > sisa pagu → revert dengan custom error `ExceedsPagu` |
+| `registerProposal(dusun, kategori, pagu, dokumenHash)` | Operator Desa | Buat `Proposal` baru, emit `ProposalRegistered` |
+| `submitDisbursement(proposalId, nominal, beritaAcaraHash, geotag)` | Operator Desa | Cek `nominal <= sisaPagu`, buat `Disbursement` status `PENDING_SEKDES`, emit `DisbursementSubmitted`. Jika nominal > sisa pagu → revert dengan custom error `ExceedsPagu` |
 | `verifyBySekdes(disbursementId)` | Sekdes | Ubah status → `PENDING_KADES`, catat `sekdesVerifier` & `verifiedAt`, emit `VerifiedBySekdes` |
 | `returnForRevision(disbursementId, catatan)` | Sekdes/Kades | Ubah status → `RETURNED_FOR_REVISION`, simpan `catatanRevisi`, emit `ReturnedForRevision` |
 | `authorizeByKades(disbursementId)` | Kades | Ubah status → `PENDING_EKSEKUSI`, catat `kadesApprover`. **Requires**: status sebelumnya harus `PENDING_KADES`. Emit `AuthorizedByKades` |
 | `executeDisbursement(disbursementId)` | Kaur Keuangan | Ubah status → `DISBURSED`, catat `disbursedAt` dan update akumulasi pencairan. Emit `Disbursed` |
 | `rejectIntervention(disbursementId, reasonHash)` | Kades | "Panic button" — kunci/tolak transaksi, emit `InterventionRejected` (dipakai BPD/Auditor sbg red flag) |
-| `submitLpjTeknis(disbursementId, totalAmount, lpjHash)` | Kaur Teknis | Catat hash dan nominal rincian belanja LPJ per termin pencairan. Emit `LpjTeknisSubmitted` |
+| `submitLpjTeknis(disbursementId, totalAmount, lpjHash)` | Operator Desa | Catat hash dan nominal rincian belanja LPJ per termin pencairan. Emit `LpjTeknisSubmitted` |
 | `submitLpjKeuangan(proposalId, lpjHash)` | Kaur Keuangan | Catat hash rekapitulasi keuangan untuk keseluruhan satu program/proposal. Emit `LpjKeuanganSubmitted` |
 | `submitLpjDesa(tahun, semester, lpjHash)` | Kades | Catat hash laporan komprehensif seluruh desa per semester/tahunan. Emit `LpjDesaSubmitted` |
 | `verifyHash(disbursementId, uploadedHash) view` | Siapapun (Auditor/Sekdes) | Bandingkan `uploadedHash` dgn `beritaAcaraHash` on-chain, return bool — dipakai fitur Hash Checker |
