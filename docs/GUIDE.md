@@ -491,7 +491,7 @@ Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar.
 
 #### Langkah 0 — Persiapan Data (Wajib Dibaca)
 Skenario ini mensyaratkan ada pencairan yang berstatus **`PENDING_KADES`**. Jika database kosong:
-1. Login sebagai **Operator Desa**, buat program baru dan ajukan pencairan.
+1. Login sebagai **Operator Desa**, buat program baru (contoh: Pagu Rp 200.000.000) lalu buka detail program dan Ajukan Pencairan (Pilih `Tahap III` yang otomatis bernilai 20% yaitu Rp 40.000.000).
 2. Login sebagai **Sekdes**, verifikasi pengajuan tersebut agar statusnya naik ke Kades.
 
 #### Langkah 1 — Kades: Intervensi Pencairan
@@ -647,12 +647,13 @@ Skenario ini membutuhkan **minimal 1 pencairan yang sudah dieksekusi** (status `
 2. Buat program baru dengan data:
    - Dusun: `Dusun Selatan`, Judul: `Pengaspalan Jalan Lingkar RT 03`
    - Kategori: `Infrastruktur`, Volume: `200`, Satuan: `M2`
-   - Pagu Maksimal: `80000000`
+   - Pagu Maksimal: `100000000`
    - Upload formulir & RAB (PDF apa saja)
 3. Daftarkan ke blockchain, PIN: `123456`
 4. Buka detail program, klik **[Ajukan Pencairan Termin]**:
-   - Keterangan: `Termin 1 - Pembelian Aspal`
-   - Nominal: `40000000`
+   - Termin Pencairan: `Tahap I`
+   - Nominal Pengajuan: (Otomatis terisi `Rp 40.000.000`)
+   - Keterangan: `Pembelian Aspal`
    - Upload berita acara & foto (file apa saja)
 5. Masukkan PIN `123456`, klik **[Ajukan]**
 6. Logout
@@ -697,14 +698,14 @@ Skenario ini membutuhkan **minimal 1 pencairan yang sudah dieksekusi** (status `
 #### Langkah 3 — Kaur Keuangan: Temukan Kesalahan Entri
 
 1. Buka **Buku Kas Umum** → filter bulan Juli
-2. Temukan entri: `Eksekusi Pencairan Termin 1 - Pengaspalan` tercatat `Rp 40.000.000`
+2. Temukan entri: `[Tahap I] Pembelian Aspal` tercatat `Rp 40.000.000`
 3. Seharusnya `Rp 4.000.000` (kesalahan input satu nol lebih)
 4. Karena sudah terkunci, tidak bisa diedit langsung
 
 #### Langkah 4 — Kaur Keuangan: Buat Transaksi Koreksi
 
 1. Buka menu **Transaksi Koreksi**
-2. Pilih entri yang salah: `Eksekusi Pencairan Termin 1 - Pengaspalan / Rp 40.000.000`
+2. Pilih entri yang salah: `Eksekusi Pencairan [Tahap I] Pembelian Aspal / Rp 40.000.000`
 3. Isi form koreksi:
    - Jenis: `Jurnal Pembalik (Kredit)`
    - Nominal Koreksi: `36000000` _(selisih Rp 40jt - Rp 4jt)_
@@ -799,10 +800,12 @@ Jika ingin membuat data fresh untuk skenario ini, ikuti langkah berikut:
 1. Login: `budi.santoso.operator-desa@kohalock.desa` / `password123`
 2. Buat program:
    - Dusun: `Dusun Barat`, Judul: `Pembangunan Tembok Penahan Tanah`
-   - Kategori: `Infrastruktur`, Volume: `50`, Satuan: `M3`, Pagu: `60000000`
+   - Kategori: `Infrastruktur`, Volume: `50`, Satuan: `M3`, Pagu: `100000000`
 3. Daftarkan ke blockchain, PIN: `123456`
-4. Ajukan pencairan:
-   - Keterangan: `Termin 1 - Pekerjaan Pondasi`, Nominal: `25000000`
+4. Buka detail program, klik **[Ajukan Pencairan Termin]**:
+   - Termin Pencairan: `Tahap I`
+   - Nominal Pengajuan: (Otomatis terisi `Rp 40.000.000`)
+   - Keterangan: `Pekerjaan Pondasi`
    - Upload berita acara & foto (file apa saja), PIN: `123456`
 5. Logout
 
