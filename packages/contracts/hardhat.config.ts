@@ -17,6 +17,9 @@ const config: HardhatUserConfig = {
   },
   networks: {
     hardhat: {},
+    localhost: {
+      url: process.env.BLOCKCHAIN_RPC_URL || "http://127.0.0.1:8545",
+    },
     polygonAmoy: {
       url: process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],

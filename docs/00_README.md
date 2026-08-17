@@ -15,6 +15,7 @@ Folder ini berisi seluruh dokumen perencanaan proyek **KOHALOCK** (Sistem Transp
 | 6 | `06_API_SPEC.md` | Saat menulis endpoint Express / integrasi frontend-backend |
 | 7 | `07_CLAUDE.md` | **Taruh di root repo sebagai `CLAUDE.md`** — konvensi coding, commands, struktur repo. Ini yang otomatis dibaca Claude Code tiap sesi. |
 | 8 | `08_ROADMAP.md` | Saat planning sprint / milestone |
+| 9 | `11_DOCKER_GUIDE.md` | Panduan lengkap menjalankan local environment & Docker Compose |
 
 ## Cara Pakai Praktis
 

@@ -1,0 +1,93 @@
+name: kohalock
+
+services:
+  # 1. PostgreSQL Database Service
+  postgres:
+    image: postgres:16-alpine
+    container_name: kohalock-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: kohalock
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kohalock"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kohalock-network
+
+  # 2. Hardhat Local Blockchain EVM Node Service
+  blockchain:
+    build:
+      context: .
+      dockerfile: packages/contracts/Dockerfile
+    container_name: kohalock-blockchain
+    restart: unless-stopped
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"const net = require('net'); const client = net.connect({port: 8545, host: '127.0.0.1'}, () => { client.end(); process.exit(0); }); client.on('error', () => process.exit(1));\""]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kohalock-network
+
+  # 3. Express Backend API Service (Includes DB Push & Seeding on Startup)
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: kohalock-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/kohalock?schema=public"
+      DIRECT_URL: "postgresql://postgres:postgres@postgres:5432/kohalock?schema=public"
+      BLOCKCHAIN_RPC_URL: "http://blockchain:8545"
+      CONTRACT_ADDRESS: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+      JWT_SECRET: "supersecretjwtkeykohalocklocal2026"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      blockchain:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/apps/api/uploads
+    networks:
+      - kohalock-network
+
+  # 4. React + Vite Frontend Web Service
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: dev
+    container_name: kohalock-web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: "http://localhost:3000/api"
+    depends_on:
+      - api
+    networks:
+      - kohalock-network
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
+
+networks:
+  kohalock-network:
+    driver: bridge
