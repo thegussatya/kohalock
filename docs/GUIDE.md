@@ -259,7 +259,7 @@ Bagian ini menjelaskan secara spesifik: **jika input data sekian → harapan has
 | Fitur                   | Input Pengguna                                                                                                      | Harapan Output di Fitur Lain                                                                                                                                                                                                        |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Formulir Musrembang** | Dusun, Judul, Kategori, Volume + Satuan, Pagu Maksimal, Upload RAB/PDF                                              | 1. Record `Proposal` dibuat.<br>2. Muncul di **Program Saya** Operator Desa.<br>3. Muncul di **Dashboard Publik → Pantau Proyek** (progress 0%).<br>4. Menjadi pilihan di dropdown **Ajukan Pencairan**.                              |
-| **Ajukan Pencairan**    | Pilih Proposal, Keterangan Termin, Nominal (mis. `50000000`), Upload PDF Berita Acara, Ambil Foto Geotagging Native | 1. Validasi: jika `Nominal > Sisa Pagu` → ditolak sistem, pesan error muncul.<br>2. Jika lolos: `Disbursement` dibuat status `PENDING_SEKDES`.<br>3. Item otomatis muncul di **Verifikasi Pengajuan Sekdes** (Split-View Reviewer). |
+| **Ajukan Pencairan**    | Pilih Proposal, Pilih Termin (mis. `Tahap I`), Nominal otomatis (`60000000`), Upload PDF Berita Acara, Ambil Foto Geotagging Native | 1. Validasi: jika `Nominal > Sisa Pagu` → ditolak sistem, pesan error muncul.<br>2. Jika lolos: `Disbursement` dibuat status `PENDING_SEKDES`.<br>3. Item otomatis muncul di **Verifikasi Pengajuan Sekdes** (Split-View Reviewer). |
 | **Riwayat Penolakan**   | Klik item yang statusnya `RETURNED_FOR_REVISION`                                                                    | 1. Detail alasan revisi dari Sekdes ditampilkan.<br>2. Tombol **[Perbaiki & Ajukan Ulang]** membuka form Ajukan Pencairan dengan data lama (_pre-filled_), Operator Desa cukup mengganti berkas yang salah.                           |
 
 ### 7.2. Sekdes — Input & Output Terhubung
@@ -375,7 +375,7 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 
 ### Skenario 1: Alur Normal Pencairan Dana (Happy Path)
 
-> **Kasus:** Dusun Mekar mengusulkan pembangunan jembatan melalui Musrembang dengan pagu anggaran Rp 150.000.000. Operator Desa mengajukan pencairan termin pertama sebesar Rp 50.000.000.
+> **Kasus:** Dusun Mekar mengusulkan pembangunan jembatan melalui Musrembang dengan pagu anggaran Rp 150.000.000. Operator Desa mengajukan pencairan termin pertama sebesar Rp 60.000.000 (40% dari pagu).
 
 #### Langkah 1 — Operator Desa: Buat Proposal Musrembang
 
@@ -397,8 +397,9 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 2. Pilih proposal: `Pembangunan Jembatan Dusun Mekar`
 3. Sistem menampilkan sisa pagu: `Rp 150.000.000`
 4. Isi formulir:
-   - Keterangan: `Termin 1 - Pondasi dan Tiang`
-   - Nominal: `50000000`
+   - Termin Pencairan: `Tahap I`
+   - Nominal Pengajuan: (Otomatis terisi `Rp 60.000.000`)
+   - Keterangan: `Pondasi dan Tiang`
 5. Upload berita acara (PDF) dan foto bukti lapangan (gunakan kamera — akan otomatis ada watermark GPS + timestamp)
 6. Klik **Ajukan**
 7. ✅ Status pencairan: **PENDING_SEKDES**
@@ -428,14 +429,14 @@ Berikut diagram alur bagaimana fitur-fitur saling terhubung:
 3. Klik item → review nominal dan potongan pajak (jika ada)
 4. Klik **Eksekusi Pencairan**
 5. ✅ Status berubah: **DISBURSED**
-6. ✅ Otomatis tercatat di **Buku Kas Umum** (pengeluaran Rp 50.000.000)
-7. ✅ Otomatis tercatat di **Buku Bank** (kredit Rp 50.000.000)
+6. ✅ Otomatis tercatat di **Buku Kas Umum** (pengeluaran Rp 60.000.000)
+7. ✅ Otomatis tercatat di **Buku Bank** (kredit Rp 60.000.000)
 8. ✅ Jika ada potongan pajak, tercatat di **Buku Pajak**
 
 #### Hasil yang Terlihat di Sisi Publik
 
 - Buka halaman **Pantau Proyek** tanpa login
-- Proyek `Pembangunan Jembatan Dusun Mekar` menampilkan progress bar 33% (Rp 50jt dari Rp 150jt)
+- Proyek `Pembangunan Jembatan Dusun Mekar` menampilkan progress bar 40% (Rp 60jt dari Rp 150jt)
 - Klik detail → terlihat rincian Termin 1, foto dengan GPS, dan status pencairan
 
 ---
@@ -451,8 +452,11 @@ Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar.
 
 1. Login sebagai **Budi Santoso**
 2. Buka **Ajukan Pencairan**, pilih proposal `Pembangunan Jembatan Dusun Mekar`
-3. Sisa pagu tampil: `Rp 100.000.000` (sudah terpakai Rp 50jt dari Skenario 1)
-4. Isi: Keterangan `Termin 2 - Rangka Baja`, Nominal `60000000`
+3. Sisa pagu tampil: `Rp 90.000.000` (sudah terpakai Rp 60jt dari Skenario 1)
+4. Isi formulir:
+   - Termin Pencairan: `Tahap II`
+   - Nominal Pengajuan: (Otomatis terisi `Rp 60.000.000`)
+   - Keterangan: `Rangka Baja`
 5. Upload berita acara dan foto (misalnya foto yang GPS-nya keliru)
 6. Klik **Ajukan** → Status: **PENDING_SEKDES**
 
@@ -469,7 +473,7 @@ Skenario ini mensyaratkan Anda sudah memiliki **Program/Usulan** yang terdaftar.
 
 1. Login kembali sebagai **Budi Santoso**
 2. Buka menu **Riwayat Penolakan**
-3. Terlihat entry: `Termin 2 - Rangka Baja` dengan alasan revisi dari Sekdes
+3. Terlihat entry: `[Tahap II] Rangka Baja` dengan alasan revisi dari Sekdes
 4. Operator Desa bisa mengajukan ulang dengan foto yang benar melalui **Ajukan Pencairan** (pencairan baru dengan data yang diperbaiki)
 
 #### Langkah 4 — Operator Desa: Ajukan Ulang
@@ -574,8 +578,9 @@ Karena fitur ini bekerja pada pengajuan yang **menunggu persetujuan Kades**, And
 2. Buka detail program **Pengadaan Pipa HDPE** yang baru dibuat
 3. Klik tombol **[Ajukan Pencairan Termin]**
 4. Isi form:
-   - Keterangan: `Termin 1 - Pembelian Material Pipa`
-   - Nominal: `35000000`
+   - Termin Pencairan: `Tahap I`
+   - Nominal Pengajuan: (Otomatis terisi `Rp 30.000.000`)
+   - Keterangan: `Pembelian Material Pipa`
    - Upload **Berita Acara** (PDF apa saja)
    - Upload **Foto Lapangan** (foto/gambar apa saja)
    - Geotag: biarkan sistem mengambil lokasi, atau masukkan koordinat manual
@@ -586,7 +591,7 @@ Karena fitur ini bekerja pada pengajuan yang **menunggu persetujuan Kades**, And
 **C. Login sebagai Sekdes — Verifikasi & Teruskan ke Kades**
 1. Login: `siti.rahma.sekdes@kohalock.desa` / `password123`
 2. Buka menu **Verifikasi Pengajuan** — terlihat 1 pengajuan baru
-3. Klik item **Termin 1 - Pembelian Material Pipa**
+3. Klik item **[Tahap I] Pembelian Material Pipa**
 4. Review detail di halaman, pastikan semua dokumen terlihat
 5. Klik tombol **[Setujui & Teruskan ke Kades]**, masukkan PIN: `123456`
 6. ✅ Status berubah: **PENDING_KADES**
