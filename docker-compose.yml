@@ -70,11 +70,11 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-      target: dev
+      target: runner
     container_name: kohalock-web
     restart: unless-stopped
     ports:
-      - "5173:5173"
+      - "5173:80"
     environment:
       VITE_API_URL: "http://localhost:3000/api"
     depends_on:
