@@ -71,6 +71,8 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       target: runner
+      args:
+        VITE_API_URL: "/api"
     container_name: kohalock-web
     restart: unless-stopped
     ports:

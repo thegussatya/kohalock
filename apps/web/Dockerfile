@@ -23,12 +23,13 @@ CMD ["pnpm", "--filter", "web", "dev", "--host", "0.0.0.0", "--port", "5173"]
 
 # --- Production Build Stage ---
 FROM base AS builder
-ARG VITE_API_URL=http://localhost:3000/api
+ARG VITE_API_URL=/api
 ENV VITE_API_URL=$VITE_API_URL
 RUN pnpm --filter web build
 
 # --- Production Nginx Runner Stage ---
 FROM nginx:alpine AS runner
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
