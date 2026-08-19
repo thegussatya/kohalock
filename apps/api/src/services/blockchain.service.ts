@@ -1,4 +1,4 @@
-import { JsonRpcProvider, Contract } from 'ethers';
+import { JsonRpcProvider, Contract, getAddress } from 'ethers';
 import * as DanaDesaLedger from '../config/DanaDesaLedger.json';
 
 const rpcUrl = process.env.BLOCKCHAIN_RPC_URL || 'http://127.0.0.1:8545';
@@ -13,7 +13,8 @@ export function getContract(): Contract {
     throw new Error('CONTRACT_ADDRESS is not defined in environment variables');
   }
 
+  const safeAddress = getAddress(contractAddress.toLowerCase());
   // Use the ABI from the hardhat artifact
   const abi = (DanaDesaLedger as any).abi || DanaDesaLedger.abi;
-  return new Contract(contractAddress, abi, provider);
+  return new Contract(safeAddress, abi, provider);
 }

@@ -1,4 +1,4 @@
-import { Wallet, Contract, ContractTransactionReceipt } from 'ethers';
+import { Wallet, Contract, ContractTransactionReceipt, getAddress } from 'ethers';
 import { provider } from './blockchain.service';
 import * as DanaDesaLedger from '../config/DanaDesaLedger.json';
 import { decryptPrivateKey } from './crypto.service';
@@ -22,6 +22,7 @@ export async function executeContractTx(
     throw new Error('CONTRACT_ADDRESS is not defined in environment variables');
   }
 
+  const safeAddress = getAddress(contractAddress.toLowerCase());
   // Connect the wallet to the provider
   const wallet = new Wallet(userPrivateKey, provider);
 
@@ -29,7 +30,7 @@ export async function executeContractTx(
   const abi = (DanaDesaLedger as any).abi || DanaDesaLedger.abi;
 
   // Create a read-write contract instance connected to the wallet
-  const contract = new Contract(contractAddress, abi, wallet);
+  const contract = new Contract(safeAddress, abi, wallet);
 
   // Verify function exists
   if (typeof contract[functionName] !== 'function') {
