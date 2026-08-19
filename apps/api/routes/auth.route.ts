@@ -4,10 +4,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { decryptPrivateKey, encryptPrivateKey } from '../src/services/crypto.service';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET belum di-set di .env');
-}
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretjwtkeykohalocklocal2026';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -53,9 +50,9 @@ router.post('/login', async (req, res) => {
         jabatan: user.jabatan,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login error:", error);
-    return res.status(500).json({ error: "Terjadi kesalahan internal server" });
+    return res.status(500).json({ error: "Terjadi kesalahan internal server", details: error?.message || String(error) });
   }
 });
 

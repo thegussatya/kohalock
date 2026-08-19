@@ -50,11 +50,12 @@ services:
       - "3000:3000"
     environment:
       PORT: 3000
-      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/kohalock?schema=public"
-      DIRECT_URL: "postgresql://postgres:postgres@postgres:5432/kohalock?schema=public"
-      BLOCKCHAIN_RPC_URL: "http://blockchain:8545"
-      CONTRACT_ADDRESS: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
-      JWT_SECRET: "supersecretjwtkeykohalocklocal2026"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/kohalock?schema=public}
+      DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgres@postgres:5432/kohalock?schema=public}
+      BLOCKCHAIN_RPC_URL: ${BLOCKCHAIN_RPC_URL:-http://blockchain:8545}
+      CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-0x5FbDB2315678afecb367f032d93F642f64180aa3}
+      JWT_SECRET: ${JWT_SECRET:-supersecretjwtkeykohalocklocal2026}
+      CUSTODIAL_ENCRYPTION_MASTER_KEY: ${CUSTODIAL_ENCRYPTION_MASTER_KEY:-MasterKeyForUserPrivateKeysEncryption2026}
     depends_on:
       postgres:
         condition: service_healthy
