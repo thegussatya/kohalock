@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'http://127.0.0.1:3000/api', // hardcoded untuk development
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 // Menambahkan interceptor untuk menyisipkan token secara otomatis ke setiap request
