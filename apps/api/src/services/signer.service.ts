@@ -1,4 +1,4 @@
-import { Wallet, Contract, ContractTransactionReceipt, getAddress } from 'ethers';
+import { Wallet, Contract, ContractTransactionReceipt, getAddress, parseEther } from 'ethers';
 import { provider } from './blockchain.service';
 import * as DanaDesaLedger from '../config/DanaDesaLedger.json';
 import { decryptPrivateKey } from './crypto.service';
@@ -25,6 +25,26 @@ export async function executeContractTx(
   const safeAddress = getAddress(contractAddress.toLowerCase());
   // Connect the wallet to the provider
   const wallet = new Wallet(userPrivateKey, provider);
+
+  // Auto-fund user wallet with gas from Master Deployer Wallet if balance is low
+  try {
+    const masterKey = process.env.PRIVATE_KEY;
+    if (masterKey) {
+      const userBalance = await provider.getBalance(wallet.address);
+      if (userBalance < parseEther('0.005')) {
+        const safeMasterKey = masterKey.startsWith('0x') ? masterKey : `0x${masterKey}`;
+        const masterWallet = new Wallet(safeMasterKey, provider);
+        const fundTx = await masterWallet.sendTransaction({
+          to: wallet.address,
+          value: parseEther('0.02')
+        });
+        await fundTx.wait();
+        console.log(`Auto-funded user wallet ${wallet.address} with 0.02 POL gas fee.`);
+      }
+    }
+  } catch (fundErr) {
+    console.warn('Auto-funding user wallet warning:', fundErr);
+  }
 
   // Use the ABI from the hardhat artifact
   const abi = (DanaDesaLedger as any).abi || DanaDesaLedger.abi;

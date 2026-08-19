@@ -54,6 +54,7 @@ services:
       DIRECT_URL: ${DIRECT_URL:-postgresql://postgres:postgres@postgres:5432/kohalock?schema=public}
       BLOCKCHAIN_RPC_URL: ${BLOCKCHAIN_RPC_URL:-http://blockchain:8545}
       CONTRACT_ADDRESS: ${CONTRACT_ADDRESS:-0x5FbDB2315678afecb367f032d93F642f64180aa3}
+      PRIVATE_KEY: ${PRIVATE_KEY:-7431a65d48578fa8195294e34097a7ff859102be956e47f5c509ebdcd6f62c23}
       JWT_SECRET: ${JWT_SECRET:-supersecretjwtkeykohalocklocal2026}
       CUSTODIAL_ENCRYPTION_MASTER_KEY: ${CUSTODIAL_ENCRYPTION_MASTER_KEY:-MasterKeyForUserPrivateKeysEncryption2026}
     depends_on:
