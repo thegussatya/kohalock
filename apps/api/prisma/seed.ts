@@ -1,6 +1,6 @@
 import { PrismaClient } from '../generated/prisma';
 import bcrypt from 'bcrypt';
-import { JsonRpcProvider, Wallet, Contract, id } from 'ethers';
+import { JsonRpcProvider, Wallet, Contract, id, getAddress } from 'ethers';
 import { encryptPrivateKey } from '../src/services/crypto.service';
 import * as DanaDesaLedger from '../src/config/DanaDesaLedger.json';
 
