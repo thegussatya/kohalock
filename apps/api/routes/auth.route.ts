@@ -17,8 +17,10 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: "Email dan password harus diisi" });
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user || !user.passwordHash) {
