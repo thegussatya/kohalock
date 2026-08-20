@@ -9,17 +9,21 @@ until node -e "const net = require('net'); const client = net.connect({host: 'po
 done
 echo "--> PostgreSQL is connected!"
 
-echo "--> Waiting for Hardhat Blockchain Node (blockchain:8545)..."
-until node -e "const net = require('net'); const client = net.connect({host: 'blockchain', port: 8545}, () => { client.end(); process.exit(0); }); client.on('error', () => process.exit(1));"; do
-  sleep 1
-done
-echo "--> Hardhat Blockchain is connected!"
+if [ "$BLOCKCHAIN_RPC_URL" = "http://blockchain:8545" ]; then
+  echo "--> Waiting for Hardhat Blockchain Node (blockchain:8545)..."
+  until node -e "const net = require('net'); const client = net.connect({host: 'blockchain', port: 8545}, () => { client.end(); process.exit(0); }); client.on('error', () => process.exit(1));"; do
+    sleep 1
+  done
+  echo "--> Hardhat Blockchain is connected!"
 
-echo "--> Deploying DanaDesaLedger Smart Contract..."
-pnpm --filter contracts exec hardhat run scripts/deploy.ts --network localhost || true
+  echo "--> Deploying DanaDesaLedger Smart Contract..."
+  pnpm --filter contracts exec hardhat run scripts/deploy.ts --network localhost || true
 
-echo "--> Copying ABI to API configuration..."
-pnpm --filter contracts exec ts-node scripts/copy-abi.ts || true
+  echo "--> Copying ABI to API configuration..."
+  pnpm --filter contracts exec ts-node scripts/copy-abi.ts || true
+else
+  echo "--> Using External Blockchain RPC: $BLOCKCHAIN_RPC_URL"
+fi
 
 echo "--> Pushing Prisma Schema to PostgreSQL..."
 pnpm --filter api exec prisma db push

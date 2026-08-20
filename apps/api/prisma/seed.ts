@@ -36,10 +36,16 @@ async function main() {
     const contractAddress = process.env.CONTRACT_ADDRESS;
     if (contractAddress) {
       const safeAddress = getAddress(contractAddress.toLowerCase());
-      adminSigner = await provider.getSigner(0);
+      const masterKey = process.env.PRIVATE_KEY;
+      if (masterKey) {
+        const safeMasterKey = masterKey.startsWith('0x') ? masterKey : `0x${masterKey}`;
+        adminSigner = new Wallet(safeMasterKey, provider);
+      } else {
+        adminSigner = await provider.getSigner(0);
+      }
       const abi = (DanaDesaLedger as any).abi || DanaDesaLedger.abi;
       contract = new Contract(safeAddress, abi, adminSigner);
-      console.log('Connected to contract as admin (account 0).');
+      console.log('Connected to contract as admin wallet.');
     } else {
       console.warn('CONTRACT_ADDRESS not found. Seed will create wallets but not grant blockchain roles.');
     }
