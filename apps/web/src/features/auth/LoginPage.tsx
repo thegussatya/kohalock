@@ -34,10 +34,14 @@ export function LoginPage() {
         navigate(`/${response.data.user.role}`);
       }
     } catch (error: any) {
-      if (error.response && error.response.data && error.response.data.error) {
+      if (error.response && error.response.data && typeof error.response.data.error === 'string') {
         toast.error(error.response.data.error);
-      } else {
+      } else if (error.response && error.response.status >= 500) {
+        toast.error('Server sedang restart/inisialisasi, silakan coba 5 detik lagi.');
+      } else if (error.response && error.response.status === 401) {
         toast.error('Email atau password salah');
+      } else {
+        toast.error('Gagal terhubung ke server. Periksa koneksi internet Anda.');
       }
     } finally {
       setIsLoading(false);
