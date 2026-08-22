@@ -37,12 +37,17 @@ export async function executeContractTx(
         const safeMasterKey = masterKey.startsWith('0x') ? masterKey : `0x${masterKey}`;
         const masterWallet = new Wallet(safeMasterKey, provider);
         const feeData = await provider.getFeeData();
-        const fundTx = await masterWallet.sendTransaction({
+        const txReq: any = {
           to: wallet.address,
-          value: parseEther('0.2'),
-          maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ? (feeData.maxPriorityFeePerGas * 12n / 10n) : undefined,
-          maxFeePerGas: feeData.maxFeePerGas ? (feeData.maxFeePerGas * 12n / 10n) : undefined,
-        });
+          value: parseEther('0.2')
+        };
+        if (feeData.maxPriorityFeePerGas) {
+          txReq.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas * 12n / 10n;
+        }
+        if (feeData.maxFeePerGas) {
+          txReq.maxFeePerGas = feeData.maxFeePerGas * 12n / 10n;
+        }
+        const fundTx = await masterWallet.sendTransaction(txReq);
         await fundTx.wait();
         console.log(`Auto-funded user wallet ${wallet.address} with 0.2 POL gas fee on Polygon Mainnet.`);
       }
