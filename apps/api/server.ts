@@ -29,8 +29,9 @@ app.use(cors());
 app.use(express.json());
 
 import path from 'path';
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads', (req, res) => {
+app.use(['/api/uploads', '/uploads'], (req, res) => {
   res.status(404).send(`
     <html>
       <body style="display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:sans-serif;background:#f8fafc;color:#64748b;">
