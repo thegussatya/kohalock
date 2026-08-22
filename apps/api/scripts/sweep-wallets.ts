@@ -1,7 +1,7 @@
 import { JsonRpcProvider, Wallet, formatEther, parseEther } from 'ethers';
 import * as dotenv from 'dotenv';
-import { PrismaClient } from '../../apps/api/generated/prisma';
-import { decryptPrivateKey } from '../../apps/api/src/services/crypto.service';
+import { PrismaClient } from '../generated/prisma';
+import { decryptPrivateKey } from '../src/services/crypto.service';
 
 dotenv.config();
 
