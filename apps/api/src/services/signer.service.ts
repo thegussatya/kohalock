@@ -26,20 +26,19 @@ export async function executeContractTx(
   // Connect the wallet to the provider
   const wallet = new Wallet(userPrivateKey, provider);
 
-  // Auto-fund user wallet with gas from Master Deployer Wallet if balance is low (Optimized for Polygon Mainnet)
+  // Auto-fund user wallet with gas from Master Deployer Wallet if balance is low (Efficient Auto-Funding: 0.04 POL)
   try {
     const masterKey = process.env.PRIVATE_KEY;
     if (masterKey) {
       const userBalance = await provider.getBalance(wallet.address);
-      // Mainnet gas fees are higher than Testnet (~0.03 - 0.07 POL per contract tx).
-      // Threshold: 0.05 POL. Funding Amount: 0.2 POL.
-      if (userBalance < parseEther('0.05')) {
+      // Efficient Mainnet Gas Auto-Funding (Threshold: < 0.015 POL, Funding: 0.04 POL)
+      if (userBalance < parseEther('0.015')) {
         const safeMasterKey = masterKey.startsWith('0x') ? masterKey : `0x${masterKey}`;
         const masterWallet = new Wallet(safeMasterKey, provider);
         const feeData = await provider.getFeeData();
         const txReq: any = {
           to: wallet.address,
-          value: parseEther('0.2')
+          value: parseEther('0.04')
         };
         if (feeData.maxPriorityFeePerGas) {
           txReq.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas * 12n / 10n;
@@ -49,7 +48,7 @@ export async function executeContractTx(
         }
         const fundTx = await masterWallet.sendTransaction(txReq);
         await fundTx.wait();
-        console.log(`Auto-funded user wallet ${wallet.address} with 0.2 POL gas fee on Polygon Mainnet.`);
+        console.log(`Auto-funded user wallet ${wallet.address} with 0.04 POL gas fee on Polygon Mainnet.`);
       }
     }
   } catch (fundErr) {

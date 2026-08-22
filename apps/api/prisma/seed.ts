@@ -108,27 +108,31 @@ async function main() {
   console.log('Start seeding...');
   
   for (const user of users) {
-    let walletAddress: string | null = null;
-    let encryptedPrivateKey: string | null = null;
+    let walletAddress: string;
+    let encryptedPrivateKey: string;
 
-    // Generate wallet for all users (or we could just do it for roles that need it)
-    const wallet = Wallet.createRandom();
-    walletAddress = wallet.address;
-    encryptedPrivateKey = encryptPrivateKey(wallet.privateKey, DEFAULT_PIN);
+    // Check if user already exists with an active wallet to lock/preserve it
+    const existingUser = await prisma.user.findUnique({ where: { email: user.email } });
+    if (existingUser && existingUser.walletAddress && existingUser.encryptedPrivateKey) {
+      walletAddress = existingUser.walletAddress;
+      encryptedPrivateKey = existingUser.encryptedPrivateKey;
+      console.log(`Preserved existing locked wallet for ${user.nama}: ${walletAddress}`);
+    } else {
+      const wallet = Wallet.createRandom();
+      walletAddress = wallet.address;
+      encryptedPrivateKey = encryptPrivateKey(wallet.privateKey, DEFAULT_PIN);
+    }
 
     const createdUser = await prisma.user.upsert({
       where: { email: user.email },
-      update: {
-        walletAddress,
-        encryptedPrivateKey
-      },
+      update: {}, // Never overwrite existing user wallet or data
       create: {
         ...user,
         walletAddress,
         encryptedPrivateKey
       },
     });
-    console.log(`Upserted user: ${createdUser.nama} (${createdUser.role}) with wallet: ${walletAddress}`);
+    console.log(`User confirmed: ${createdUser.nama} (${createdUser.role}) with wallet: ${walletAddress}`);
 
     // Grant Role on-chain if applicable
     if (contract && roleMap[user.role]) {
@@ -144,20 +148,6 @@ async function main() {
         }
       } catch (err) {
         console.error(`Failed to grant role for ${user.role}:`, err);
-      }
-    }
-
-    // Fund the new wallet with 1 ETH for gas
-    if (adminSigner) {
-      try {
-        const txFund = await adminSigner.sendTransaction({
-          to: walletAddress,
-          value: 1000000000000000000n // 1 ETH
-        });
-        await txFund.wait();
-        console.log(`Funded ${walletAddress} with 1 ETH`);
-      } catch (err) {
-        console.error(`Failed to fund ${walletAddress}:`, err);
       }
     }
   }
