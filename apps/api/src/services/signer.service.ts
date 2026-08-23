@@ -26,13 +26,13 @@ export async function executeContractTx(
   // Connect the wallet to the provider
   const wallet = new Wallet(userPrivateKey, provider);
 
-  // Auto-fund user wallet with gas from Master Deployer Wallet if balance is low (Optimized Auto-Funding: 0.08 POL)
+  // Universal Auto-Fund user wallet with gas from Master Deployer Wallet for ALL ROLES (Threshold: <= 0.055 POL, Funding: 0.08 POL)
   try {
     const masterKey = process.env.PRIVATE_KEY;
     if (masterKey) {
       const userBalance = await provider.getBalance(wallet.address);
-      // Mainnet Gas Auto-Funding (Threshold: < 0.04 POL, Funding: 0.08 POL)
-      if (userBalance < parseEther('0.04')) {
+      // Universal threshold (0.055 POL) ensures wallets with ~0.04 POL balance get funded before transaction execution
+      if (userBalance <= parseEther('0.055')) {
         const safeMasterKey = masterKey.startsWith('0x') ? masterKey : `0x${masterKey}`;
         const masterWallet = new Wallet(safeMasterKey, provider);
         const feeData = await provider.getFeeData();
