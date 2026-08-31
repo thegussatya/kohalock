@@ -242,13 +242,15 @@ Aplikasi KOHALOCK menyediakan **2 Skenario Jalur Instalasi** sesuai kebutuhan pe
 
 #### 🛠️ Langkah-Langkah Eksekusi:
 
+##### 🐳 Opsi 1A: Menggunakan Docker Compose (Sangat Mudah & Otomatis)
+
 1. **Clone Repositori**:
    ```bash
    git clone https://github.com/thegussatya/kohalock.git
    cd kohalock
    ```
 
-2. **Jalankan Docker Compose (1 Command)**:
+2. **Jalankan Docker Compose**:
    ```bash
    docker compose up -d --build
    ```
@@ -259,18 +261,62 @@ Aplikasi KOHALOCK menyediakan **2 Skenario Jalur Instalasi** sesuai kebutuhan pe
    - 🐘 **PostgreSQL Database**: `localhost:5432` (`POSTGRES_DB=kohalock`, `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=SecurePasswordPostgres2026!`)
    - ⛓️ **Hardhat Local Blockchain Node**: `http://localhost:8545`
 
-4. **Kredensial Login Pengujian Instan (Password Seluruh Akun: `password123`)**:
-   - **Kaur Teknis / Operator Desa**: `budi.santoso.operator-desa@kohalock.desa`
-   - **Sekretaris Desa (Sekdes)**: `siti.rahma.sekdes@kohalock.desa`
-   - **Kepala Desa (Kades)**: `ahmad.fauzi.kades@kohalock.desa`
-   - **Kaur Keuangan / Bendahara**: `hastuti.kaur-keuangan@kohalock.desa`
-   - **Auditor Inspektorat**: `inspektur.auditor@kohalock.desa`
-   - **BPD & Tokoh Adat**: `ketua.bpd-adat@kohalock.desa`
-
-5. **Menghentikan Container**:
+4. **Menghentikan Container**:
    ```bash
    docker compose down
    ```
+
+---
+
+##### 💻 Opsi 1B: Tanpa Docker (Mode Development Manual — PNPM & Multi-Terminal)
+*Gunakan opsi ini jika Anda tidak memasang Docker dan ingin menjalankan aplikasi secara langsung menggunakan Node.js/PNPM & PostgreSQL lokal.*
+
+1. **Install Seluruh Dependensi Monorepo**:
+   ```bash
+   pnpm install
+   ```
+
+2. **Terminal 1 — Jalankan Local Blockchain Node (Hardhat In-Memory Node)**:
+   ```bash
+   cd packages/contracts
+   npx hardhat node
+   ```
+   *(Biarkan terminal ini tetap terbuka. Hardhat otomatis menyediakan 20 akun test terisi 10.000 ETH)*
+
+3. **Terminal 2 — Persiapkan Database PostgreSQL & Seeding**:
+   Pastikan PostgreSQL lokal Anda aktif di port 5432, lalu salin `.env` dan jalankan Prisma:
+   ```bash
+   cd apps/api
+   cp .env.example .env
+   npx prisma db push
+   npx prisma db seed
+   ```
+
+4. **Jalankan Server Backend API (Terminal 2)**:
+   ```bash
+   cd apps/api
+   pnpm dev
+   ```
+   *(Server Backend API berjalan di http://localhost:3000)*
+
+5. **Terminal 3 — Jalankan Frontend Web Application**:
+   Buka terminal baru:
+   ```bash
+   cd apps/web
+   cp .env.example .env
+   pnpm dev
+   ```
+   *(Aplikasi Frontend Web berjalan di http://localhost:5173)*
+
+---
+
+#### 🗝️ Kredensial Login Pengujian Instan (Password Seluruh Akun: `password123`)
+- **Kaur Teknis / Operator Desa**: `budi.santoso.operator-desa@kohalock.desa`
+- **Sekretaris Desa (Sekdes)**: `siti.rahma.sekdes@kohalock.desa`
+- **Kepala Desa (Kades)**: `ahmad.fauzi.kades@kohalock.desa`
+- **Kaur Keuangan / Bendahara**: `hastuti.kaur-keuangan@kohalock.desa`
+- **Auditor Inspektorat**: `inspektur.auditor@kohalock.desa`
+- **BPD & Tokoh Adat**: `ketua.bpd-adat@kohalock.desa`
 
 ---
 
