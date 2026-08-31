@@ -228,9 +228,19 @@ VITE_API_URL="/api"
 
 ## 🚀 Panduan Instalasi & Cara Menjalankan Aplikasi
 
-### 🐳 CARA A: Menggunakan Docker Compose (Sangat Mudah & Siap Pakai)
+Aplikasi KOHALOCK menyediakan **2 Skenario Jalur Instalasi** sesuai kebutuhan pengujian Anda:
 
-Ini adalah cara tercepat untuk menjalankan seluruh ekosistem KOHALOCK (Database Postgres, Backend Express API, dan Frontend React Nginx Web) hanya dengan satu perintah:
+---
+
+### 🟢 SKENARIO 1: Mode Lokal Siap Pakai (Quick Run — Tanpa Faucet & Blockchain Publik)
+*Direkomendasikan untuk Penguji, Dosen, Reviewer PKM, atau Developer yang ingin menguji seluruh fitur aplikasi secara cepat di komputer lokal tanpa menggunakan Faucet maupun jaringan publik.*
+
+#### 📌 Keunggulan Skenario 1:
+- ⚡ **Tanpa Faucet & Saldo POL Asli**: Hardhat Node lokal otomatis menyediakan 20 akun test gratisan masing-masing terisi **10.000 ETH/POL**.
+- 🛠️ **1-Command Docker Compose**: Menjalankan PostgreSQL, In-Memory Blockchain Node, Express API, dan Nginx Frontend Web sekaligus.
+- 📦 **Database Auto-Seeded**: 6 Akun Desa dummy (Kaur Teknis, Sekdes, Kades, Kaur Keuangan, Auditor, BPD) langsung siap dipakai login.
+
+#### 🛠️ Langkah-Langkah Eksekusi:
 
 1. **Clone Repositori**:
    ```bash
@@ -238,67 +248,94 @@ Ini adalah cara tercepat untuk menjalankan seluruh ekosistem KOHALOCK (Database 
    cd kohalock
    ```
 
-2. **Jalankan Docker Compose**:
+2. **Jalankan Docker Compose (1 Command)**:
    ```bash
    docker compose up -d --build
    ```
 
-3. **Akses Aplikasi**:
-   - **Frontend Web**: Buka browser di [http://localhost](http://localhost) (atau port 80 / domain Anda)
-   - **Backend API Health Check**: [http://localhost:3000/health](http://localhost:3000/health)
+3. **Pemetaan Port & URL Akses Lokal**:
+   - 🌐 **Frontend Web App**: [http://localhost](http://localhost) (Port 80 / 5173)
+   - ⚡ **Backend Express API Health Check**: [http://localhost:3000/health](http://localhost:3000/health)
+   - 🐘 **PostgreSQL Database**: `localhost:5432` (`POSTGRES_DB=kohalock`, `POSTGRES_USER=postgres`, `POSTGRES_PASSWORD=SecurePasswordPostgres2026!`)
+   - ⛓️ **Hardhat Local Blockchain Node**: `http://localhost:8545`
 
-4. **Menghentikan Container**:
+4. **Kredensial Login Pengujian Instan (Password Seluruh Akun: `password123`)**:
+   - **Kaur Teknis / Operator Desa**: `budi.santoso.operator-desa@kohalock.desa`
+   - **Sekretaris Desa (Sekdes)**: `siti.rahma.sekdes@kohalock.desa`
+   - **Kepala Desa (Kades)**: `ahmad.fauzi.kades@kohalock.desa`
+   - **Kaur Keuangan / Bendahara**: `hastuti.kaur-keuangan@kohalock.desa`
+   - **Auditor Inspektorat**: `inspektur.auditor@kohalock.desa`
+   - **BPD & Tokoh Adat**: `ketua.bpd-adat@kohalock.desa`
+
+5. **Menghentikan Container**:
    ```bash
    docker compose down
    ```
 
 ---
 
-### 💻 CARA B: Mode Development Manual (PNPM & Local Node)
+### 🌐 SKENARIO 2: Mode Full Development & Web3 Integrated (Polygon PoS Mainnet / Amoy Testnet)
+*Direkomendasikan untuk Pengujian Integrasi Blockchain Publik (Polygon Mainnet / Polygon Amoy Testnet) atau Deployment Production ke VPS Server.*
 
-Jika Anda ingin melakukan pengembangan (*development*) kode program secara langsung di komputer lokal:
+#### 📌 Fitur Skenario 2:
+- 🔗 **Integrasi Real EVM Blockchain**: Menghubungkan aplikasi ke Polygon PoS Mainnet / Amoy Testnet via Alchemy RPC Endpoint.
+- 💸 **Auto-Funding Relayer Gas**: Backend API secara otomatis menyalurkan gas fee `0.08 POL` ke wallet pengguna desa saat menekan tombol transaksi.
+- 🧹 **Script Sweep Refund**: Fitur penarikan kembali sisa gas POL dari wallet user ke Master Wallet.
 
-#### 1. Install Seluruh Dependensi Monorepo:
-```bash
-pnpm install
-```
+#### 🛠️ Langkah-Langkah Eksekusi:
 
-#### 2. Persiapkan Database PostgreSQL & Migration:
-```bash
-cd apps/api
-cp .env.example .env
-npx prisma db push
-npx prisma db seed
-```
+1. **Konfigurasi Environment Backend API (`apps/api/.env`)**:
+   Buat file `apps/api/.env` (salin dari `apps/api/.env.example`) dan isi variabel jaringan blockchain:
+   ```env
+   PORT=3000
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/kohalock?schema=public"
+   JWT_SECRET="super-secret-jwt-key-kohalock-2026"
+   
+   # Private Key Master Wallet / Gas Relayer Anda
+   PRIVATE_KEY="0xPrivateKeyMasterWalletAnda"
+   
+   # RPC Endpoint Jaringan Polygon (Alchemy / Infura / Public RPC)
+   # Mainnet: https://polygon-mainnet.g.alchemy.com/v2/ALCHEMY_API_KEY
+   # Amoy Testnet: https://rpc-amoy.polygon.technology
+   POLYGON_MAINNET_RPC_URL="https://polygon-mainnet.g.alchemy.com/v2/ALCHEMY_API_KEY"
+   BLOCKCHAIN_RPC_URL="https://polygon-mainnet.g.alchemy.com/v2/ALCHEMY_API_KEY"
+   
+   # Alamat Smart Contract DanaDesaLedger
+   CONTRACT_ADDRESS="0xC627605BC2f7f1BddE0f68D43A369E5317cc7ED3"
+   ```
 
-#### 3. Jalankan Server Backend API (Terminal 1):
-```bash
-cd apps/api
-pnpm dev
-```
-*(Backend API berjalan di http://localhost:3000)*
+2. **Funding Master Wallet (Pengisian Saldo POL)**:
+   - **Untuk Polygon PoS Mainnet**: Isi Master Wallet (`PRIVATE_KEY`) Anda dengan minimal **0.5 - 2 POL** asli via Pintu/Exchange.
+   - **Untuk Polygon Amoy Testnet**: Dapatkan Testnet POL gratis dari Faucet resmi [https://faucet.polygon.technology/](https://faucet.polygon.technology/).
 
-#### 4. Jalankan Server Frontend Web (Terminal 2):
-```bash
-cd apps/web
-cp .env.example .env
-pnpm dev
-```
-*(Frontend Web berjalan di http://localhost:5173)*
+3. **Kompilasi & Deployment Smart Contract (Hardhat)**:
+   Jika Anda ingin mentargetkan deployment Smart Contract baru ke Polygon Amoy Testnet atau Mainnet:
+   ```bash
+   cd packages/contracts
+   cp .env.example .env
+   
+   # Kompilasi Contract Solidity
+   pnpm compile
+   
+   # Deploy ke Polygon Amoy Testnet
+   npx hardhat run scripts/deploy-direct.ts --network polygonAmoy
+   
+   # Atau Deploy ke Polygon PoS Mainnet
+   npx hardhat run scripts/deploy-direct.ts --network polygon
+   ```
+   *Salin alamat Smart Contract hasil deploy tersebut dan perbarui variabel `CONTRACT_ADDRESS` di file `apps/api/.env`.*
 
----
+4. **Jalankan Server Production & API**:
+   ```bash
+   # Jalankan via Docker Compose di Server VPS
+   docker compose up -d --build api web
+   ```
 
-## ⛓️ Pengelolaan Smart Contract (Polygon Mainnet)
-
-Smart Contract **`DanaDesaLedger.sol`** telah terdeploy dan terverifikasi di jaringan **Polygon PoS Mainnet**:
-
-- **Contract Address**: [`0xC627605BC2f7f1BddE0f68D43A369E5317cc7ED3`](https://polygonscan.com/address/0xC627605BC2f7f1BddE0f68D43A369E5317cc7ED3)
-- **Master Deployer / Gas Relayer Wallet**: `0x4DDEa3f08800Dd8cb130a3Fc6AAcc2ab0FB902A0`
-
-### Menjalankan Skrip Refund / Sweep Balance (Jika Perlu Draw Sisa Gas User):
-```bash
-docker compose exec api pnpm --filter api exec ts-node scripts/sweep-wallets.ts
-```
+5. **Eksekusi Penarikan Sisa Gas (Sweep Refund Script)**:
+   Jika ingin memindahkan sisa saldo POL dari wallet pengguna desa kembali ke Master Wallet:
+   ```bash
+   docker compose exec api pnpm --filter api exec ts-node scripts/sweep-wallets.ts
+   ```
 
 ---
 
